@@ -296,11 +296,19 @@
         </div>
       `;
 
-      let url = API_BASE + '/castracoes';
-      const params = [];
-      if (tipo) params.push('tipo=' + encodeURIComponent(tipo));
-      if (status) params.push('status=' + encodeURIComponent(status));
-      if (params.length) url += '?' + params.join('&');
+      var ev = window._eventoRelatorio;
+      var useMutiraoInscricao = ev && ev.id && !isNaN(Number(ev.id));
+
+      var url;
+      if (useMutiraoInscricao) {
+        url = API_BASE + '/mutirao_inscricao?calendario_mutirao_id=' + Number(ev.id);
+      } else {
+        url = API_BASE + '/castracoes';
+        var params = [];
+        if (tipo) params.push('tipo=' + encodeURIComponent(tipo));
+        if (status) params.push('status=' + encodeURIComponent(status));
+        if (params.length) url += '?' + params.join('&');
+      }
 
       fetch(url)
         .then(function(r) {
@@ -310,19 +318,25 @@
         .then(function(data) {
           var filtered = Array.isArray(data) ? data : [];
 
+          if (useMutiraoInscricao) {
+            filtered = filtered.filter(function(item) {
+              return Number(item.calendario_mutirao_id) === Number(ev.id);
+            });
+          }
+
           if (especie) {
             filtered = filtered.filter(function(item) {
               return (item.pet_especie || '').toLowerCase() === especie.toLowerCase();
             });
           }
 
-          if (dataInicio) {
+          if (dataInicio && !useMutiraoInscricao) {
             filtered = filtered.filter(function(item) {
               return item.data_agendamento && item.data_agendamento >= dataInicio;
             });
           }
 
-          if (dataFim) {
+          if (dataFim && !useMutiraoInscricao) {
             filtered = filtered.filter(function(item) {
               return item.data_agendamento && item.data_agendamento <= dataFim;
             });
@@ -357,20 +371,29 @@
         statsEl.style.display = 'none';
         return;
       }
-      var total = data.length;
-      var gatos = data.filter(function(d) { return (d.pet_especie || '').toLowerCase() === 'gato'; }).length;
-      var cachorros = data.filter(function(d) { return (d.pet_especie || '').toLowerCase() === 'cachorro'; }).length;
-      var agendados = data.filter(function(d) { return (d.status || '').toLowerCase() === 'agendado'; }).length;
-      var realizados = data.filter(function(d) { return (d.status || '').toLowerCase() === 'realizado'; }).length;
-      var mutirao = data.filter(function(d) { return (d.tipo || '').toLowerCase() === 'mutirao'; }).length;
+      var isMutiraoInscricao = data[0].hasOwnProperty('nome_responsavel') && data[0].hasOwnProperty('calendario_mutirao_id');
 
       statsEl.style.display = 'flex';
-      statsEl.innerHTML =
-        '<div class="stat-card"><div class="stat-value">' + total + '</div><div class="stat-label">Total</div></div>' +
-        '<div class="stat-card"><div class="stat-value">' + gatos + '</div><div class="stat-label">Gatos</div></div>' +
-        '<div class="stat-card"><div class="stat-value">' + cachorros + '</div><div class="stat-label">Cachorros</div></div>' +
-        '<div class="stat-card"><div class="stat-value">' + agendados + '</div><div class="stat-label">Agendados</div></div>' +
-        '<div class="stat-card"><div class="stat-value">' + realizados + '</div><div class="stat-label">Realizados</div></div>';
+      var total = data.length;
+      var html = '<div class="stat-card"><div class="stat-value">' + total + '</div><div class="stat-label">Total</div></div>';
+
+      if (isMutiraoInscricao) {
+        var atendidos = data.filter(function(d) { return (d.status || '').toLowerCase() === 'atendido'; }).length;
+        var pendentes = data.filter(function(d) { return (d.status || '').toLowerCase() === 'pendente'; }).length;
+        html += '<div class="stat-card"><div class="stat-value">' + atendidos + '</div><div class="stat-label">Atendidos</div></div>';
+        html += '<div class="stat-card"><div class="stat-value">' + pendentes + '</div><div class="stat-label">Pendentes</div></div>';
+      } else {
+        var gatos = data.filter(function(d) { return (d.pet_especie || '').toLowerCase() === 'gato'; }).length;
+        var cachorros = data.filter(function(d) { return (d.pet_especie || '').toLowerCase() === 'cachorro'; }).length;
+        var agendados = data.filter(function(d) { return (d.status || '').toLowerCase() === 'agendado'; }).length;
+        var realizados = data.filter(function(d) { return (d.status || '').toLowerCase() === 'realizado'; }).length;
+        html += '<div class="stat-card"><div class="stat-value">' + gatos + '</div><div class="stat-label">Gatos</div></div>';
+        html += '<div class="stat-card"><div class="stat-value">' + cachorros + '</div><div class="stat-label">Cachorros</div></div>';
+        html += '<div class="stat-card"><div class="stat-value">' + agendados + '</div><div class="stat-label">Agendados</div></div>';
+        html += '<div class="stat-card"><div class="stat-value">' + realizados + '</div><div class="stat-label">Realizados</div></div>';
+      }
+
+      statsEl.innerHTML = html;
     }
 
     function renderTabela(data) {
@@ -390,6 +413,8 @@
         return;
       }
 
+      var isMutiraoInscricao = data[0].hasOwnProperty('nome_responsavel') && data[0].hasOwnProperty('calendario_mutirao_id');
+
       countEl.textContent = data.length + ' registros';
       selectedIds.clear();
       document.getElementById('btnDeleteSelected').disabled = true;
@@ -397,33 +422,39 @@
       var html = '<div class="table-wrapper"><table class="table-modern"><thead><tr>';
       html += '<th class="checkbox-col"><input type="checkbox" id="checkAll" onchange="toggleAll(event)"></th>';
       html += '<th>Ticket</th>';
-      html += '<th>Responsável</th>';
-      html += '<th>Pet</th>';
-      html += '<th>Espécie</th>';
-      html += '<th>Sexo</th>';
-      html += '<th>Idade</th>';
-      html += '<th>Clínica</th>';
-      html += '<th>Data</th>';
-      html += '<th>Tipo</th>';
+      if (isMutiraoInscricao) {
+        html += '<th>Responsável</th><th>Contato</th><th>CPF</th><th>Endereço</th><th>Bairro</th><th>Cidade</th>';
+      } else {
+        html += '<th>Responsável</th><th>Pet</th><th>Espécie</th><th>Sexo</th><th>Idade</th><th>Clínica</th><th>Data</th><th>Tipo</th>';
+      }
       html += '<th>Status</th>';
       html += '<th class="actions-col">Ações</th>';
       html += '</tr></thead><tbody>';
 
       data.forEach(function(row) {
-        var especieClass = (row.pet_especie || '').toLowerCase() === 'gato' ? 'badge-gato' : 'badge-cachorro';
         var statusClass = 'badge-' + ((row.status || '').toLowerCase() || 'agendado');
 
         html += '<tr id="row-' + row.id + '">';
         html += '<td class="checkbox-col"><input type="checkbox" value="' + row.id + '" onchange="onCheckChange(event)"></td>';
         html += '<td><strong>' + (row.ticket || '-') + '</strong></td>';
-        html += '<td>' + (row.tutor_nome || '-') + '</td>';
-        html += '<td><strong>' + (row.pet_nome || '-') + '</strong></td>';
-        html += '<td><span class="badge-especie ' + especieClass + '">' + (row.pet_especie || '-') + '</span></td>';
-        html += '<td>' + (row.pet_sexo || '-') + '</td>';
-        html += '<td>' + (row.pet_idade || '-') + '</td>';
-        html += '<td>' + (row.clinica || '-') + '</td>';
-        html += '<td>' + (row.data_agendamento || '-') + '</td>';
-        html += '<td><span style="text-transform:capitalize;">' + ((row.tipo || '').replace(/_/g, ' ') || '-') + '</span></td>';
+        if (isMutiraoInscricao) {
+          html += '<td>' + (row.nome_responsavel || '-') + '</td>';
+          html += '<td>' + (row.contato || '-') + '</td>';
+          html += '<td>' + (row.cpf || '-') + '</td>';
+          html += '<td>' + (row.endereco || '-') + ', ' + (row.numero || '') + '</td>';
+          html += '<td>' + (row.bairro || '-') + '</td>';
+          html += '<td>' + (row.cidade || '-') + '</td>';
+        } else {
+          var especieClass = (row.pet_especie || '').toLowerCase() === 'gato' ? 'badge-gato' : 'badge-cachorro';
+          html += '<td>' + (row.tutor_nome || '-') + '</td>';
+          html += '<td><strong>' + (row.pet_nome || '-') + '</strong></td>';
+          html += '<td><span class="badge-especie ' + especieClass + '">' + (row.pet_especie || '-') + '</span></td>';
+          html += '<td>' + (row.pet_sexo || '-') + '</td>';
+          html += '<td>' + (row.pet_idade || '-') + '</td>';
+          html += '<td>' + (row.clinica || '-') + '</td>';
+          html += '<td>' + (row.data_agendamento || '-') + '</td>';
+          html += '<td><span style="text-transform:capitalize;">' + ((row.tipo || '').replace(/_/g, ' ') || '-') + '</span></td>';
+        }
         html += '<td><span class="badge-status ' + statusClass + '">' + (row.status || '-') + '</span></td>';
         html += '<td class="actions-col">';
         html += '<button class="btn-action btn-delete" title="Excluir" onclick="excluirRegistro(' + row.id + ')"><i class="bi bi-trash"></i></button>';
@@ -453,12 +484,17 @@
       document.getElementById('btnDeleteSelected').disabled = selectedIds.size === 0;
     }
 
+    function tabelaAtual() {
+      var ev = window._eventoRelatorio;
+      return (ev && ev.id && !isNaN(Number(ev.id))) ? 'mutirao_inscricao' : 'castracoes';
+    }
+
     function excluirRegistro(id) {
       if (!confirm('Tem certeza que deseja excluir a inscrição #' + id + '?')) return;
       var btn = event && event.target ? event.target.closest('button') : null;
       if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass"></i>'; }
 
-      fetch(API_BASE + '/castracoes/' + id, { method: 'DELETE' })
+      fetch(API_BASE + '/' + tabelaAtual() + '/' + id, { method: 'DELETE' })
         .then(function(r) {
           if (!r.ok) throw new Error('Erro ao excluir');
           return r.json();
@@ -480,10 +516,11 @@
       btn.disabled = true;
       btn.innerHTML = '<i class="bi bi-hourglass"></i> Excluindo...';
 
+      var table = tabelaAtual();
       var promises = [];
       selectedIds.forEach(function(id) {
         promises.push(
-          fetch(API_BASE + '/castracoes/' + id, { method: 'DELETE' })
+          fetch(API_BASE + '/' + table + '/' + id, { method: 'DELETE' })
             .then(function(r) {
               if (!r.ok) throw new Error('Erro ao excluir #' + id);
               return r.json();
@@ -503,8 +540,15 @@
 
     function exportarCSV() {
       if (!currentData.length) return;
-      var columns = ['ticket', 'tutor_nome', 'tutor_telefone', 'pet_nome', 'pet_especie', 'pet_sexo', 'pet_idade', 'clinica', 'data_agendamento', 'tipo', 'status'];
-      var labels = ['Ticket', 'Responsável', 'Contato', 'Pet', 'Espécie', 'Sexo', 'Idade', 'Clínica', 'Data', 'Tipo', 'Status'];
+      var isMutiraoInscricao = currentData[0].hasOwnProperty('nome_responsavel') && currentData[0].hasOwnProperty('calendario_mutirao_id');
+      var columns, labels;
+      if (isMutiraoInscricao) {
+        columns = ['ticket', 'nome_responsavel', 'contato', 'cpf', 'endereco', 'numero', 'bairro', 'cidade', 'status'];
+        labels = ['Ticket', 'Responsável', 'Contato', 'CPF', 'Endereço', 'Número', 'Bairro', 'Cidade', 'Status'];
+      } else {
+        columns = ['ticket', 'tutor_nome', 'tutor_telefone', 'pet_nome', 'pet_especie', 'pet_sexo', 'pet_idade', 'clinica', 'data_agendamento', 'tipo', 'status'];
+        labels = ['Ticket', 'Responsável', 'Contato', 'Pet', 'Espécie', 'Sexo', 'Idade', 'Clínica', 'Data', 'Tipo', 'Status'];
+      }
 
       var csv = labels.map(function(l) { return '"' + l + '"'; }).join(',') + '\n';
       currentData.forEach(function(row) {
@@ -528,8 +572,15 @@
       var win = window.open('', '_blank');
       if (!win) { alert('Permita pop-ups para gerar PDF.'); return; }
 
-      var columns = ['ticket', 'tutor_nome', 'pet_nome', 'pet_especie', 'pet_sexo', 'pet_idade', 'clinica', 'data_agendamento', 'tipo', 'status'];
-      var labels = ['Ticket', 'Responsável', 'Pet', 'Espécie', 'Sexo', 'Idade', 'Clínica', 'Data', 'Tipo', 'Status'];
+      var isMutiraoInscricao = currentData[0].hasOwnProperty('nome_responsavel') && currentData[0].hasOwnProperty('calendario_mutirao_id');
+      var columns, labels;
+      if (isMutiraoInscricao) {
+        columns = ['ticket', 'nome_responsavel', 'contato', 'cpf', 'endereco', 'bairro', 'cidade', 'status'];
+        labels = ['Ticket', 'Responsável', 'Contato', 'CPF', 'Endereço', 'Bairro', 'Cidade', 'Status'];
+      } else {
+        columns = ['ticket', 'tutor_nome', 'pet_nome', 'pet_especie', 'pet_sexo', 'pet_idade', 'clinica', 'data_agendamento', 'tipo', 'status'];
+        labels = ['Ticket', 'Responsável', 'Pet', 'Espécie', 'Sexo', 'Idade', 'Clínica', 'Data', 'Tipo', 'Status'];
+      }
 
       var ev = window._eventoRelatorio || null;
       if (!ev) {
@@ -602,7 +653,7 @@
         var s = sessionStorage.getItem('relatorio_evento');
         if (s) { sessionStorage.removeItem('relatorio_evento'); return JSON.parse(s); }
         var p = new URLSearchParams(window.location.search);
-        return p.get('data') ? { data: p.get('data'), local: p.get('local') } : null;
+        return p.get('data') ? { data: p.get('data'), local: p.get('local'), id: p.get('id') || '' } : null;
       })();
       window._eventoRelatorio = ev;
 

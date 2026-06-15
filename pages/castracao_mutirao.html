@@ -233,18 +233,18 @@ function renderizarEventos() {
     } else if (isEncerrado) {
       badgeHtml = '<span class="badge badge-secondary"><i class="bi bi-check-circle me-1"></i>Encerrado</span>';
       botoesHtml = '<span class="badge badge-secondary d-block text-center mt-2"><i class="bi bi-x-circle me-2"></i>Encerrado</span>';
-      botoesHtml += '<a href="../relatorio/castracao.html" onclick="event.preventDefault();sessionStorage.setItem(\'relatorio_evento\',JSON.stringify({data:\'' + ev.data + '\',local:\'' + ev.local + '\'}));location.href=this.href;" class="btn btn-secondary btn-sm w-100 mt-1"><i class="bi bi-bar-chart-steps me-1"></i>Ver Inscrições</a>';
+      botoesHtml += '<a href="../relatorio/castracao.html" onclick="event.preventDefault();sessionStorage.setItem(\'relatorio_evento\',JSON.stringify({data:\'' + ev.data + '\',local:\'' + ev.local.replace(/'/g,"\\'") + '\',id:' + (ev._id || 'null') + '}));location.href=this.href;" class="btn btn-secondary btn-sm w-100 mt-1"><i class="bi bi-bar-chart-steps me-1"></i>Ver Inscrições</a>';
     } else {
       badgeHtml = '<span class="badge badge-success"><i class="bi bi-people-fill me-1"></i>' + (ev.vagas || 0) + ' vagas disponíveis</span>';
       botoesHtml = '<a href="castracao_mutirao_form.html" onclick="event.preventDefault();sessionStorage.setItem(\'mutirao_evento\',JSON.stringify({data:\'' + ev.data + '\',local:\'' + ev.local.replace(/'/g,"\\'") + '\',endereco:\'' + ev.endereco.replace(/'/g,"\\'") + '\',vagas:' + ev.vagas + ',dataLimite:\'' + ev.dataLimite + '\',especiePadrao:\'' + ev.especiePadrao + '\'}));location.href=this.href;" class="btn btn-primary w-100"><i class="bi bi-pencil-square me-2"></i>Inscrever-se</a>';
-      botoesHtml += '<a href="../relatorio/castracao.html" onclick="event.preventDefault();sessionStorage.setItem(\'relatorio_evento\',JSON.stringify({data:\'' + ev.data + '\',local:\'' + ev.local.replace(/'/g,"\\'") + '\'}));location.href=this.href;" class="btn btn-secondary btn-sm w-100 mt-1"><i class="bi bi-bar-chart-steps me-1"></i>Ver Inscrições</a>';
+      botoesHtml += '<a href="../relatorio/castracao.html" onclick="event.preventDefault();sessionStorage.setItem(\'relatorio_evento\',JSON.stringify({data:\'' + ev.data + '\',local:\'' + ev.local.replace(/'/g,"\\'") + '\',id:' + (ev._id || 'null') + '}));location.href=this.href;" class="btn btn-secondary btn-sm w-100 mt-1"><i class="bi bi-bar-chart-steps me-1"></i>Ver Inscrições</a>';
     }
 
     if (isAdmin) {
       var dataEscaped = ev.data.replace(/'/g,"\\'");
       var localEscaped = ev.local.replace(/'/g,"\\'");
       botoesHtml += '<div style="display:flex;gap:4px;margin-top:6px;">' +
-        '<button onclick="mostrarRelatorioGeral(\'' + dataEscaped + '\',\'' + localEscaped + '\')" class="btn btn-warning btn-sm" style="flex:1;"><i class="bi bi-file-text me-1"></i>Relatório Geral</button>' +
+        '<button onclick="mostrarRelatorioGeral(' + (ev._id || 'null') + ',\'' + dataEscaped + '\',\'' + localEscaped + '\')" class="btn btn-warning btn-sm" style="flex:1;"><i class="bi bi-file-text me-1"></i>Relatório Geral</button>' +
         '<button onclick="excluirEvento(' + idx + ',this)" class="btn btn-danger btn-sm" style="flex:1;"><i class="bi bi-trash me-1"></i>Excluir</button>' +
         '</div>';
     }
@@ -267,18 +267,21 @@ function renderizarEventos() {
   container.innerHTML = html || '<div class="col-12"><p class="text-muted">Nenhum mutirão agendado no momento.</p></div>';
 }
 
-function mostrarRelatorioGeral(data, local) {
+function mostrarRelatorioGeral(eventoId, data, local) {
   document.getElementById('modal-titulo').textContent = data + ' - ' + local;
   document.getElementById('modal-body').innerHTML = '<div class="modal-loading"><i class="bi bi-hourglass-split" style="font-size:2rem;"></i><p>Carregando inscrições...</p></div>';
   document.getElementById('modal-relatorio').style.display = 'flex';
 
-  fetch(API_BASE + '/castracoes')
+  var url = API_BASE + '/mutirao_inscricao';
+  if (eventoId) url += '?calendario_mutirao_id=' + eventoId;
+
+  fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(items) {
       var inscricoes = Array.isArray(items) ? items : [];
-      var filtradas = inscricoes.filter(function(item) {
-        return item.tipo === 'mutirao' && item.agenda === data;
-      });
+      var filtradas = eventoId
+        ? inscricoes.filter(function(item) { return Number(item.calendario_mutirao_id) === Number(eventoId); })
+        : inscricoes;
 
       if (filtradas.length === 0) {
         document.getElementById('modal-body').innerHTML = '<div class="modal-loading"><i class="bi bi-inbox" style="font-size:2rem;"></i><p>Nenhuma inscrição encontrada para este mutirão.</p></div>';
@@ -288,20 +291,18 @@ function mostrarRelatorioGeral(data, local) {
       var html = '<p><strong>Total de inscrições: ' + filtradas.length + '</strong></p>';
       html += '<div style="overflow-x:auto;"><table>' +
         '<thead><tr>' +
-        '<th>#</th><th>Tutor</th><th>Contato</th><th>Pet</th><th>Espécie</th><th>Sexo</th><th>Idade</th><th>Peso</th><th>Vacinado</th><th>Ticket</th><th>Status</th>' +
+        '<th>#</th><th>Tutor</th><th>Contato</th><th>CPF</th><th>Endereço</th><th>Bairro</th><th>Cidade</th><th>Ticket</th><th>Status</th>' +
         '</tr></thead><tbody>';
 
       filtradas.forEach(function(ins, i) {
         html += '<tr>' +
           '<td>' + (i + 1) + '</td>' +
-          '<td>' + (ins.tutor_nome || '-') + '</td>' +
-          '<td>' + (ins.tutor_telefone || '-') + '</td>' +
-          '<td>' + (ins.pet_nome || '-') + '</td>' +
-          '<td>' + (ins.pet_especie || '-') + '</td>' +
-          '<td>' + (ins.pet_sexo || '-') + '</td>' +
-          '<td>' + (ins.pet_idade || '-') + '</td>' +
-          '<td>' + (ins.pet_peso || '-') + '</td>' +
-          '<td>' + (ins.pet_vacinado ? 'Sim' : 'N\u00e3o') + '</td>' +
+          '<td>' + (ins.nome_responsavel || '-') + '</td>' +
+          '<td>' + (ins.contato || '-') + '</td>' +
+          '<td>' + (ins.cpf || '-') + '</td>' +
+          '<td>' + (ins.endereco || '-') + '</td>' +
+          '<td>' + (ins.bairro || '-') + '</td>' +
+          '<td>' + (ins.cidade || '-') + '</td>' +
           '<td>' + (ins.ticket || '-') + '</td>' +
           '<td>' + (ins.status || 'PENDENTE') + '</td>' +
           '</tr>';
@@ -330,30 +331,34 @@ function excluirEvento(index, btn) {
 
   if (btn) { btn.disabled = true; btn.textContent = 'Excluindo...'; }
 
-  fetch(API_BASE + '/castracoes')
-    .then(function(r) { return r.json(); })
-    .then(function(items) {
-      var inscricoes = Array.isArray(items) ? items : [];
-      var paraExcluir = inscricoes.filter(function(item) {
-        return item.tipo === 'mutirao' && item.agenda === ev.data;
-      });
+  var headers = { 'Authorization': 'Bearer ' + token };
 
-      if (paraExcluir.length === 0) {
-        removerEventoLocal(ev);
-        if (btn) btn.disabled = false;
-        return;
-      }
-
-      var headers = { 'Authorization': 'Bearer ' + token };
-      var deletes = paraExcluir.map(function(ins) {
-        return fetch(API_BASE + '/castracoes/' + ins.id, { method: 'DELETE', headers: headers })
-          .then(function(r) { if (!r.ok) throw new Error('Erro ao excluir inscrição'); });
+  function excluirInscricoes() {
+    if (!ev._id) return Promise.resolve();
+    return fetch(API_BASE + '/mutirao_inscricao')
+      .then(function(r) { return r.json(); })
+      .then(function(items) {
+        var inscricoes = Array.isArray(items) ? items : [];
+        var paraExcluir = inscricoes.filter(function(item) {
+          return Number(item.calendario_mutirao_id) === Number(ev._id);
+        });
+        if (paraExcluir.length === 0) return;
+        return Promise.all(paraExcluir.map(function(ins) {
+          return fetch(API_BASE + '/mutirao_inscricao/' + ins.id, { method: 'DELETE', headers: headers })
+            .then(function(r) { if (!r.ok) throw new Error('Erro ao excluir inscrição'); });
+        }));
       });
+  }
 
-      return Promise.all(deletes).then(function() {
-        removerEventoLocal(ev);
-      });
-    })
+  function excluirEventoAPI() {
+    if (!ev._api || !ev._id) return Promise.resolve();
+    return fetch(API_BASE + '/calendario_mutirao/' + ev._id, { method: 'DELETE', headers: headers })
+      .then(function(r) { if (!r.ok) throw new Error('Erro ao excluir evento'); });
+  }
+
+  excluirInscricoes()
+    .then(function() { return excluirEventoAPI(); })
+    .then(function() { removerEventoLocal(ev); })
     .catch(function(err) {
       alert('Erro ao excluir: ' + err.message);
       if (btn) btn.disabled = false;
