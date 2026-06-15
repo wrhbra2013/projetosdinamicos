@@ -383,12 +383,12 @@ function carregarEventos() {
       _api: true,
       _id: ev.id,
       data: ev.data_evento ? formatarDataBR(ev.data_evento) : '',
-      local: ev.local || '',
+      local: ev.clinica || ev.local || '',
       endereco: ev.endereco || '',
       vagas: ev.vagas || 0,
       dataLimite: ev.data_limite ? formatarDataBR(ev.data_limite) : '',
       especiePadrao: ev.especie_padrao || '',
-      status: ev.status || 'aberto'
+      status: ev.arquivado ? 'encerrado' : (ev.status || 'aberto')
     };
   });
   return apiEventos.concat(adminEventos).filter(function(ev) {
@@ -521,18 +521,16 @@ function cadastrarEventoAdmin(e) {
 
   var token = localStorage.getItem('amoranimal_token');
   if (token) {
-    fetch(API_BASE + '/eventos', {
+    fetch(API_BASE + '/calendario_mutirao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({
-        titulo: 'Mutirão de Castração - ' + evento.local,
         data_evento: formatarDataISOInverso(evento.data),
-        local: evento.local,
+        clinica: evento.local,
         endereco: evento.endereco,
         vagas: evento.vagas,
-        data_limite: formatarDataISOInverso(evento.dataLimite),
         especie_padrao: evento.especiePadrao,
-        status: 'aberto'
+        arquivado: false
       })
     }).then(function(r) { if (r.ok) carregarEventosAPI(); });
   }
@@ -592,7 +590,7 @@ function atualizarAdminLista() {
 }
 
 function carregarEventosAPI() {
-  return fetch(API_BASE + '/eventos')
+  return fetch(API_BASE + '/calendario_mutirao')
     .then(function(r) { return r.json(); })
     .then(function(data) { eventosAPI = Array.isArray(data) ? data : []; })
     .catch(function() { eventosAPI = []; });
