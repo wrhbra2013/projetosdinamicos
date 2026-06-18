@@ -728,6 +728,69 @@ app.post('/settings', async (req, res) => {
     }
 });
 
+app.get('/search', async (req, res) => {
+    const { q } = req.query;
+    if (!q || q.length < 2) {
+        return res.json({ results: [] });
+    }
+    try {
+        const term = '%' + q.toLowerCase() + '%';
+        const results = [];
+
+        if (await tabelaExiste('eventos')) {
+            const r = await pool.query(
+                `SELECT id, titulo, LEFT(COALESCE(descricao,''),100) as descricao, 'eventos' as tabela FROM eventos WHERE LOWER(titulo) LIKE $1 OR LOWER(COALESCE(descricao,'')) LIKE $1 OR LOWER(COALESCE(local,'')) LIKE $1 LIMIT 5`,
+                [term]
+            );
+            results.push(...r.rows);
+        }
+
+        if (await tabelaExiste('castracoes')) {
+            const r = await pool.query(
+                `SELECT id, pet_nome as titulo, tutor_nome || ' - ' || COALESCE(clinica,'') as descricao, 'castracoes' as tabela FROM castracoes WHERE LOWER(pet_nome) LIKE $1 OR LOWER(tutor_nome) LIKE $1 OR LOWER(COALESCE(clinica,'')) LIKE $1 LIMIT 5`,
+                [term]
+            );
+            results.push(...r.rows);
+        }
+
+        if (await tabelaExiste('animais')) {
+            const r = await pool.query(
+                `SELECT id, nome as titulo, COALESCE(especie,'') || ' - ' || LEFT(COALESCE(caracteristicas,''),100) as descricao, 'animais' as tabela FROM animais WHERE LOWER(nome) LIKE $1 OR LOWER(COALESCE(especie,'')) LIKE $1 OR LOWER(COALESCE(caracteristicas,'')) LIKE $1 LIMIT 5`,
+                [term]
+            );
+            results.push(...r.rows);
+        }
+
+        if (await tabelaExiste('voluntarios')) {
+            const r = await pool.query(
+                `SELECT id, nome as titulo, COALESCE(localidade,'') || ' - ' || LEFT(COALESCE(habilidade,''),100) as descricao, 'voluntarios' as tabela FROM voluntarios WHERE LOWER(nome) LIKE $1 OR LOWER(COALESCE(localidade,'')) LIKE $1 OR LOWER(COALESCE(habilidade,'')) LIKE $1 LIMIT 5`,
+                [term]
+            );
+            results.push(...r.rows);
+        }
+
+        if (await tabelaExiste('parcerias')) {
+            const r = await pool.query(
+                `SELECT id, empresa as titulo, COALESCE(localidade,'') || ' - ' || COALESCE(representante,'') as descricao, 'parcerias' as tabela FROM parcerias WHERE LOWER(empresa) LIKE $1 OR LOWER(COALESCE(localidade,'')) LIKE $1 OR LOWER(COALESCE(representante,'')) LIKE $1 LIMIT 5`,
+                [term]
+            );
+            results.push(...r.rows);
+        }
+
+        if (await tabelaExiste('procura_se')) {
+            const r = await pool.query(
+                `SELECT id, COALESCE(nome,'') as titulo, COALESCE(especie,'') || ' - ' || LEFT(COALESCE(informacoes,''),100) as descricao, 'procura_se' as tabela FROM procura_se WHERE LOWER(COALESCE(nome,'')) LIKE $1 OR LOWER(COALESCE(especie,'')) LIKE $1 OR LOWER(COALESCE(informacoes,'')) LIKE $1 LIMIT 5`,
+                [term]
+            );
+            results.push(...r.rows);
+        }
+
+        res.json({ results });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/:tabela', async (req, res) => {
     const { tabela } = req.params;
     if (!(await tabelaExiste(tabela))) {
@@ -809,17 +872,56 @@ app.get('/transparencia', async (req, res) => {
 });
 
 app.post('/transparencia', async (req, res) => {
-    const { titulo, tipo, ano, descricao, arquivo } = req.body;
+    const { titulo, tipo, ano, descricao, arquivo, arquivo_nome, arquivo_data } = req.body;
     if (!titulo || !tipo || !ano) {
         return res.status(400).json({ error: 'titulo, tipo e ano são obrigatórios' });
     }
     try {
+        const fs = require('fs');
+        let nomeArquivo = arquivo || null;
+
+        if (arquivo_data && arquivo_nome) {
+            const uploadDir = path.join(__dirname, '..', 'uploads', 'transparencia');
+            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+            const ext = path.extname(arquivo_nome) || '.bin';
+            const base = path.basename(arquivo_nome, ext)
+                .toLowerCase()
+                .replace(/[\s]+/g, '_')
+                .replace(/[^a-z0-9_-]/g, '');
+            const timestamp = Date.now();
+            nomeArquivo = base + '_' + timestamp + ext;
+
+            const matches = arquivo_data.match(/^data:([^;]+);base64,(.+)$/);
+            if (matches) {
+                const buffer = Buffer.from(matches[2], 'base64');
+                fs.writeFileSync(path.join(uploadDir, nomeArquivo), buffer);
+            } else {
+                const buffer = Buffer.from(arquivo_data, 'base64');
+                fs.writeFileSync(path.join(uploadDir, nomeArquivo), buffer);
+            }
+        }
+
         const result = await pool.query(
             `INSERT INTO transparencia (titulo, tipo, ano, descricao, arquivo)
              VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-            [titulo, tipo, ano, descricao || null, arquivo || null]
+            [titulo, tipo, ano, descricao || null, nomeArquivo]
         );
         res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/transparencia/:id/:arquivo', async (req, res) => {
+    const { id, arquivo } = req.params;
+    try {
+        const fs = require('fs');
+        const filepath = path.join(__dirname, '..', 'uploads', 'transparencia', arquivo);
+        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+
+        await pool.query('DELETE FROM transparencia WHERE id = $1', [id]);
+        res.json({ success: true, message: 'Documento excluído' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

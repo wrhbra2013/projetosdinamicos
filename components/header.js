@@ -109,6 +109,46 @@
     return div.innerHTML;
   }
 
+  var API_SEARCH_MAP = {
+    eventos: { i: 'bi bi-calendar-event', c: '#a855f7' },
+    castracoes: { i: 'bi bi-person-heart', c: '#10b981' },
+    animais: { i: 'bi bi-paw', c: '#f59e0b' },
+    voluntarios: { i: 'bi bi-people-fill', c: '#ec4899' },
+    parcerias: { i: 'bi bi-handshake', c: '#14b8a6' },
+    procura_se: { i: 'bi bi-search', c: '#f97316' }
+  };
+
+  function apiSearch(q, callback) {
+    var BASE = window.API_BASE || 'https://api.projetosdinamicos.com.br/amoranimal';
+    fetch(BASE + '/search?q=' + encodeURIComponent(q))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var items = [];
+        if (data.results) {
+          for (var i = 0; i < data.results.length; i++) {
+            var r = data.results[i];
+            var m = API_SEARCH_MAP[r.tabela];
+            if (m) {
+              items.push({
+                page: {
+                  t: r.titulo || '',
+                  d: r.descricao || '',
+                  i: m.i,
+                  c: m.c,
+                  e: r.tabela
+                },
+                score: 5,
+                api: true,
+                apiData: true
+              });
+            }
+          }
+        }
+        callback(items);
+      })
+      .catch(function() { callback([]); });
+  }
+
   var searchCache = {};
 
   function searchPages(q) {
@@ -162,6 +202,24 @@
 
     renderDropdown(found, q);
     renderPanel(found, q);
+
+    apiSearch(q, function(apiItems) {
+      if (!apiItems.length) return;
+      var seen = {};
+      for (var i = 0; i < found.length; i++) {
+        seen[found[i].page.t + '|' + found[i].page.d + '|' + (found[i].page.e || '')] = true;
+      }
+      for (var i = 0; i < apiItems.length; i++) {
+        var key = apiItems[i].page.t + '|' + apiItems[i].page.d + '|' + apiItems[i].page.e;
+        if (!seen[key]) {
+          found.push(apiItems[i]);
+          seen[key] = true;
+        }
+      }
+      found.sort(function(a, b) { return b.score - a.score; });
+      renderDropdown(found, q);
+      renderPanel(found, q);
+    });
   }
 
   function sectionUrl(s) {
