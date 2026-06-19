@@ -226,7 +226,7 @@
       .then(function(data) {
         if (data && Array.isArray(data) && data.length > 0) {
           var countEl = document.getElementById('stat-count-' + endpoint);
-          if (countEl) countEl.textContent = data.length + '+';
+          if (countEl) countEl.textContent = data.length;
         } else {
           card.style.display = 'none';
         }
