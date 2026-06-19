@@ -1403,7 +1403,7 @@ EOF
     [Ss])
       # Descobrir caminho do projeto amoranimalmarilia
       ESPELHO_DIR=""
-      for try_dir in "/home/wander/Public/amoranimalmarilia" "/var/www/amoranimalmarilia" "/opt/amoranimalmarilia"; do
+      for try_dir in "/home/debian/amoranimalmarilia" "/home/wander/Public/amoranimalmarilia" "/var/www/amoranimalmarilia" "/opt/amoranimalmarilia"; do
         [ -d "$try_dir" ] && ESPELHO_DIR="$try_dir" && break
       done
 
@@ -1422,8 +1422,13 @@ EOF
       fi
 
       # Copiar uploads do amoranimalmarilia
+      UPLOADS_SRC=""
       if [ -n "$ESPELHO_DIR" ] && [ -d "${ESPELHO_DIR%/*}/amoranimal_uploads" ]; then
         UPLOADS_SRC="${ESPELHO_DIR%/*}/amoranimal_uploads"
+      elif [ -d "/home/debian/amoranimal_uploads" ]; then
+        UPLOADS_SRC="/home/debian/amoranimal_uploads"
+      fi
+      if [ -n "$UPLOADS_SRC" ]; then
         info "Copiando uploads de $UPLOADS_SRC para $DATA_DIR/uploads..."
         mkdir -p "$DATA_DIR/uploads"
         cp -rn "$UPLOADS_SRC/"* "$DATA_DIR/uploads/" 2>/dev/null && \
