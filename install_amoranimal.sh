@@ -791,6 +791,77 @@ app.get('/search', async (req, res) => {
     }
 });
 
+// --- Eventos photo upload handlers ---
+app.post('/eventos', async (req, res) => {
+    const data = req.body;
+    try {
+        await garantirTabela('eventos', data);
+        await garantirColunas('eventos', data);
+
+        if (data.fotos && typeof data.fotos === 'string' && data.fotos.startsWith('data:')) {
+            const fs = require('fs');
+            const uploadDir = path.join(__dirname, '..', 'uploads', 'eventos');
+            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+            const matches = data.fotos.match(/^data:([^;]+);base64,(.+)$/);
+            if (matches) {
+                const mimeMap = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' };
+                const ext = mimeMap[matches[1]] || '.jpg';
+                const timestamp = Date.now();
+                const nomeArquivo = 'foto_' + timestamp + ext;
+                const buffer = Buffer.from(matches[2], 'base64');
+                fs.writeFileSync(path.join(uploadDir, nomeArquivo), buffer);
+                data.fotos = nomeArquivo;
+            }
+        }
+
+        const keys = Object.keys(data).map(k => `"${k}"`).join(', ');
+        const values = Object.keys(data).map((_, i) => `$${i + 1}`).join(', ');
+        const result = await pool.query(
+            `INSERT INTO "eventos" (${keys}) VALUES (${values}) RETURNING *;`,
+            Object.values(data)
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/eventos/:id', async (req, res) => {
+    const { id } = req.params;
+    const data = req.body;
+    try {
+        await garantirColunas('eventos', data);
+
+        if (data.fotos && typeof data.fotos === 'string' && data.fotos.startsWith('data:')) {
+            const fs = require('fs');
+            const uploadDir = path.join(__dirname, '..', 'uploads', 'eventos');
+            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+            const matches = data.fotos.match(/^data:([^;]+);base64,(.+)$/);
+            if (matches) {
+                const mimeMap = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif', 'image/webp': '.webp' };
+                const ext = mimeMap[matches[1]] || '.jpg';
+                const timestamp = Date.now();
+                const nomeArquivo = 'foto_' + timestamp + ext;
+                const buffer = Buffer.from(matches[2], 'base64');
+                fs.writeFileSync(path.join(uploadDir, nomeArquivo), buffer);
+                data.fotos = nomeArquivo;
+            }
+        }
+
+        const keys = Object.keys(data).map((k, i) => `"${k}" = $${i + 1}`).join(', ');
+        const result = await pool.query(
+            `UPDATE "eventos" SET ${keys} WHERE id = $${Object.keys(data).length + 1} RETURNING *;`,
+            [...Object.values(data), id]
+        );
+        res.json(result.rows[0] || { error: 'Evento não encontrado' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+// --- End eventos photo upload handlers ---
+
 app.get('/:tabela', async (req, res) => {
     const { tabela } = req.params;
     if (!(await tabelaExiste(tabela))) {

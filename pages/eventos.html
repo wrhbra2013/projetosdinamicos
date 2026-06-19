@@ -38,7 +38,7 @@ fetch(API_BASE + '/eventos')
       col.className = 'col-md-4 mb-4';
       col.innerHTML =
         '<div class="card h-100">' +
-          (ev.foto_url ? '<img src="' + ev.foto_url + '" class="card-img-top" alt="' + (ev.titulo || '') + '">' : '') +
+          (ev.fotos ? '<img src="' + API_BASE + '/uploads/eventos/' + ev.fotos + '" class="card-img-top" alt="' + (ev.titulo || '') + '">' : '') +
           '<div class="card-body">' +
             '<h5 class="card-title">' + (ev.titulo || '') + '</h5>' +
             '<p class="card-subtitle text-muted">' + (ev.data_evento || '') + '</p>' +
