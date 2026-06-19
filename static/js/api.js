@@ -1,1 +1,1 @@
-window.API_BASE = 'https://api.projetosdinamicos.com.br/amoranimal';
+window.API_BASE = 'https://api.projetosdinamicos.com.br';

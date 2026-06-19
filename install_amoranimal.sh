@@ -37,9 +37,10 @@ _check_port() {
 _diagnostic_api() {
   echo ""
   warn "===== DIAGNÓSTICO DE FALHA ($APP_NAME) ====="
-  if docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'amoranimal-api'; then
+  local api_container="${APP_NAME:-amoranimal}-api"
+  if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "$api_container"; then
     local actual_port
-    actual_port=$(docker logs amoranimal-api 2>&1 | grep -oP 'port \K\d+' | tail -1)
+    actual_port=$(docker logs "$api_container" 2>&1 | grep -oP 'port \K\d+' | tail -1)
     if [ -n "$actual_port" ]; then
       warn "API $APP_NAME está ouvindo na porta interna: $actual_port"
       warn "Porta externa configurada: ${PORT:-?}"
@@ -49,9 +50,9 @@ _diagnostic_api() {
       fi
     fi
     warn "--- Últimas 20 linhas do log da API ---"
-    docker logs amoranimal-api --tail 20 2>&1
+    docker logs "$api_container" --tail 20 2>&1
   else
-    warn "Container amoranimal-api ($APP_NAME) não está rodando"
+    warn "Container $api_container ($APP_NAME) não está rodando"
     warn "--- Status dos containers ---"
     docker compose -f "$SCRIPT_DIR/docker-compose.yml" ps 2>&1
     warn "--- Logs completos da API ---"
@@ -163,6 +164,42 @@ SQLEOS
       END LOOP;
     END $$;
 SQLEOS
+
+  # 5. Corrigir caminhos de arquivos vindos do espelho (amoranimalmarilia)
+  info "Corrigindo caminhos de arquivos no banco de dados..."
+  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
+    -- Corrigir foto_url em animais (vindo de adotado)
+    UPDATE animais SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
+      WHERE foto_url LIKE '../amoranimal_uploads/%';
+
+    -- Corrigir foto_url em procura_se
+    UPDATE procura_se SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
+      WHERE foto_url LIKE '../amoranimal_uploads/%';
+
+    -- Corrigir arquivos de transparencia
+    UPDATE transparencia SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
+      WHERE arquivo LIKE '../amoranimal_uploads/%';
+
+    -- Corrigir foto_url em adocoes (vindo de adocao)
+    UPDATE adocoes SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
+      WHERE foto_url LIKE '../amoranimal_uploads/%';
+
+    -- Corrigir arquivo em home
+    UPDATE home SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
+      WHERE arquivo LIKE '../amoranimal_uploads/%';
+
+    -- Corrigir fotos em eventos
+    UPDATE eventos SET fotos = regexp_replace(fotos, '../amoranimal_uploads/', 'uploads/', 'g')
+      WHERE fotos LIKE '../amoranimal_uploads/%';
+
+    -- Substituir domínio antigo nos dados
+    UPDATE animais SET foto_url = replace(foto_url, 'amoranimal.ong.br', 'projetosdinamicos.com.br')
+      WHERE foto_url LIKE '%amoranimal.ong.br%';
+    UPDATE procura_se SET foto_url = replace(foto_url, 'amoranimal.ong.br', 'projetosdinamicos.com.br')
+      WHERE foto_url LIKE '%amoranimal.ong.br%';
+SQLEOS
+  info "Caminhos corrigidos."
+
   info "Migração concluída."
 }
 
@@ -349,15 +386,16 @@ free_ports() {
 # Logs API — mostrar logs da API
 # ==============================================================
 logs_api() {
+  local api_container="${APP_NAME:-amoranimal}-api"
   echo ""
   info "===== Logs da API (últimas 30 linhas) ====="
   echo ""
-  if docker ps --format '{{.Names}}' 2>/dev/null | grep -q 'amoranimal-api'; then
-    docker logs amoranimal-api --tail 30 2>&1
+  if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "$api_container"; then
+    docker logs "$api_container" --tail 30 2>&1
     echo ""
-    info "Para acompanhar em tempo real: docker logs -f amoranimal-api"
+    info "Para acompanhar em tempo real: docker logs -f $api_container"
   else
-    warn "Container amoranimal-api não está rodando."
+    warn "Container $api_container não está rodando."
     docker compose -f "$SCRIPT_DIR/docker-compose.yml" logs --tail=30 api 2>&1 || \
       warn "Nenhum log disponível."
   fi
@@ -524,6 +562,12 @@ services:
       - "${PORT:-3000}:3000"
 COMPOSEEOF
 
+  # Corrigir nomes hardcoded no docker-compose.yml
+  sed -i "s/container_name: amoranimal-db/container_name: ${APP_NAME}-db/g" "$SCRIPT_DIR/docker-compose.yml"
+  sed -i "s/container_name: amoranimal-api/container_name: ${APP_NAME}-api/g" "$SCRIPT_DIR/docker-compose.yml"
+  sed -i "s/amoranimal_db/${APP_NAME}_db/g" "$SCRIPT_DIR/docker-compose.yml"
+  sed -i "s|ADMIN_EMAIL: \${ADMIN_EMAIL:-admin@amoranimal.ong.br}|ADMIN_EMAIL: \${ADMIN_EMAIL:-${ADMIN_EMAIL}}|g" "$SCRIPT_DIR/docker-compose.yml"
+
   info "Gerando api/Dockerfile..."
   cat > "$SCRIPT_DIR/api/Dockerfile" <<'DOCKEREOF'
 FROM node:20-alpine
@@ -565,6 +609,8 @@ DOCKEREOF
   }
 }
 PKGEOF
+
+  sed -i "s|\"name\": \"amoranimal-api\"|\"name\": \"${APP_NAME}-api\"|" "$SCRIPT_DIR/api/package.json"
 
   info "Gerando api/src/server.js..."
   cat > "$SCRIPT_DIR/api/src/server.js" <<'SVREOF'
@@ -1119,6 +1165,12 @@ app.listen(PORT, () => {
 });
 SVREOF
 
+  # Corrigir defaults e strings hardcoded no server.js
+  sed -i "s|process.env.APP_NAME || 'amoranimal'|process.env.APP_NAME || '${APP_NAME}'|" "$SCRIPT_DIR/api/src/server.js"
+  sed -i "s|process.env.DB_NAME || 'amoranimal_db'|process.env.DB_NAME || '${APP_NAME}_db'|" "$SCRIPT_DIR/api/src/server.js"
+  sed -i "s/'amoranimal_secret'/'${APP_NAME}_secret'/g" "$SCRIPT_DIR/api/src/server.js"
+  sed -i "s|-- Backup Amor Animal|-- Backup ${APP_NAME}|" "$SCRIPT_DIR/api/src/server.js"
+
   info "Gerando db/init/01-schema.sql..."
   cat > "$SCRIPT_DIR/db/init/01-schema.sql" <<'SQLEOF'
 CREATE TABLE IF NOT EXISTS settings (
@@ -1340,6 +1392,48 @@ ADMIN_EMAIL=$ADMIN_EMAIL
 ADMIN_NOME=$ADMIN_NOME
 ADMIN_PASS=$ADMIN_PASS
 EOF
+
+  # ==============================================================
+  # Migrar dados do banco espelho (amoranimalmarilia)
+  # ==============================================================
+  echo ""
+  printf "Deseja clonar dados do banco 'espelho' e copiar uploads do amoranimalmarilia? [s/N]: "
+  read -r CLONE_ESPELHO
+  case "$CLONE_ESPELHO" in
+    [Ss])
+      # Descobrir caminho do projeto amoranimalmarilia
+      ESPELHO_DIR=""
+      for try_dir in "/home/wander/Public/amoranimalmarilia" "/var/www/amoranimalmarilia" "/opt/amoranimalmarilia"; do
+        [ -d "$try_dir" ] && ESPELHO_DIR="$try_dir" && break
+      done
+
+      # Dump do banco espelho local
+      if command -v pg_dump >/dev/null 2>&1; then
+        info "Exportando banco 'espelho' local..."
+        if sudo -u postgres pg_dump -d espelho > "/tmp/${APP_NAME}_dump.sql" 2>/dev/null; then
+          info "Banco 'espelho' exportado para /tmp/${APP_NAME}_dump.sql"
+        elif PGPASSWORD="$DB_PASS" pg_dump -h 127.0.0.1 -U postgres -d espelho > "/tmp/${APP_NAME}_dump.sql" 2>/dev/null; then
+          info "Banco 'espelho' exportado (TCP) para /tmp/${APP_NAME}_dump.sql"
+        else
+          warn "Não foi possível exportar banco 'espelho'. Pule esta etapa ou execute manualmente depois."
+        fi
+      else
+        warn "pg_dump não encontrado. Instale o postgresql-client ou exporte manualmente."
+      fi
+
+      # Copiar uploads do amoranimalmarilia
+      if [ -n "$ESPELHO_DIR" ] && [ -d "${ESPELHO_DIR%/*}/amoranimal_uploads" ]; then
+        UPLOADS_SRC="${ESPELHO_DIR%/*}/amoranimal_uploads"
+        info "Copiando uploads de $UPLOADS_SRC para $DATA_DIR/uploads..."
+        mkdir -p "$DATA_DIR/uploads"
+        cp -rn "$UPLOADS_SRC/"* "$DATA_DIR/uploads/" 2>/dev/null && \
+          info "Uploads copiados com sucesso!" || \
+          warn "Falha ao copiar alguns arquivos (podem já existir)."
+      else
+        warn "Diretório de uploads do amoranimalmarilia não encontrado."
+      fi
+      ;;
+  esac
 
   # ==============================================================
   # Construir e iniciar containers
