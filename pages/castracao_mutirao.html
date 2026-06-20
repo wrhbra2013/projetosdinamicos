@@ -181,10 +181,11 @@ function salvarEventosAdmin(eventos) {
 
 function formatarDataISO(dataISO) {
   if (!dataISO) return '';
+  var partes = dataISO.split('T')[0].split('-');
+  if (partes.length === 3 && partes[0].length === 4) return partes[2] + '/' + partes[1] + '/' + partes[0];
   var d = new Date(dataISO);
-  if (!isNaN(d)) return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
-  var partes = dataISO.split('-');
-  return partes[2] + '/' + partes[1] + '/' + partes[0];
+  if (!isNaN(d)) return String(d.getUTCDate()).padStart(2,'0') + '/' + String(d.getUTCMonth()+1).padStart(2,'0') + '/' + d.getUTCFullYear();
+  return dataISO;
 }
 
 function formatarDataISOInverso(dataBR) {
@@ -201,7 +202,7 @@ function formatarDataBR(d) {
   if (!d) return '';
   if (d.match(/^\d{2}\/\d{2}\/\d{4}$/)) return d;
   var dt = new Date(d);
-  if (!isNaN(dt)) return String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear();
+  if (!isNaN(dt)) return String(dt.getUTCDate()).padStart(2,'0') + '/' + String(dt.getUTCMonth()+1).padStart(2,'0') + '/' + dt.getUTCFullYear();
   var partes = d.split('-');
   if (partes.length === 3) return partes[2] + '/' + partes[1] + '/' + partes[0];
   return d;

@@ -2254,10 +2254,10 @@ body.high-contrast .news-carousel-dots .dot.active {
   position:relative
 }
 .search-results-box {
-  position:fixed;
-  top:120px;
-  left:15px;
-  right:15px;
+  position:absolute;
+  top:100%;
+  left:0;
+  right:0;
   background:var(--container-bg);
   border:1px solid var(--border-color);
   border-radius:12px;

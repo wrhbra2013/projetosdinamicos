@@ -77,7 +77,7 @@ _test_endpoint() {
 }
 
 # ==============================================================
-# migrate_schema — criar tabelas ausentes do espelho e migrar dados
+# migrate_schema — garantir tabelas login/home e corrigir paths
 # ==============================================================
 migrate_schema() {
   [ -f "$SCRIPT_DIR/.env" ] && . "$SCRIPT_DIR/.env" || true
@@ -87,8 +87,8 @@ migrate_schema() {
 
   info "Verificando schema do banco de dados..."
 
-  # Tabelas que a API hardcoded espera (singular, do espelho)
-  # 1. login (substitui usuarios)
+  # Tabelas auxiliares da API (não existem no espelho)
+  # 1. login
   docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -tAc \
     "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name='login');" 2>/dev/null | grep -q 't' || {
     info "Criando tabela 'login' a partir de 'usuarios'..."
@@ -136,116 +136,16 @@ SQLEOS
     } || warn "Falha ao restaurar dump (pode ser conflito com tabelas existentes)"
   fi
 
-  # 4. Migrar dados das tabelas singulares (dump) para plurais (API)
-  info "Migrando dados das tabelas singulares para plurais..."
-  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
-    DO $$
-    DECLARE
-      m RECORD;
-      col RECORD;
-      cols TEXT;
-      singular_count INTEGER;
-    BEGIN
-      FOR m IN
-        SELECT * FROM (VALUES
-          ('adocao',     'animais'),
-          ('castracao',  'castracoes'),
-          ('parceria',   'parcerias'),
-          ('voluntario', 'voluntarios')
-        ) AS t(singular, plural)
-      LOOP
-        -- Se a tabela singular não existe, pular
-        IF NOT EXISTS (SELECT 1 FROM information_schema.tables
-                       WHERE table_schema='public' AND table_name=m.singular) THEN
-          CONTINUE;
-        END IF;
-
-        -- Se a tabela plural não existe: renomear singular → plural
-        IF NOT EXISTS (SELECT 1 FROM information_schema.tables
-                       WHERE table_schema='public' AND table_name=m.plural) THEN
-          EXECUTE 'ALTER TABLE "' || m.singular || '" RENAME TO "' || m.plural || '"';
-          RAISE NOTICE 'Tabela % renomeada para %', m.singular, m.plural;
-          CONTINUE;
-        END IF;
-
-        -- Ambas existem: copiar apenas colunas em comum
-        EXECUTE 'SELECT count(*) FROM "' || m.singular || '"' INTO singular_count;
-        IF singular_count = 0 THEN
-          EXECUTE 'DROP TABLE "' || m.singular || '"';
-          RAISE NOTICE 'Tabela % vazia, removida', m.singular;
-          CONTINUE;
-        END IF;
-
-        cols := '';
-        FOR col IN
-          SELECT column_name FROM information_schema.columns
-          WHERE table_schema='public' AND table_name=m.singular
-          INTERSECT
-          SELECT column_name FROM information_schema.columns
-          WHERE table_schema='public' AND table_name=m.plural
-          ORDER BY column_name
-        LOOP
-          CONTINUE WHEN col.column_name = 'id';
-          IF cols <> '' THEN cols := cols || ', '; END IF;
-          cols := cols || '"' || col.column_name || '"';
-        END LOOP;
-
-        IF cols <> '' THEN
-          BEGIN
-            EXECUTE 'INSERT INTO "' || m.plural || '" (' || cols || ') SELECT ' || cols || ' FROM "' || m.singular || '"';
-            RAISE NOTICE 'Copiados % registros de % para %', singular_count, m.singular, m.plural;
-            EXECUTE 'DROP TABLE "' || m.singular || '"';
-            RAISE NOTICE 'Tabela % removida após cópia', m.singular;
-          EXCEPTION WHEN OTHERS THEN
-            RAISE NOTICE 'Erro ao copiar % para %: %', m.singular, m.plural, SQLERRM;
-          END;
-        ELSE
-          RAISE NOTICE 'Sem colunas em comum entre % e %', m.singular, m.plural;
-        END IF;
-      END LOOP;
-    END $$;
-SQLEOS
-
-  # 4b. Mapeamento especial de colunas (nomes diferentes entre singular e plural)
-  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
-    DO $$
-    DECLARE
-      has_nome_pet BOOLEAN;
-      has_foto_adocao BOOLEAN;
-      has_descricao BOOLEAN;
-      cols TEXT;
-    BEGIN
-      -- Verificar se adotado ainda existe (não foi processado pelo passo 4)
-      IF NOT EXISTS (SELECT 1 FROM information_schema.tables
-                     WHERE table_schema='public' AND table_name='adotado') THEN
-        RETURN;
-      END IF;
-
-      -- Verificar colunas disponíveis em adotado
-      SELECT EXISTS(SELECT 1 FROM information_schema.columns
-                    WHERE table_schema='public' AND table_name='adotado' AND column_name='nome_pet') INTO has_nome_pet;
-      SELECT EXISTS(SELECT 1 FROM information_schema.columns
-                    WHERE table_schema='public' AND table_name='adotado' AND column_name='foto_adocao') INTO has_foto_adocao;
-      SELECT EXISTS(SELECT 1 FROM information_schema.columns
-                    WHERE table_schema='public' AND table_name='adotado' AND column_name='descricao') INTO has_descricao;
-
-      cols := 'especie, sexo, idade, porte';
-      IF has_nome_pet THEN cols := cols || ', nome_pet as nome'; ELSE cols := cols || ', null::varchar as nome'; END IF;
-      IF has_foto_adocao THEN cols := cols || ', foto_adocao as foto_url'; ELSE cols := cols || ', null::varchar as foto_url'; END IF;
-      IF has_descricao THEN cols := cols || ', descricao as caracteristicas'; ELSE cols := cols || ', null::varchar as caracteristicas'; END IF;
-
-      EXECUTE 'INSERT INTO animais (nome, especie, sexo, idade, porte, foto_url, caracteristicas, status)'
-           || ' SELECT ' || cols || ', ''adotado''::varchar as status FROM adotado';
-      RAISE NOTICE 'Dados de adotado migrados para animais com mapeamento especial';
-      EXECUTE 'DROP TABLE adotado';
-    END $$;
-SQLEOS
+  # 4. Tabelas da API já usam nomes singulares (adocao, castracao, etc.)
+  #    compatíveis com o espelho. O dump restaurado no passo 3 já está no
+  #    formato correto — nenhuma renomeação é necessária.
+  info "Tabelas singulares já compatíveis com o espelho — nenhuma renomeação necessária."
 
   # 5. Corrigir caminhos de arquivos vindos do espelho (amoranimalmarilia)
   info "Corrigindo caminhos de arquivos no banco de dados..."
   docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
-    -- Corrigir foto_url em animais (vindo de adotado)
-    UPDATE animais SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
+    -- Corrigir foto_url em adocao
+    UPDATE adocao SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
       WHERE foto_url LIKE '../amoranimal_uploads/%';
 
     -- Corrigir foto_url em procura_se
@@ -256,12 +156,6 @@ SQLEOS
     UPDATE transparencia SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
       WHERE arquivo LIKE '../amoranimal_uploads/%';
 
-    -- Corrigir foto_url em animais (vindo de adocao)
-    UPDATE animais SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
-      WHERE foto_url LIKE '../amoranimal_uploads/%';
-    UPDATE adocoes SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
-      WHERE foto_url LIKE '../amoranimal_uploads/%';
-
     -- Corrigir arquivo em home
     UPDATE home SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
       WHERE arquivo LIKE '../amoranimal_uploads/%';
@@ -271,7 +165,7 @@ SQLEOS
       WHERE fotos LIKE '../amoranimal_uploads/%';
 
     -- Substituir domínio antigo nos dados
-    UPDATE animais SET foto_url = replace(foto_url, 'amoranimal.ong.br', 'projetosdinamicos.com.br')
+    UPDATE adocao SET foto_url = replace(foto_url, 'amoranimal.ong.br', 'projetosdinamicos.com.br')
       WHERE foto_url LIKE '%amoranimal.ong.br%';
     UPDATE procura_se SET foto_url = replace(foto_url, 'amoranimal.ong.br', 'projetosdinamicos.com.br')
       WHERE foto_url LIKE '%amoranimal.ong.br%';
@@ -863,39 +757,39 @@ app.get('/search', async (req, res) => {
 
         if (await tabelaExiste('eventos')) {
             const r = await pool.query(
-                `SELECT id, titulo, LEFT(COALESCE(descricao,''),100) as descricao, 'eventos' as tabela FROM eventos WHERE LOWER(titulo) LIKE $1 OR LOWER(COALESCE(descricao,'')) LIKE $1 OR LOWER(COALESCE(local,'')) LIKE $1 LIMIT 5`,
+                `SELECT id, titulo, LEFT(COALESCE(descricao,''),100) as descricao, 'eventos' as tabela FROM eventos WHERE LOWER(titulo) LIKE $1 OR LOWER(COALESCE(descricao,'')) LIKE $1 LIMIT 5`,
                 [term]
             );
             results.push(...r.rows);
         }
 
-        if (await tabelaExiste('castracoes')) {
+        if (await tabelaExiste('castracao')) {
             const r = await pool.query(
-                `SELECT id, pet_nome as titulo, tutor_nome || ' - ' || COALESCE(clinica,'') as descricao, 'castracoes' as tabela FROM castracoes WHERE LOWER(pet_nome) LIKE $1 OR LOWER(tutor_nome) LIKE $1 OR LOWER(COALESCE(clinica,'')) LIKE $1 LIMIT 5`,
+                `SELECT id, COALESCE(nome_pet,nome) as titulo, COALESCE(clinica,'') as descricao, 'castracao' as tabela FROM castracao WHERE LOWER(COALESCE(nome_pet,nome)) LIKE $1 OR LOWER(COALESCE(clinica,'')) LIKE $1 LIMIT 5`,
                 [term]
             );
             results.push(...r.rows);
         }
 
-        if (await tabelaExiste('animais')) {
+        if (await tabelaExiste('adocao')) {
             const r = await pool.query(
-                `SELECT id, nome as titulo, COALESCE(especie,'') || ' - ' || LEFT(COALESCE(caracteristicas,''),100) as descricao, 'animais' as tabela FROM animais WHERE LOWER(nome) LIKE $1 OR LOWER(COALESCE(especie,'')) LIKE $1 OR LOWER(COALESCE(caracteristicas,'')) LIKE $1 LIMIT 5`,
+                `SELECT id, nome as titulo, COALESCE(especie,'') || ' - ' || LEFT(COALESCE(caracteristicas,''),100) as descricao, 'adocao' as tabela FROM adocao WHERE LOWER(nome) LIKE $1 OR LOWER(COALESCE(especie,'')) LIKE $1 OR LOWER(COALESCE(caracteristicas,'')) LIKE $1 LIMIT 5`,
                 [term]
             );
             results.push(...r.rows);
         }
 
-        if (await tabelaExiste('voluntarios')) {
+        if (await tabelaExiste('voluntario')) {
             const r = await pool.query(
-                `SELECT id, nome as titulo, COALESCE(localidade,'') || ' - ' || LEFT(COALESCE(habilidade,''),100) as descricao, 'voluntarios' as tabela FROM voluntarios WHERE LOWER(nome) LIKE $1 OR LOWER(COALESCE(localidade,'')) LIKE $1 OR LOWER(COALESCE(habilidade,'')) LIKE $1 LIMIT 5`,
+                `SELECT id, nome as titulo, COALESCE(localidade,'') || ' - ' || LEFT(COALESCE(habilidade,''),100) as descricao, 'voluntario' as tabela FROM voluntario WHERE LOWER(nome) LIKE $1 OR LOWER(COALESCE(localidade,'')) LIKE $1 OR LOWER(COALESCE(habilidade,'')) LIKE $1 LIMIT 5`,
                 [term]
             );
             results.push(...r.rows);
         }
 
-        if (await tabelaExiste('parcerias')) {
+        if (await tabelaExiste('parceria')) {
             const r = await pool.query(
-                `SELECT id, empresa as titulo, COALESCE(localidade,'') || ' - ' || COALESCE(representante,'') as descricao, 'parcerias' as tabela FROM parcerias WHERE LOWER(empresa) LIKE $1 OR LOWER(COALESCE(localidade,'')) LIKE $1 OR LOWER(COALESCE(representante,'')) LIKE $1 LIMIT 5`,
+                `SELECT id, empresa as titulo, COALESCE(localidade,'') || ' - ' || COALESCE(representante,'') as descricao, 'parceria' as tabela FROM parceria WHERE LOWER(empresa) LIKE $1 OR LOWER(COALESCE(localidade,'')) LIKE $1 OR LOWER(COALESCE(representante,'')) LIKE $1 LIMIT 5`,
                 [term]
             );
             results.push(...r.rows);
@@ -1006,8 +900,8 @@ app.post('/:tabela', async (req, res) => {
         await garantirTabela(tabela, data);
         await garantirColunas(tabela, data);
 
-        if (tabela === 'castracoes' && !data.ticket) {
-            const seqResult = await pool.query("SELECT nextval('castracoes_id_seq')");
+        if (tabela === 'castracao' && !data.ticket) {
+            const seqResult = await pool.query("SELECT nextval('castracao_id_seq')");
             const seq = seqResult.rows[0].nextval;
             data.ticket = gerarTicket(data.tipo || 'baixo_custo', seq);
         }
@@ -1256,20 +1150,21 @@ CREATE TABLE IF NOT EXISTS settings (
     valor TEXT
 );
 
-CREATE TABLE IF NOT EXISTS animais (
+CREATE TABLE IF NOT EXISTS adocao (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
     especie VARCHAR(50),
     porte VARCHAR(50),
     idade VARCHAR(100),
     sexo VARCHAR(20),
+    castrado VARCHAR(20),
     caracteristicas TEXT,
     foto_url TEXT,
     status VARCHAR(50) DEFAULT 'disponivel',
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS adocoes (
+CREATE TABLE IF NOT EXISTS adotado (
     id SERIAL PRIMARY KEY,
     adotante_nome VARCHAR(255) NOT NULL,
     adotante_cpf VARCHAR(20),
@@ -1293,7 +1188,7 @@ CREATE TABLE IF NOT EXISTS adocoes (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS castracoes (
+CREATE TABLE IF NOT EXISTS castracao (
     id SERIAL PRIMARY KEY,
     tipo VARCHAR(50) NOT NULL,
     ticket VARCHAR(20),
@@ -1348,7 +1243,7 @@ CREATE TABLE IF NOT EXISTS eventos (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS parcerias (
+CREATE TABLE IF NOT EXISTS parceria (
     id SERIAL PRIMARY KEY,
     empresa VARCHAR(255) NOT NULL,
     localidade VARCHAR(255),
@@ -1375,7 +1270,7 @@ CREATE TABLE IF NOT EXISTS procura_se (
     status VARCHAR(50)
 );
 
-CREATE TABLE IF NOT EXISTS voluntarios (
+CREATE TABLE IF NOT EXISTS voluntario (
     id SERIAL PRIMARY KEY,
     origem TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     nome VARCHAR(255),
@@ -1619,42 +1514,6 @@ EOF
   echo "  curl http://localhost:$APP_PORT/health"
 }
 
-# ==============================================================
-# menu — menu interativo
-# ==============================================================
-menu() {
-  while :; do
-    echo ""
-    info "===== Amor Animal API - Gerenciamento ====="
-    echo "  1. Instalar"
-    echo "  2. Reconfigurar porta"
-    echo "  3. Recriar container"
-    echo "  4. Liberar portas"
-    echo "  5. Ver logs da API"
-    echo "  6. Parar containers"
-    echo "  7. Desinstalar"
-    echo "  8. Migrar banco (tabelas login/home)"
-    echo "  0. Sair"
-    echo ""
-    printf "Escolha: "; read -r OPT
-    case "$OPT" in
-      1) install_flow; break ;;
-      2) reconfig ;;
-      3) recreate ;;
-      4) free_ports ;;
-      5) logs_api ;;
-      6) stop_containers ;;
-      7) uninstall ;;
-      8) migrate_schema; info "Migração concluída." ;;
-      0) info "Saindo..."; exit 0 ;;
-      *) warn "Opção inválida" ;;
-    esac
-    echo ""
-    printf "Pressione Enter para voltar ao menu..."; read -r _
-  done
-}
-
-
 case "${1:-}" in
   install) install_flow ;;
   uninstall) uninstall ;;
@@ -1664,6 +1523,5 @@ case "${1:-}" in
   logs) logs_api ;;
   stop) stop_containers ;;
   migrate) migrate_schema ;;
-  menu|"") menu ;;
-  *) error "Uso: $0 {install|uninstall|reconfig|recreate|free-ports|logs|stop|migrate|menu}" ;;
+  *) error "Uso: $0 {install|uninstall|reconfig|recreate|free-ports|logs|stop|migrate}" ;;
 esac
