@@ -168,19 +168,19 @@
   <div class="landing-container">
     <h2 class="text-center mb-4">Nosso Impacto</h2>
     <div class="stats-grid" id="stats-grid">
-      <div class="stat-card" data-endpoint="usuarios">
+      <div class="stat-card" data-endpoint="voluntario">
         <div class="stat-card-icon" style="color: var(--brand-teal);"><i class="bi bi-people"></i></div>
-        <div class="stat-card-number" id="stat-count-usuarios">0</div>
+        <div class="stat-card-number" id="stat-count-voluntario">0</div>
         <div class="stat-card-label">Voluntários</div>
       </div>
-      <div class="stat-card" data-endpoint="animais">
+      <div class="stat-card" data-endpoint="adocao">
         <div class="stat-card-icon" style="color: var(--brand-coral);"><i class="bi bi-paw"></i></div>
-        <div class="stat-card-number" id="stat-count-animais">0</div>
+        <div class="stat-card-number" id="stat-count-adocao">0</div>
         <div class="stat-card-label">Aguardando Adoção</div>
       </div>
-      <div class="stat-card" data-endpoint="adocoes">
+      <div class="stat-card" data-endpoint="adotado">
         <div class="stat-card-icon" style="color: var(--brand-purple);"><i class="bi bi-heart"></i></div>
-        <div class="stat-card-number" id="stat-count-adocoes">0</div>
+        <div class="stat-card-number" id="stat-count-adotado">0</div>
         <div class="stat-card-label">Adotados</div>
       </div>
       <div class="stat-card" data-endpoint="procura_se">
@@ -188,14 +188,14 @@
         <div class="stat-card-number" id="stat-count-procura_se">0</div>
         <div class="stat-card-label">Desaparecidos</div>
       </div>
-      <div class="stat-card" data-endpoint="castracoes">
+      <div class="stat-card" data-endpoint="castracao">
         <div class="stat-card-icon" style="color: var(--brand-green);"><i class="bi bi-person-heart"></i></div>
-        <div class="stat-card-number" id="stat-count-castracoes">0</div>
+        <div class="stat-card-number" id="stat-count-castracao">0</div>
         <div class="stat-card-label">Castrações</div>
       </div>
-      <div class="stat-card" data-endpoint="parcerias">
+      <div class="stat-card" data-endpoint="parceria">
         <div class="stat-card-icon" style="color: var(--brand-yellow);"><i class="bi bi-hand-thumbs-up"></i></div>
-        <div class="stat-card-number" id="stat-count-parcerias">0</div>
+        <div class="stat-card-number" id="stat-count-parceria">0</div>
         <div class="stat-card-label">Parcerias</div>
       </div>
     </div>
@@ -608,21 +608,21 @@ function abrirTermo(el) {
         <i class="bi bi-bar-chart" style="font-size:2.5rem;display:block;margin-bottom:8px;"></i>
         Relatórios
       </a>
-      <a href="relatorio/index.html?tabela=animais" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
+      <a href="relatorio/index.html?tabela=adocao" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
         <i class="bi bi-paw" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-        Animais
+        Adocao
       </a>
-      <a href="relatorio/index.html?tabela=adocoes" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
+      <a href="relatorio/index.html?tabela=adotado" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
         <i class="bi bi-heart" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-        Adoções
+        Adotados
       </a>
-      <a href="relatorio/index.html?tabela=castracoes" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
+      <a href="relatorio/index.html?tabela=castracao" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
         <i class="bi bi-person-heart" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-        Castrações
+        Castracao
       </a>
-      <a href="relatorio/index.html?tabela=voluntarios" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
+      <a href="relatorio/index.html?tabela=voluntario" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
         <i class="bi bi-people" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-        Voluntários
+        Voluntario
       </a>
       <a href="relatorio/castracao.html" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
         <i class="bi bi-calendar-check" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
@@ -664,7 +664,7 @@ document.addEventListener('click', function(e) {
 function excluirCastracao(btn) {
   var id = btn.dataset.id;
   if (!confirm('Tem certeza que deseja excluir este agendamento?')) return;
-  fetch(window.API_BASE + '/castracoes/' + encodeURIComponent(id), { method: 'DELETE' })
+  fetch(window.API_BASE + '/castracao/' + encodeURIComponent(id), { method: 'DELETE' })
     .then(function(r) {
       if (!r.ok) throw new Error('Erro ao excluir');
       var tr = btn.closest('tr');
@@ -678,7 +678,7 @@ function excluirCastracao(btn) {
 function atenderCastracao(btn) {
   var id = btn.dataset.id;
   if (!confirm('Marcar este agendamento como Atendido?')) return;
-  fetch(window.API_BASE + '/castracoes/' + encodeURIComponent(id), {
+  fetch(window.API_BASE + '/castracao/' + encodeURIComponent(id), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: 'Atendido' })

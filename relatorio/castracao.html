@@ -303,7 +303,7 @@
       if (useMutiraoInscricao) {
         url = API_BASE + '/mutirao_inscricao?calendario_mutirao_id=' + Number(ev.id);
       } else {
-        url = API_BASE + '/castracoes';
+        url = API_BASE + '/castracao';
         var params = [];
         if (tipo) params.push('tipo=' + encodeURIComponent(tipo));
         if (status) params.push('status=' + encodeURIComponent(status));
@@ -486,7 +486,7 @@
 
     function tabelaAtual() {
       var ev = window._eventoRelatorio;
-      return (ev && ev.id && !isNaN(Number(ev.id))) ? 'mutirao_inscricao' : 'castracoes';
+      return (ev && ev.id && !isNaN(Number(ev.id))) ? 'mutirao_inscricao' : 'castracao';
     }
 
     function excluirRegistro(id) {

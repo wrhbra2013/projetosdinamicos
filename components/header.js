@@ -85,10 +85,10 @@
 
   var API_SECTIONS = [
     { t:"Eventos na Landing", d:"Eventos cadastrados na pagina inicial", k:"evento agenda calendario programacao", i:"bi bi-calendar-event", c:"#a855f7", e:"eventos", f:"titulo" },
-    { t:"Castracoes", d:"Agendamentos de castracao realizados", k:"castracao cirurgia castrar agendamento veterinario", i:"bi bi-person-heart", c:"#10b981", e:"castracoes", f:"pet_nome" },
-    { t:"Pets para Adocao", d:"Animais disponiveis para adocao", k:"pet cachorro gato cao felino adocao animal", i:"bi bi-paw", c:"#f59e0b", e:"animais", f:"nome" },
-    { t:"Voluntarios", d:"Voluntarios cadastrados no sistema", k:"voluntario voluntariado ajuda contribuir", i:"bi bi-people-fill", c:"#ec4899", e:"voluntarios", f:"nome" },
-    { t:"Parcerias", d:"Empresas parceiras da ONG", k:"parceria empresa patrocinio apoio parceiro", i:"bi bi-handshake", c:"#14b8a6", e:"parcerias", f:"empresa" },
+    { t:"Castracoes", d:"Agendamentos de castracao realizados", k:"castracao cirurgia castrar agendamento veterinario", i:"bi bi-person-heart", c:"#10b981", e:"castracao", f:"nome_pet" },
+    { t:"Pets para Adocao", d:"Animais disponiveis para adocao", k:"pet cachorro gato cao felino adocao animal", i:"bi bi-paw", c:"#f59e0b", e:"adocao", f:"nome" },
+    { t:"Voluntarios", d:"Voluntarios cadastrados no sistema", k:"voluntario voluntariado ajuda contribuir", i:"bi bi-people-fill", c:"#ec4899", e:"voluntario", f:"nome" },
+    { t:"Parcerias", d:"Empresas parceiras da ONG", k:"parceria empresa patrocinio apoio parceiro", i:"bi bi-handshake", c:"#14b8a6", e:"parceria", f:"empresa" },
     { t:"Animais Perdidos", d:"Animais desaparecidos divulgacao", k:"procura-se perdido desaparecido sumido busca", i:"bi bi-search", c:"#f97316", e:"procura_se", f:"nome" }
   ];
 
@@ -111,10 +111,10 @@
 
   var API_SEARCH_MAP = {
     eventos: { i: 'bi bi-calendar-event', c: '#a855f7' },
-    castracoes: { i: 'bi bi-person-heart', c: '#10b981' },
-    animais: { i: 'bi bi-paw', c: '#f59e0b' },
-    voluntarios: { i: 'bi bi-people-fill', c: '#ec4899' },
-    parcerias: { i: 'bi bi-handshake', c: '#14b8a6' },
+    castracao: { i: 'bi bi-person-heart', c: '#10b981' },
+    adocao: { i: 'bi bi-paw', c: '#f59e0b' },
+    voluntario: { i: 'bi bi-people-fill', c: '#ec4899' },
+    parceria: { i: 'bi bi-handshake', c: '#14b8a6' },
     procura_se: { i: 'bi bi-search', c: '#f97316' }
   };
 
@@ -225,10 +225,10 @@
   function sectionUrl(s) {
     var map = {
       eventos: 'pages/eventos.html',
-      castracoes: 'pages/castracao.html',
-      animais: 'pages/adocao.html',
-      voluntarios: 'pages/voluntario.html',
-      parcerias: 'pages/parceria.html',
+      castracao: 'pages/castracao.html',
+      adocao: 'pages/adocao.html',
+      voluntario: 'pages/voluntario.html',
+      parceria: 'pages/parceria.html',
       procura_se: 'pages/procura_se.html'
     };
     return map[s.e] || 'index.html';

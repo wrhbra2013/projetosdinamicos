@@ -281,7 +281,7 @@ function cadastrarPetsRua(e) {
   btn.disabled = true; btn.textContent = 'Enviando...';
 
   const promises = petsPR.map(function(pet) {
-    return fetch(API_BASE + '/castracoes', {
+    return fetch(API_BASE + '/castracao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

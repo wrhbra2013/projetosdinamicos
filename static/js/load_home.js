@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', function () {
   var BASE = window.API_BASE;
   fetchAndRender(BASE + '/eventos', renderEvents);
-  fetchAndRender(BASE + '/castracoes', renderCastracoes);
-  fetchAndRender(BASE + '/animais', renderAnimais);
-  fetchAndRender(BASE + '/voluntarios', renderVoluntarios);
+  fetchAndRender(BASE + '/castracao', renderCastracoes);
+  fetchAndRender(BASE + '/adocao', renderAnimais);
+  fetchAndRender(BASE + '/voluntario', renderVoluntarios);
 });
 
 function fetchAndRender(url, renderFn) {

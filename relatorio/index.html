@@ -113,14 +113,14 @@
         <label for="tabela" class="form-label fw-bold">Tabelas:</label>
         <select id="tabela" onchange="carregarTabela(this.value)">
           <option value="">-- Selecione uma tabela --</option>
-          <option value="animais">Animais</option>
-          <option value="adocoes">Adoções</option>
-          <option value="castracoes">Castrações</option>
-          <option value="doacoes">Doações</option>
+          <option value="adocao">Adocao</option>
+          <option value="adotado">Adotados</option>
+          <option value="castracao">Castracao</option>
+          <option value="doacoes">Doacoes</option>
           <option value="eventos">Eventos</option>
-          <option value="parcerias">Parcerias</option>
+          <option value="parceria">Parceria</option>
           <option value="procura_se">Procura-se</option>
-          <option value="voluntarios">Voluntários</option>
+          <option value="voluntario">Voluntario</option>
           <option value="coleta">Coleta</option>
         </select>
       </div>
@@ -128,34 +128,34 @@
       <div class="mb-3">
         <label class="form-label fw-bold">Atalhos rápidos:</label>
         <div class="selector-grid" id="atalhosGrid">
-          <div class="report-option" data-table="animais" onclick="carregarTabela('animais')">
+          <div class="report-option" data-table="adocao" onclick="carregarTabela('adocao')">
             <i class="bi bi-heart"></i>
-            <div class="report-title">Animais</div>
+            <div class="report-title">Adocao</div>
             <div class="report-desc">Pets cadastrados</div>
           </div>
-          <div class="report-option" data-table="adocoes" onclick="carregarTabela('adocoes')">
+          <div class="report-option" data-table="adotado" onclick="carregarTabela('adotado')">
             <i class="bi bi-hand-thumbs-up"></i>
-            <div class="report-title">Adoções</div>
-            <div class="report-desc">Registros de adoção</div>
+            <div class="report-title">Adotados</div>
+            <div class="report-desc">Registros de adocao</div>
           </div>
-          <div class="report-option" data-table="castracoes" onclick="carregarTabela('castracoes')">
+          <div class="report-option" data-table="castracao" onclick="carregarTabela('castracao')">
             <i class="bi bi-scissors"></i>
-            <div class="report-title">Castrações</div>
+            <div class="report-title">Castracao</div>
             <div class="report-desc">Agendamentos realizados</div>
           </div>
           <div class="report-option" data-table="doacoes" onclick="carregarTabela('doacoes')">
             <i class="bi bi-gift"></i>
-            <div class="report-title">Doações</div>
-            <div class="report-desc">Contribuições recebidas</div>
+            <div class="report-title">Doacoes</div>
+            <div class="report-desc">Contribuicoes recebidas</div>
           </div>
           <div class="report-option" data-table="eventos" onclick="carregarTabela('eventos')">
             <i class="bi bi-calendar-event"></i>
             <div class="report-title">Eventos</div>
             <div class="report-desc">Eventos cadastrados</div>
           </div>
-          <div class="report-option" data-table="parcerias" onclick="carregarTabela('parcerias')">
+          <div class="report-option" data-table="parceria" onclick="carregarTabela('parceria')">
             <i class="bi bi-people"></i>
-            <div class="report-title">Parcerias</div>
+            <div class="report-title">Parceria</div>
             <div class="report-desc">Parceiros da ONG</div>
           </div>
           <div class="report-option" data-table="procura_se" onclick="carregarTabela('procura_se')">
@@ -163,12 +163,11 @@
             <div class="report-title">Procura-se</div>
             <div class="report-desc">Pets desaparecidos</div>
           </div>
-          <div class="report-option" data-table="voluntarios" onclick="carregarTabela('voluntarios')">
+          <div class="report-option" data-table="voluntario" onclick="carregarTabela('voluntario')">
             <i class="bi bi-people"></i>
-            <div class="report-title">Voluntários</div>
-            <div class="report-desc">Cadastro de voluntários</div>
+            <div class="report-title">Voluntario</div>
+            <div class="report-desc">Cadastro de voluntarios</div>
           </div>
-          <div class="report-option" data-table="coleta" onclick="carregarTabela('coleta')">
             <i class="bi bi-truck"></i>
             <div class="report-title">Coleta</div>
             <div class="report-desc">Solicitações de coleta</div>
@@ -218,14 +217,13 @@
     const API_BASE = window.API_BASE;
 
     const TABLE_LABELS = {
-      animais: 'Animais',
-      adocoes: 'Adoções',
-      castracoes: 'Castrações',
-      doacoes: 'Doações',
-      eventos: 'Eventos',
-      parcerias: 'Parcerias',
+      adocao: 'Adocao',
+      adotado: 'Adotados',
+      castracao: 'Castracao',
+      doacoes: 'Doacoes',
+      parceria: 'Parceria',
       procura_se: 'Procura-se',
-      voluntarios: 'Voluntários',
+      voluntario: 'Voluntario',
       coleta: 'Coleta',
     };
 
