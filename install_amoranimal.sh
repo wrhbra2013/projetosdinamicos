@@ -136,32 +136,108 @@ SQLEOS
     } || warn "Falha ao restaurar dump (pode ser conflito com tabelas existentes)"
   fi
 
-  # 4. Renomear tabelas do dump (singular -> plural) se existirem
-  info "Verificando tabelas do dump (singular -> plural)..."
+  # 4. Migrar dados das tabelas singulares (dump) para plurais (API)
+  info "Migrando dados das tabelas singulares para plurais..."
   docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
     DO $$
     DECLARE
       m RECORD;
+      col RECORD;
+      cols TEXT;
+      singular_count INTEGER;
     BEGIN
       FOR m IN
         SELECT * FROM (VALUES
-          ('adocao',     'adocoes'),
-          ('adotado',    'animais'),
+          ('adocao',     'animais'),
           ('castracao',  'castracoes'),
           ('parceria',   'parcerias'),
           ('voluntario', 'voluntarios')
         ) AS t(singular, plural)
       LOOP
-        IF EXISTS (SELECT 1 FROM information_schema.tables
-                   WHERE table_schema='public' AND table_name=m.singular) THEN
-          IF EXISTS (SELECT 1 FROM information_schema.tables
-                     WHERE table_schema='public' AND table_name=m.plural) THEN
-            EXECUTE 'DROP TABLE IF EXISTS "' || m.plural || '" CASCADE';
-          END IF;
+        -- Se a tabela singular não existe, pular
+        IF NOT EXISTS (SELECT 1 FROM information_schema.tables
+                       WHERE table_schema='public' AND table_name=m.singular) THEN
+          CONTINUE;
+        END IF;
+
+        -- Se a tabela plural não existe: renomear singular → plural
+        IF NOT EXISTS (SELECT 1 FROM information_schema.tables
+                       WHERE table_schema='public' AND table_name=m.plural) THEN
           EXECUTE 'ALTER TABLE "' || m.singular || '" RENAME TO "' || m.plural || '"';
           RAISE NOTICE 'Tabela % renomeada para %', m.singular, m.plural;
+          CONTINUE;
+        END IF;
+
+        -- Ambas existem: copiar apenas colunas em comum
+        EXECUTE 'SELECT count(*) FROM "' || m.singular || '"' INTO singular_count;
+        IF singular_count = 0 THEN
+          EXECUTE 'DROP TABLE "' || m.singular || '"';
+          RAISE NOTICE 'Tabela % vazia, removida', m.singular;
+          CONTINUE;
+        END IF;
+
+        cols := '';
+        FOR col IN
+          SELECT column_name FROM information_schema.columns
+          WHERE table_schema='public' AND table_name=m.singular
+          INTERSECT
+          SELECT column_name FROM information_schema.columns
+          WHERE table_schema='public' AND table_name=m.plural
+          ORDER BY column_name
+        LOOP
+          CONTINUE WHEN col.column_name = 'id';
+          IF cols <> '' THEN cols := cols || ', '; END IF;
+          cols := cols || '"' || col.column_name || '"';
+        END LOOP;
+
+        IF cols <> '' THEN
+          BEGIN
+            EXECUTE 'INSERT INTO "' || m.plural || '" (' || cols || ') SELECT ' || cols || ' FROM "' || m.singular || '"';
+            RAISE NOTICE 'Copiados % registros de % para %', singular_count, m.singular, m.plural;
+            EXECUTE 'DROP TABLE "' || m.singular || '"';
+            RAISE NOTICE 'Tabela % removida após cópia', m.singular;
+          EXCEPTION WHEN OTHERS THEN
+            RAISE NOTICE 'Erro ao copiar % para %: %', m.singular, m.plural, SQLERRM;
+          END;
+        ELSE
+          RAISE NOTICE 'Sem colunas em comum entre % e %', m.singular, m.plural;
         END IF;
       END LOOP;
+    END $$;
+SQLEOS
+
+  # 4b. Mapeamento especial de colunas (nomes diferentes entre singular e plural)
+  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
+    DO $$
+    DECLARE
+      has_nome_pet BOOLEAN;
+      has_foto_adocao BOOLEAN;
+      has_descricao BOOLEAN;
+      cols TEXT;
+    BEGIN
+      -- Verificar se adotado ainda existe (não foi processado pelo passo 4)
+      IF NOT EXISTS (SELECT 1 FROM information_schema.tables
+                     WHERE table_schema='public' AND table_name='adotado') THEN
+        RETURN;
+      END IF;
+
+      -- Verificar colunas disponíveis em adotado
+      SELECT EXISTS(SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='adotado' AND column_name='nome_pet') INTO has_nome_pet;
+      SELECT EXISTS(SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='adotado' AND column_name='foto_adocao') INTO has_foto_adocao;
+      SELECT EXISTS(SELECT 1 FROM information_schema.columns
+                    WHERE table_schema='public' AND table_name='adotado' AND column_name='descricao') INTO has_descricao;
+
+      cols := 'especie, sexo, idade, porte';
+      IF has_nome_pet THEN cols := cols || ', nome_pet as nome'; ELSE cols := cols || ', null::varchar as nome'; END IF;
+      IF has_foto_adocao THEN cols := cols || ', foto_adocao as foto_url'; ELSE cols := cols || ', null::varchar as foto_url'; END IF;
+      IF has_descricao THEN cols := cols || ', descricao as caracteristicas'; ELSE cols := cols || ', null::varchar as caracteristicas'; END IF;
+
+      EXECUTE 'INSERT INTO animais (nome, especie, sexo, idade, porte, foto_url, caracteristicas, status)'
+           || ' SELECT ' || cols || ', ''adotado''::varchar as status FROM adotado';
+      RAISE NOTICE 'Dados de adotado migrados para animais com mapeamento especial';
+      EXECUTE 'DROP TABLE adotado';
     END $$;
 SQLEOS
 
@@ -180,7 +256,9 @@ SQLEOS
     UPDATE transparencia SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
       WHERE arquivo LIKE '../amoranimal_uploads/%';
 
-    -- Corrigir foto_url em adocoes (vindo de adocao)
+    -- Corrigir foto_url em animais (vindo de adocao)
+    UPDATE animais SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
+      WHERE foto_url LIKE '../amoranimal_uploads/%';
     UPDATE adocoes SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
       WHERE foto_url LIKE '../amoranimal_uploads/%';
 
