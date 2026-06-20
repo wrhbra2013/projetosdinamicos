@@ -1166,8 +1166,8 @@ app.listen(PORT, () => {
 SVREOF
 
   # Corrigir defaults e strings hardcoded no server.js
-  sed -i "s|process.env.APP_NAME || 'amoranimal'|process.env.APP_NAME || '${APP_NAME}'|" "$SCRIPT_DIR/api/src/server.js"
-  sed -i "s|process.env.DB_NAME || 'amoranimal_db'|process.env.DB_NAME || '${APP_NAME}_db'|" "$SCRIPT_DIR/api/src/server.js"
+  sed -i "s#process.env.APP_NAME || 'amoranimal'#process.env.APP_NAME || '${APP_NAME}'#" "$SCRIPT_DIR/api/src/server.js"
+  sed -i "s#process.env.DB_NAME || 'amoranimal_db'#process.env.DB_NAME || '${APP_NAME}_db'#" "$SCRIPT_DIR/api/src/server.js"
   sed -i "s/'amoranimal_secret'/'${APP_NAME}_secret'/g" "$SCRIPT_DIR/api/src/server.js"
   sed -i "s|-- Backup Amor Animal|-- Backup ${APP_NAME}|" "$SCRIPT_DIR/api/src/server.js"
 
