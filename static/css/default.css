@@ -2254,8 +2254,8 @@ body.high-contrast .news-carousel-dots .dot.active {
   position:relative
 }
 .search-results-box {
-  position:absolute;
-  top:100%;
+  position:fixed;
+  top:120px;
   left:15px;
   right:15px;
   background:var(--container-bg);
