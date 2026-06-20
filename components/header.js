@@ -282,16 +282,15 @@
     if (!input) return;
 
     var defaultText = 'Pesquisar em todo o site...';
-    var sections = document.querySelectorAll('.landing-section');
+    var impactSection = document.getElementById('nosso-impacto-section');
     var names = [];
 
-    for (var i = 0; i < sections.length; i++) {
-      var h2 = sections[i].querySelector('h2');
-      if (!h2) continue;
-      var text = h2.textContent.replace(/^\s*[\d.]+\s*/, '').trim();
-      if (!text || text.length < 2) continue;
-      if (text === 'Administração') continue;
-      names.push(text);
+    if (impactSection) {
+      var labels = impactSection.querySelectorAll('.stat-card-label');
+      labels.forEach(function(l) {
+        var text = l.textContent.trim();
+        if (text) names.push(text);
+      });
     }
 
     if (names.length > 0) {
