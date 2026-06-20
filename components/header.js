@@ -119,7 +119,7 @@
   };
 
   function apiSearch(q, callback) {
-    var BASE = window.API_BASE || 'https://api.projetosdinamicos.com.br';
+    var BASE = window.API_BASE || 'https://api.projetosdinamicos.com.br/amoranimal';
     fetch(BASE + '/search?q=' + encodeURIComponent(q))
       .then(function(r) { return r.json(); })
       .then(function(data) {
