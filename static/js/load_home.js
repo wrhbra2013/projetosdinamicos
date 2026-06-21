@@ -1,5 +1,6 @@
+var BASE = window.API_BASE;
+
 document.addEventListener('DOMContentLoaded', function () {
-  var BASE = window.API_BASE;
   fetchAndRender(BASE + '/eventos', renderEvents);
   fetchAndRender(BASE + '/castracao', renderCastracoes);
   fetchAndRender(BASE + '/adocao', renderAnimais);
