@@ -329,7 +329,7 @@
     <h2 class="text-center mb-4">Agendamentos de Castração</h2>
     <div class="text-end mb-2">
       <label style="cursor: pointer; font-size: 0.85rem;">
-        <input type="checkbox" id="toggleAtendidos" onchange="document.querySelectorAll('.status-atendido').forEach(function(el){el.style.display=this.checked?'table-row':'none'})" style="margin-right:5px;">
+        <input type="checkbox" id="toggleAtendidos" onchange="var cb=document.getElementById('toggleAtendidos');document.querySelectorAll('.status-atendido').forEach(function(el){el.style.display=cb.checked?'table-row':'none'})" style="margin-right:5px;">
         Mostrar atendidos
       </label>
     </div>
