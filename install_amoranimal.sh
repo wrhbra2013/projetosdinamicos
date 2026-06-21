@@ -1384,6 +1384,37 @@ CREATE TABLE IF NOT EXISTS transparencia (
     arquivo TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE OR REPLACE FUNCTION encerrar_mutiroes() RETURNS INTEGER AS $$
+DECLARE
+    afetados INTEGER;
+BEGIN
+    UPDATE "calendario_mutirao"
+    SET status = 'encerrado'
+    WHERE (status IS NULL OR status IN ('aberto', ''))
+      AND data_evento IS NOT NULL
+      AND data_evento != ''
+      AND TO_DATE(LEFT(data_evento, 10), 'YYYY-MM-DD') < CURRENT_DATE;
+    GET DIAGNOSTICS afetados = ROW_COUNT;
+    RETURN afetados;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION atender_castracao_mutirao() RETURNS INTEGER AS $$
+DECLARE
+    afetados INTEGER;
+BEGIN
+    UPDATE "castracao"
+    SET status = 'ATENDIDO'
+    WHERE tipo = 'mutirao'
+      AND LOWER(COALESCE(status, '')) NOT IN ('atendido', 'atendida')
+      AND agenda IS NOT NULL
+      AND agenda ~ '^\d{2}/\d{2}/\d{4}$'
+      AND TO_DATE(agenda, 'DD/MM/YYYY') < CURRENT_DATE;
+    GET DIAGNOSTICS afetados = ROW_COUNT;
+    RETURN afetados;
+END;
+$$ LANGUAGE plpgsql;
 SQLEOF
 
   info "Gerando db/init/02-seed.sh..."
@@ -1417,6 +1448,51 @@ ADMIN_EMAIL=$ADMIN_EMAIL
 ADMIN_NOME=$ADMIN_NOME
 ADMIN_PASS=$ADMIN_PASS
 EOF
+
+  # ==============================================================
+  info "Gerando scripts/arquivar_mutiroes.sql..."
+  mkdir -p "$SCRIPT_DIR/scripts"
+  cat > "$SCRIPT_DIR/scripts/arquivar_mutiroes.sql" <<'ARQEOF'
+docker exec -i amoranimal-db psql -U postgres -d amoranimal_db <<'FIMSQL'
+CREATE OR REPLACE FUNCTION encerrar_mutiroes() RETURNS INTEGER AS $$
+DECLARE
+    afetados INTEGER;
+BEGIN
+    UPDATE "calendario_mutirao"
+    SET status = 'encerrado'
+    WHERE (status IS NULL OR status IN ('aberto', ''))
+      AND data_evento IS NOT NULL
+      AND data_evento != ''
+      AND TO_DATE(LEFT(data_evento, 10), 'YYYY-MM-DD') < CURRENT_DATE;
+    GET DIAGNOSTICS afetados = ROW_COUNT;
+    RETURN afetados;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION atender_castracao_mutirao() RETURNS INTEGER AS $$
+DECLARE
+    afetados INTEGER;
+BEGIN
+    UPDATE "castracao"
+    SET status = 'ATENDIDO'
+    WHERE tipo = 'mutirao'
+      AND LOWER(COALESCE(status, '')) NOT IN ('atendido', 'atendida')
+      AND agenda IS NOT NULL
+      AND agenda ~ '^\d{2}/\d{2}/\d{4}$'
+      AND TO_DATE(agenda, 'DD/MM/YYYY') < CURRENT_DATE;
+    GET DIAGNOSTICS afetados = ROW_COUNT;
+    RETURN afetados;
+END;
+$$ LANGUAGE plpgsql;
+FIMSQL
+
+echo ""
+echo "---"
+echo "Criar funções (uma vez):   bash scripts/arquivar_mutiroes.sql"
+echo "Encerrar mutirões:         docker exec amoranimal-db psql -U postgres -d amoranimal_db -c 'SELECT encerrar_mutiroes();'"
+echo "Atender castrações:        docker exec amoranimal-db psql -U postgres -d amoranimal_db -c 'SELECT atender_castracao_mutirao();'"
+ARQEOF
+  chmod +x "$SCRIPT_DIR/scripts/arquivar_mutiroes.sql"
 
   # ==============================================================
   # Migrar dados do banco espelho (amoranimalmarilia)
