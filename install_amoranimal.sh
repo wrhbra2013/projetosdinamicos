@@ -141,7 +141,47 @@ SQLEOS
   #    formato correto — nenhuma renomeação é necessária.
   info "Tabelas singulares já compatíveis com o espelho — nenhuma renomeação necessária."
 
-  # 5. Corrigir caminhos de arquivos vindos do espelho (amoranimalmarilia)
+  # 5. Garantir colunas da API que o espelho não tem (eventos.fotos, etc.)
+  info "Sincronizando colunas entre espelho e API..."
+  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
+    -- Adicionar colunas que a API espera mas o espelho pode não ter
+    DO $$
+    DECLARE
+      col_exists BOOLEAN;
+    BEGIN
+      -- eventos.fotos (espelho usa arquivo)
+      SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='eventos' AND column_name='fotos') INTO col_exists;
+      IF NOT col_exists THEN
+        ALTER TABLE eventos ADD COLUMN fotos TEXT;
+        UPDATE eventos SET fotos = arquivo WHERE arquivo IS NOT NULL;
+        RAISE NOTICE 'Coluna eventos.fotos criada e populada a partir de arquivo';
+      END IF;
+
+      -- eventos.local
+      SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='eventos' AND column_name='local') INTO col_exists;
+      IF NOT col_exists THEN
+        ALTER TABLE eventos ADD COLUMN local VARCHAR(255);
+        RAISE NOTICE 'Coluna eventos.local criada';
+      END IF;
+
+      -- eventos.endereco
+      SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='eventos' AND column_name='endereco') INTO col_exists;
+      IF NOT col_exists THEN
+        ALTER TABLE eventos ADD COLUMN endereco TEXT;
+        RAISE NOTICE 'Coluna eventos.endereco criada';
+      END IF;
+
+      -- eventos.status
+      SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='eventos' AND column_name='status') INTO col_exists;
+      IF NOT col_exists THEN
+        ALTER TABLE eventos ADD COLUMN status VARCHAR(50) DEFAULT 'agendado';
+        RAISE NOTICE 'Coluna eventos.status criada';
+      END IF;
+    END $$;
+SQLEOS
+  info "Colunas sincronizadas."
+
+  # 6. Corrigir caminhos de arquivos vindos do espelho (amoranimalmarilia)
   info "Corrigindo caminhos de arquivos no banco de dados..."
   docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
     -- Corrigir foto_url em adocao
@@ -160,9 +200,11 @@ SQLEOS
     UPDATE home SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
       WHERE arquivo LIKE '../amoranimal_uploads/%';
 
-    -- Corrigir fotos em eventos
+    -- Corrigir fotos/arquivo em eventos
     UPDATE eventos SET fotos = regexp_replace(fotos, '../amoranimal_uploads/', 'uploads/', 'g')
       WHERE fotos LIKE '../amoranimal_uploads/%';
+    UPDATE eventos SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
+      WHERE arquivo LIKE '../amoranimal_uploads/%';
 
     -- Substituir domínio antigo nos dados
     UPDATE adocao SET foto_url = replace(foto_url, 'amoranimal.ong.br', 'projetosdinamicos.com.br')
