@@ -116,6 +116,7 @@ function renderAnimais(animais) {
     d.setAttribute('onclick', 'abrirTermo(this)');
     d.innerHTML =
       '<div class="carousel-img-wrap" style="position:relative;width:100%;height:220px;overflow:hidden;">' +
+        '<button class="btn-delete-pet admin-only" data-id="' + pet.id + '" title="Excluir pet"><i class="bi bi-x-lg"></i></button>' +
         '<img src="' + imgUrl(pet.foto_url || pet.arquivo, 'adocao') + '" alt="' + esc(pet.nome) + '" style="width:100%;height:100%;object-fit:cover;">' +
         '<span class="carousel-badge badge badge-success" style="position:absolute;top:10px;left:10px;border-radius:20px;">' + esc(pet.status || 'Dispon\u00edvel') + '</span>' +
       '</div>' +

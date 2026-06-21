@@ -120,6 +120,19 @@
   .btn-delete-evento:hover { background: rgb(185,28,28); }
   .btn-delete-evento i { line-height: 1; }
   body.admin-mode .btn-delete-evento { display: flex; }
+
+  .btn-delete-pet {
+    position: absolute; top: 8px; right: 8px; z-index: 20;
+    width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: rgba(220,38,38,0.9); color: #fff;
+    font-size: 0.85rem; cursor: pointer;
+    display: none; align-items: center; justify-content: center;
+    transition: background 0.2s; line-height: 1;
+  }
+  .btn-delete-pet:hover { background: rgb(185,28,28); }
+  .btn-delete-pet i { line-height: 1; }
+  body.admin-mode .btn-delete-pet { display: flex; }
+
   body.admin-mode .admin-only { display: inline-flex !important; }
   .btn-excluir-castracao {
     display: none; margin-left: 4px;
@@ -656,6 +669,23 @@ document.addEventListener('click', function(e) {
     })
     .catch(function(err) {
       alert('Erro ao excluir evento: ' + err.message);
+    });
+});
+
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.btn-delete-pet');
+  if (!btn) return;
+  e.stopPropagation();
+  var id = btn.dataset.id;
+  if (!confirm('Tem certeza que deseja excluir este pet?')) return;
+  fetch(window.API_BASE + '/adocao/' + encodeURIComponent(id), { method: 'DELETE' })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Erro ao excluir');
+      var card = btn.closest('.pet-carousel-item');
+      if (card) card.remove();
+    })
+    .catch(function(err) {
+      alert('Erro ao excluir pet: ' + err.message);
     });
 });
 </script>
