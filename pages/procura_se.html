@@ -77,8 +77,9 @@ function carregarProcuraSe() {
       for (var i = 0; i < data.length; i++) {
         var p = data[i];
         var dataStr = p.origem ? formatDate(p.origem) : '-';
-        var fotoHtml = p.foto_url
-          ? '<img src="' + p.foto_url + '" width="80" height="80" style="object-fit:cover" class="img-thumbnail p-1 rounded" alt="Foto">'
+        var fotoUrl = p.foto_url || p.arquivo;
+        var fotoHtml = fotoUrl
+          ? '<img src="' + fotoUrl + '" width="80" height="80" style="object-fit:cover" class="img-thumbnail p-1 rounded" alt="Foto">'
           : '<div style="width:80px;height:80px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:1.5rem"><i class="bi bi-question-circle"></i></div>';
         html +=
           '<tr>' +

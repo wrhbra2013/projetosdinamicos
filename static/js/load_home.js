@@ -115,7 +115,7 @@ function renderAnimais(animais) {
     d.setAttribute('onclick', 'abrirTermo(this)');
     d.innerHTML =
       '<div class="carousel-img-wrap" style="position:relative;width:100%;height:220px;overflow:hidden;">' +
-        '<img src="' + esc(pet.foto_url || 'static/css/imagem/1.jpg') + '" alt="' + esc(pet.nome) + '" style="width:100%;height:100%;object-fit:cover;">' +
+        '<img src="' + imgUrl(pet.foto_url || pet.arquivo, 'adocao') + '" alt="' + esc(pet.nome) + '" style="width:100%;height:100%;object-fit:cover;">' +
         '<span class="carousel-badge badge badge-success" style="position:absolute;top:10px;left:10px;border-radius:20px;">' + esc(pet.status || 'Dispon\u00edvel') + '</span>' +
       '</div>' +
       '<div class="carousel-info" style="padding:1rem;">' +
@@ -153,6 +153,12 @@ function renderVoluntarios(voluntarios) {
       '</div>';
     container.appendChild(card);
   });
+}
+
+function imgUrl(f, pasta) {
+  if (!f) return 'static/css/imagem/1.jpg';
+  if (f.indexOf('://') !== -1 || f.indexOf('data:') === 0) return f;
+  return BASE + '/uploads/' + pasta + '/' + f;
 }
 
 function fmtDate(d) {

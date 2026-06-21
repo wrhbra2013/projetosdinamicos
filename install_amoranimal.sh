@@ -177,6 +177,14 @@ SQLEOS
         ALTER TABLE eventos ADD COLUMN status VARCHAR(50) DEFAULT 'agendado';
         RAISE NOTICE 'Coluna eventos.status criada';
       END IF;
+
+      -- adocao.foto_url (espelho usa arquivo)
+      SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='adocao' AND column_name='foto_url') INTO col_exists;
+      IF NOT col_exists THEN
+        ALTER TABLE adocao ADD COLUMN foto_url TEXT;
+        UPDATE adocao SET foto_url = arquivo WHERE arquivo IS NOT NULL;
+        RAISE NOTICE 'Coluna adocao.foto_url criada e populada a partir de arquivo';
+      END IF;
     END $$;
 SQLEOS
   info "Colunas sincronizadas."
@@ -184,9 +192,11 @@ SQLEOS
   # 6. Corrigir caminhos de arquivos vindos do espelho (amoranimalmarilia)
   info "Corrigindo caminhos de arquivos no banco de dados..."
   docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
-    -- Corrigir foto_url em adocao
+    -- Corrigir foto_url e arquivo em adocao
     UPDATE adocao SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
       WHERE foto_url LIKE '../amoranimal_uploads/%';
+    UPDATE adocao SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
+      WHERE arquivo LIKE '../amoranimal_uploads/%';
 
     -- Corrigir foto_url em procura_se
     UPDATE procura_se SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')

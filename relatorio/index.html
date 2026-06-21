@@ -310,7 +310,7 @@
           let val = row[col];
           if (val === null || val === undefined) val = '-';
           if (typeof val === 'string' && val.length > 120) val = val.substring(0, 120) + '...';
-          if (col === 'foto_url' && val && val !== '-') {
+          if ((col === 'foto_url' || col === 'arquivo') && val && val !== '-') {
             val = `<a href="${val}" target="_blank" class="text-decoration-none"><i class="bi bi-image"></i> Foto</a>`;
           }
           if (col === 'status') {
