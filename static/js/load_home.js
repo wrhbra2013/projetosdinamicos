@@ -35,7 +35,7 @@ function renderEvents(events) {
         '<p class="event-descricao">' + esc(ev.descricao) + '</p>' +
       '</div>' +
       '<div class="event-fotos-area" style="display:flex;align-items:center;justify-content:center;background:#e2e8f0;color:#94a3b8;font-size:3rem;overflow:hidden;">' +
-        (function(){ var f = ev.fotos || ev.arquivo; return f ? '<img src="' + BASE + '/uploads/eventos/' + f + '" alt="' + esc(ev.titulo) + '" style="width:100%;height:100%;object-fit:cover;">' : '<i class="bi bi-calendar-event"></i>'; })() +
+        (ev.fotos || ev.arquivo ? '<img src="' + BASE + '/uploads/eventos/' + (ev.fotos || ev.arquivo) + '" alt="' + esc(ev.titulo) + '" style="width:100%;height:100%;object-fit:cover;">' : '<i class="bi bi-calendar-event"></i>') +
       '</div>';
     container.appendChild(card);
   });

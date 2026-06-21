@@ -50,7 +50,7 @@ fetch(API_BASE + '/eventos')
       col.className = 'col-md-4 mb-4';
       col.innerHTML =
         '<div class="card h-100">' +
-          (function(){ var f = ev.fotos || ev.arquivo; return f ? '<img src="' + API_BASE + '/uploads/eventos/' + f + '" class="card-img-top" alt="' + (ev.titulo || '') + '">' : ''; })() +
+          (ev.fotos || ev.arquivo ? '<img src="' + API_BASE + '/uploads/eventos/' + (ev.fotos || ev.arquivo) + '" class="card-img-top" alt="' + (ev.titulo || '') + '">' : '') +
           '<div class="card-body">' +
             '<h5 class="card-title">' + (ev.titulo || '') + '</h5>' +
             '<p class="card-subtitle text-muted">' + fmtData(ev.data_evento) + '</p>' +
