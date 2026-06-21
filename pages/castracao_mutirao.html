@@ -223,9 +223,10 @@ function renderizarEventos() {
     var botoesHtml = '';
     var especieLabel = '';
     var especiePadrao = ev.especiePadrao || ev.especie || '';
-    if (especiePadrao === 'Gato') especieLabel = '<span class="badge" style="background:#a855f7;color:white;margin-top:4px;"><i class="bi bi-tag-fill me-1"></i>Gatos</span>';
-    else if (especiePadrao === 'Cachorro') especieLabel = '<span class="badge" style="background:#f59e0b;color:white;margin-top:4px;"><i class="bi bi-tag-fill me-1"></i>Cachorros</span>';
-    else if (especiePadrao) especieLabel = '<span class="badge" style="background:#10b981;color:white;margin-top:4px;"><i class="bi bi-tag-fill me-1"></i>' + especiePadrao + '</span>';
+    var especieNorm = especiePadrao.charAt(0).toUpperCase() + especiePadrao.slice(1).toLowerCase();
+    if (especieNorm === 'Gato') especieLabel = '<span class="badge" style="background:#a855f7;color:white;margin-top:4px;"><i class="bi bi-tag-fill me-1"></i>Gatos</span>';
+    else if (especieNorm === 'Cachorro') especieLabel = '<span class="badge" style="background:#f59e0b;color:white;margin-top:4px;"><i class="bi bi-tag-fill me-1"></i>Cachorros</span>';
+    else if (especieNorm) especieLabel = '<span class="badge" style="background:#10b981;color:white;margin-top:4px;"><i class="bi bi-tag-fill me-1"></i>' + especieNorm + '</span>';
     else especieLabel = '<span class="badge" style="background:#10b981;color:white;margin-top:4px;"><i class="bi bi-tag-fill me-1"></i>Gatos e Cachorros</span>';
 
     if (isIndisponivel) {

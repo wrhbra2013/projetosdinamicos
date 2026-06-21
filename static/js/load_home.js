@@ -52,7 +52,7 @@ function renderCastracoes(castracoes) {
   }
   castracoes.forEach(function (c) {
     var ticketNum = c.ticket || '';
-    var isAtendido = c.status === 'Atendido' || c.status === 'atendido';
+    var isAtendido = (c.status || '').toLowerCase() === 'atendido';
     var tr = document.createElement('tr');
     if (isAtendido) { tr.className = 'status-atendido'; tr.style.display = 'none'; }
     tr.setAttribute('data-ticket', ticketNum);
