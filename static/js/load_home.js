@@ -147,6 +147,7 @@ function renderVoluntarios(voluntarios) {
     card.style.cssText = 'flex:0 0 280px;width:280px;';
     var inicial = (v.nome || '?').charAt(0).toUpperCase();
     card.innerHTML =
+      '<button class="btn-delete-voluntario admin-only" data-id="' + v.id + '" title="Excluir volunt\u00e1rio"><i class="bi bi-x-lg"></i></button>' +
       '<div style="padding:1.25rem;text-align:center;">' +
         '<div style="width:60px;height:60px;border-radius:50%;background:' + cores[i % cores.length] + ';color:white;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:bold;margin:0 auto 10px;">' + inicial + '</div>' +
         '<div style="font-weight:bold;">' + esc(v.nome) + '</div>' +
