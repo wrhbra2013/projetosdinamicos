@@ -277,27 +277,44 @@
     }
   }
 
+  function trackPageVisit() {
+    var page = location.pathname.replace('/projetosdinamicos/', '').replace(/^\//, '') || 'index.html';
+    var key = 'page_visits';
+    try {
+      var visits = JSON.parse(localStorage.getItem(key) || '{}');
+      visits[page] = (visits[page] || 0) + 1;
+      localStorage.setItem(key, JSON.stringify(visits));
+    } catch(e) {}
+  }
+
   function updateSearchPlaceholder() {
     var input = document.getElementById('site-search');
     if (!input) return;
 
     var defaultText = 'Pesquisar em todo o site...';
-    var impactSection = document.getElementById('nosso-impacto-section');
-    var names = [];
 
-    if (impactSection) {
-      var labels = impactSection.querySelectorAll('.stat-card-label');
-      labels.forEach(function(l) {
-        var text = l.textContent.trim();
-        if (text) names.push(text);
+    try {
+      var visits = JSON.parse(localStorage.getItem('page_visits') || '{}');
+      var entries = Object.keys(visits).map(function(k) { return { page: k, count: visits[k] }; });
+      entries.sort(function(a, b) { return b.count - a.count; });
+      var top4 = entries.slice(0, 4);
+      var pageMap = {};
+      PAGES.forEach(function(p) {
+        var url = p.u.replace(/^\//, '');
+        pageMap[url] = p.t;
       });
-    }
+      var names = [];
+      top4.forEach(function(e) {
+        var title = pageMap[e.page];
+        if (title) names.push(title);
+      });
+      if (names.length > 0) {
+        input.placeholder = 'Pesquisar: ' + names.join(', ');
+        return;
+      }
+    } catch(e) {}
 
-    if (names.length > 0) {
-      input.placeholder = 'Pesquisar: ' + names.join(', ');
-    } else {
-      input.placeholder = defaultText;
-    }
+    input.placeholder = defaultText;
   }
 
   function openPanel() {
@@ -439,11 +456,13 @@
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
+      trackPageVisit();
       initAdminUI();
       initSearch();
       initContrast();
     });
   } else {
+    trackPageVisit();
     initAdminUI();
     initSearch();
     initContrast();
