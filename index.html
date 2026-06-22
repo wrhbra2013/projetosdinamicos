@@ -234,6 +234,12 @@
 
   if (pending === 0) return;
 
+  function contar(data, filtro) {
+    if (!Array.isArray(data)) return 0;
+    if (!filtro) return data.length;
+    return data.filter(filtro).length;
+  }
+
   cards.forEach(function(card) {
     var endpoint = card.getAttribute('data-endpoint');
     if (!endpoint) {
@@ -243,15 +249,25 @@
       return;
     }
 
-    fetch(API_BASE + '/' + endpoint)
+    var fetchUrl = endpoint === 'adotado' ? API_BASE + '/adocao' : API_BASE + '/' + endpoint;
+
+    fetch(fetchUrl)
       .then(function(r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       })
       .then(function(data) {
-        if (data && Array.isArray(data) && data.length > 0) {
+        var count;
+        if (endpoint === 'adocao') {
+          count = contar(data, function(a) { return (a.status || '').toLowerCase() === 'disponivel'; });
+        } else if (endpoint === 'adotado') {
+          count = contar(data, function(a) { return (a.status || '').toLowerCase() === 'adotado'; });
+        } else {
+          count = contar(data);
+        }
+        if (count > 0) {
           var countEl = document.getElementById('stat-count-' + endpoint);
-          if (countEl) countEl.textContent = data.length;
+          if (countEl) countEl.textContent = count;
         } else {
           card.style.display = 'none';
         }

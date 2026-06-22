@@ -123,10 +123,8 @@ function cadastrarProcuraSe(e) {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Publicando...';
 
-  fetch(API_BASE + '/procura_se', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  function enviar(fotoBase64) {
+    var payload = {
       tutor_nome: document.getElementById('tutor_nome').value.trim(),
       tutor_contato: document.getElementById('tutor_contato').value.trim(),
       tutor_whatsapp: document.getElementById('tutor_whatsapp').value.trim() || null,
@@ -137,23 +135,45 @@ function cadastrarProcuraSe(e) {
       pet_caracteristicas: document.getElementById('pet_caracteristicas').value.trim() || null,
       local_desaparecimento: document.getElementById('local_desaparecimento').value.trim(),
       data_desaparecimento: document.getElementById('data_desaparecimento').value || null
+    };
+    if (fotoBase64) payload.foto_url = fotoBase64;
+
+    fetch(API_BASE + '/procura_se', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     })
-  })
-  .then(function(r) {
-    if (!r.ok) throw new Error('Erro ao publicar');
-    return r.json();
-  })
-  .then(function() {
-    document.getElementById('form-procura').style.display = 'none';
-    document.getElementById('msg-sucesso').style.display = 'block';
-  })
-  .catch(function(err) {
-    alert('Erro ao publicar anúncio: ' + err.message + '\n\nTente novamente mais tarde.');
-  })
-  .finally(function() {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="bi bi-megaphone me-2"></i>Publicar Anúncio';
-  });
+    .then(function(r) {
+      if (!r.ok) throw new Error('Erro ao publicar');
+      return r.json();
+    })
+    .then(function() {
+      document.getElementById('form-procura').style.display = 'none';
+      document.getElementById('msg-sucesso').style.display = 'block';
+    })
+    .catch(function(err) {
+      alert('Erro ao publicar anúncio: ' + err.message + '\n\nTente novamente mais tarde.');
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-megaphone me-2"></i>Publicar Anúncio';
+    });
+  }
+
+  var fotoInput = document.getElementById('pet_foto');
+  var fotoFile = fotoInput && fotoInput.files && fotoInput.files[0];
+  if (fotoFile) {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      enviar(ev.target.result);
+    };
+    reader.onerror = function() {
+      enviar(null);
+    };
+    reader.readAsDataURL(fotoFile);
+  } else {
+    enviar(null);
+  }
 
   return false;
 }

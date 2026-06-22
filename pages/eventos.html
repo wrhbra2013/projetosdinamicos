@@ -23,8 +23,15 @@
 </main>
 
 <script src="../components/footer.js"></script>
+<script src="../static/js/api.js"></script>
 <script>
 var API_BASE = window.API_BASE;
+
+function imgEventoUrl(f) {
+  if (!f) return '';
+  if (f.indexOf('://') !== -1 || f.indexOf('data:') === 0) return f;
+  return API_BASE + '/uploads/eventos/' + f;
+}
 
 function fmtData(d) {
   if (!d) return '';
@@ -50,7 +57,7 @@ fetch(API_BASE + '/eventos')
       col.className = 'col-md-4 mb-4';
       col.innerHTML =
         '<div class="card h-100">' +
-          (ev.fotos || ev.arquivo ? '<img src="' + API_BASE + '/uploads/eventos/' + (ev.fotos || ev.arquivo) + '" class="card-img-top" alt="' + (ev.titulo || '') + '">' : '') +
+          (ev.fotos || ev.arquivo ? '<img src="' + imgEventoUrl(ev.fotos || ev.arquivo) + '" class="card-img-top" alt="' + (ev.titulo || '') + '">' : '') +
           '<div class="card-body">' +
             '<h5 class="card-title">' + (ev.titulo || '') + '</h5>' +
             '<p class="card-subtitle text-muted">' + fmtData(ev.data_evento) + '</p>' +

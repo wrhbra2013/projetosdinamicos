@@ -36,7 +36,7 @@ function renderEvents(events) {
         '<p class="event-descricao">' + esc(ev.descricao) + '</p>' +
       '</div>' +
       '<div class="event-fotos-area" style="display:flex;align-items:center;justify-content:center;background:#e2e8f0;color:#94a3b8;font-size:3rem;overflow:hidden;">' +
-        (ev.fotos || ev.arquivo ? '<img src="' + BASE + '/uploads/eventos/' + (ev.fotos || ev.arquivo) + '" alt="' + esc(ev.titulo) + '" style="width:100%;height:100%;object-fit:cover;">' : '<i class="bi bi-calendar-event"></i>') +
+        (ev.fotos || ev.arquivo ? '<img src="' + imgUrl(ev.fotos || ev.arquivo, 'eventos') + '" alt="' + esc(ev.titulo) + '" style="width:100%;height:100%;object-fit:cover;">' : '<i class="bi bi-calendar-event"></i>') +
       '</div>';
     container.appendChild(card);
   });
@@ -129,7 +129,6 @@ function renderAnimais(animais) {
     return d;
   }
   animais.forEach(function (p) { container.appendChild(item(p)); });
-  animais.forEach(function (p) { container.appendChild(item(p)); });
 }
 
 function renderVoluntarios(voluntarios) {
@@ -159,7 +158,7 @@ function renderVoluntarios(voluntarios) {
 }
 
 function imgUrl(f, pasta) {
-  if (!f) return 'static/css/imagem/1.jpg';
+  if (!f) return '/static/css/imagem/1.jpg';
   if (f.indexOf('://') !== -1 || f.indexOf('data:') === 0) return f;
   return BASE + '/uploads/' + pasta + '/' + f;
 }
