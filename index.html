@@ -229,14 +229,15 @@
   </div>
 </section>
 <script>
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
   var section = document.getElementById('nosso-impacto-section');
   var cards = section.querySelectorAll('.stat-card');
   var pending = cards.length;
 
   function showSection(sectionId, show) {
     var el = document.getElementById(sectionId);
-    if (el) el.style.display = show ? '' : 'none';
+    if (!el) return;
+    el.style.display = show ? 'block' : 'none';
   }
 
   if (pending === 0) return;
@@ -305,13 +306,13 @@
     .then(function(data) {
       var eventosEl = document.getElementById('section-eventos');
       if (data && Array.isArray(data) && data.length > 0) {
-        eventosEl.style.display = '';
+        eventosEl.style.display = 'block';
       } else {
         eventosEl.style.display = 'none';
       }
     })
     .catch(function() {});
-})();
+});
 </script>
 
 <section class="landing-section landing-section-alt">
