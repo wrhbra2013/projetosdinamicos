@@ -154,6 +154,8 @@
   }
   .btn-excluir-castracao:hover { background: rgb(185,28,28); }
   body.admin-mode .btn-excluir-castracao { display: inline-block; }
+
+  #section-eventos, #section-castracao, #section-pets, #section-voluntarios { display: none; }
   </style>
 </head>
 <body>
@@ -193,12 +195,12 @@
   <div class="landing-container">
     <h2 class="text-center mb-4">Nosso Impacto</h2>
     <div class="stats-grid" id="stats-grid">
-      <div class="stat-card" data-endpoint="voluntario">
+      <div class="stat-card" data-endpoint="voluntario" data-section="section-voluntarios">
         <div class="stat-card-icon" style="color: var(--brand-teal);"><i class="bi bi-people"></i></div>
         <div class="stat-card-number" id="stat-count-voluntario">0</div>
         <div class="stat-card-label">Voluntários</div>
       </div>
-      <div class="stat-card" data-endpoint="adocao">
+      <div class="stat-card" data-endpoint="adocao" data-section="section-pets">
         <div class="stat-card-icon" style="color: var(--brand-coral);"><i class="bi bi-paw"></i></div>
         <div class="stat-card-number" id="stat-count-adocao">0</div>
         <div class="stat-card-label">Aguardando Adoção</div>
@@ -213,7 +215,7 @@
         <div class="stat-card-number" id="stat-count-procura_se">0</div>
         <div class="stat-card-label">Desaparecidos</div>
       </div>
-      <div class="stat-card" data-endpoint="castracao">
+      <div class="stat-card" data-endpoint="castracao" data-section="section-castracao">
         <div class="stat-card-icon" style="color: var(--brand-green);"><i class="bi bi-person-heart"></i></div>
         <div class="stat-card-number" id="stat-count-castracao">0</div>
         <div class="stat-card-label">Castrações</div>
@@ -231,6 +233,11 @@
   var section = document.getElementById('nosso-impacto-section');
   var cards = section.querySelectorAll('.stat-card');
   var pending = cards.length;
+
+  function showSection(sectionId, show) {
+    var el = document.getElementById(sectionId);
+    if (el) el.style.display = show ? '' : 'none';
+  }
 
   if (pending === 0) return;
 
@@ -265,15 +272,20 @@
         } else {
           count = contar(data);
         }
+        var sectionId = card.getAttribute('data-section');
         if (count > 0) {
           var countEl = document.getElementById('stat-count-' + endpoint);
           if (countEl) countEl.textContent = count;
+          if (sectionId) showSection(sectionId, true);
         } else {
           card.style.display = 'none';
+          if (sectionId) showSection(sectionId, false);
         }
       })
       .catch(function() {
         card.style.display = 'none';
+        var sectionId = card.getAttribute('data-section');
+        if (sectionId) showSection(sectionId, false);
       })
       .finally(function() {
         pending--;
@@ -287,6 +299,18 @@
       section.style.display = 'none';
     }
   }
+
+  fetch(API_BASE + '/eventos')
+    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data) {
+      var eventosEl = document.getElementById('section-eventos');
+      if (data && Array.isArray(data) && data.length > 0) {
+        eventosEl.style.display = '';
+      } else {
+        eventosEl.style.display = 'none';
+      }
+    })
+    .catch(function() {});
 })();
 </script>
 
@@ -316,7 +340,7 @@
   </div>
 </section>
 
-<section class="landing-section landing-section-white">
+<section class="landing-section landing-section-white" id="section-eventos">
   <div class="landing-container">
     <div class="d-flex align-items-center justify-content-between mb-4">
       <h2>Eventos</h2>
@@ -340,7 +364,7 @@
   </div>
 </div>
 
-<section class="landing-section landing-section-alt">
+<section class="landing-section landing-section-alt" id="section-castracao">
   <div class="landing-container">
     <h2 class="text-center mb-4">Agendamentos de Castração</h2>
     <div class="text-end mb-2">
@@ -376,7 +400,7 @@
   </div>
 </section>
 
-<section class="landing-section landing-section-white">
+<section class="landing-section landing-section-white" id="section-pets">
   <div class="landing-container">
     <div class="section-header" style="text-align: center; margin-bottom: 2rem;">
       <h2>
@@ -398,7 +422,7 @@
   </div>
 </section>
 
-<section class="landing-section landing-section-alt">
+<section class="landing-section landing-section-alt" id="section-voluntarios">
   <div class="landing-container">
     <h2 class="text-center mb-4">
       <i class="bi bi-people-fill"></i> Nossos Voluntários
