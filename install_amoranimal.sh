@@ -238,13 +238,23 @@ uninstall() {
   [ -f "$SCRIPT_DIR/.env" ] && . "$SCRIPT_DIR/.env" || true
 
   echo ""
-  info "[1/3] Parando containers Docker..."
+  info "[1/4] Parando containers Docker..."
   docker compose -f "$SCRIPT_DIR/docker-compose.yml" down 2>/dev/null || true
   info "Containers parados."
 
   echo ""
-  info "[2/3] Removendo .env..."
+  info "[2/4] Removendo .env..."
   rm -f "$SCRIPT_DIR/.env" && info ".env removido" || warn ".env não encontrado"
+
+  echo ""
+  info "[3/4] Removendo configuracao nginx..."
+  NGINX_CONF="/etc/nginx/sites-available/default"
+  NGINX_LOCATIONS="/etc/nginx/${APP_NAME:-amoranimal}-locations.conf"
+  rm -f "$NGINX_LOCATIONS" && info "${NGINX_LOCATIONS} removido" || warn "Falha ao remover ${NGINX_LOCATIONS}"
+  sed -i "/${APP_NAME:-amoranimal}-locations.conf/d" "$NGINX_CONF" 2>/dev/null || true
+  if nginx -t 2>/dev/null; then
+    systemctl reload nginx.service 2>/dev/null && info "Nginx recarregado" || true
+  fi
 
   if [ -n "${DATA_DIR:-}" ] && [ -d "$DATA_DIR" ]; then
     echo ""
@@ -259,7 +269,7 @@ uninstall() {
   fi
 
   echo ""
-  info "[3/3] Desinstalação concluída!"
+  info "[4/4] Desinstalação concluída!"
 }
 
 # ==============================================================
@@ -579,6 +589,7 @@ services:
       DB_NAME: ${DB_NAME:-amoranimal_db}
       DB_USER: ${DB_USER:-postgres}
       DB_PASS: ${DB_PASS:-postgres}
+      API_TOKEN: ${API_TOKEN}
     volumes:
       - ${DATA_DIR}/uploads:/app/uploads
       - ${DATA_DIR}/backups:/app/backups
@@ -647,6 +658,7 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PROJETO = process.env.APP_NAME || 'amoranimal';
+const API_TOKEN = process.env.API_TOKEN || '';
 
 const pool = new Pool({
     host: process.env.DB_HOST || 'db',
@@ -677,6 +689,15 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS') return res.sendStatus(200);
+    next();
+});
+
+app.use((req, res, next) => {
+    if (req.path === '/' || req.path === '/health' || req.path.startsWith('/auth/')) return next();
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('Bearer ') || auth.slice(7) !== API_TOKEN) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
     next();
 });
 
@@ -1434,7 +1455,8 @@ SEEDEOF
   chmod +x "$SCRIPT_DIR/db/init/02-seed.sh"
 
   # ==============================================================
-  info "Criando .env"
+  API_TOKEN=$(openssl rand -hex 32)
+  info "Criando .env (API_TOKEN gerado)"
   cat > "$SCRIPT_DIR/.env" <<EOF
 PORT=$APP_PORT
 APP_NAME=$APP_NAME
@@ -1444,6 +1466,7 @@ DB_PORT=5432
 DB_NAME=$DB_NAME
 DB_USER=postgres
 DB_PASS=$DB_PASS
+API_TOKEN=$API_TOKEN
 ADMIN_EMAIL=$ADMIN_EMAIL
 ADMIN_NOME=$ADMIN_NOME
 ADMIN_PASS=$ADMIN_PASS
@@ -1558,12 +1581,49 @@ ARQEOF
     exit 1
   fi
 
+  # ==============================================================
+  # Nginx — configurar location /amoranimal/api/
+  # ==============================================================
+  info "Configurando Nginx..."
+
+  NGINX_CONF="/etc/nginx/sites-available/default"
+  NGINX_LOCATIONS="/etc/nginx/${APP_NAME}-locations.conf"
+
+  cat > "$NGINX_LOCATIONS" <<NGINXEOF
+location /${APP_NAME}/api/ {
+    rewrite ^/${APP_NAME}/api/(.*) /\$1 break;
+    proxy_pass http://127.0.0.1:${APP_PORT}/;
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+}
+NGINXEOF
+  info "${NGINX_LOCATIONS} criado"
+
+  if [ -f "$NGINX_CONF" ]; then
+    if ! grep -q "${APP_NAME}-locations.conf" "$NGINX_CONF"; then
+      sed -i "/^\s*server_name api\.projetosdinamicos\.com\.br;$/a\    include ${NGINX_LOCATIONS};" "$NGINX_CONF"
+      info "Include adicionado ao nginx"
+    else
+      info "Include ja existe no nginx"
+    fi
+  fi
+
+  if nginx -t 2>/dev/null; then
+    systemctl reload nginx.service 2>/dev/null && info "Nginx configurado" || warn "Falha ao recarregar nginx"
+  else
+    warn "Configuracao do nginx invalida — verifique manualmente"
+  fi
+
   echo ""
   info "===== Instalação concluída! ====="
   echo ""
   echo "  Projeto:   $APP_NAME"
   echo "  API:       http://localhost:$APP_PORT"
   echo "  Health:    http://localhost:$APP_PORT/health"
+  echo "  Publica:   https://api.projetosdinamicos.com.br/$APP_NAME/api/"
   echo "  Admin:     $ADMIN_EMAIL / $ADMIN_PASS"
   echo ""
 
@@ -1632,6 +1692,7 @@ ARQEOF
   info "Testes concluídos!"
   echo ""
   echo "  Projeto:  $APP_NAME"
+  echo "  Token:    $API_TOKEN"
   echo "  Admin:    $ADMIN_EMAIL / $ADMIN_PASS"
   echo ""
   info "Comandos úteis:"
