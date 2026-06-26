@@ -56,12 +56,12 @@ function renderCastracoes(castracoes) {
     var tr = document.createElement('tr');
     if (isAtendido) { tr.className = 'status-atendido'; tr.style.display = 'none'; }
     tr.setAttribute('data-ticket', ticketNum);
-    tr.setAttribute('data-pet', c.nome_pet || '');
-    tr.setAttribute('data-responsavel', c.nome || '');
-    tr.setAttribute('data-especie', c.especie || '');
-    tr.setAttribute('data-sexo', c.sexo || '');
+    tr.setAttribute('data-pet', c.pet_nome || '');
+    tr.setAttribute('data-responsavel', c.tutor_nome || '');
+    tr.setAttribute('data-especie', c.pet_especie || '');
+    tr.setAttribute('data-sexo', c.pet_sexo || '');
     tr.setAttribute('data-porte', c.porte || '');
-    tr.setAttribute('data-idade', c.idade || '');
+    tr.setAttribute('data-idade', c.pet_idade || '');
     tr.setAttribute('data-clinica', c.clinica || '');
     tr.setAttribute('data-data', fmtDate(c.origem));
     tr.setAttribute('data-status', c.status || 'Pendente');
@@ -75,16 +75,16 @@ function renderCastracoes(castracoes) {
     tr.setAttribute('data-cidade', c.tutor_cidade || '');
     tr.setAttribute('data-estado', c.tutor_estado || '');
     tr.setAttribute('data-cep', c.tutor_cep || '');
-    var badgeCor = (c.especie || '').toLowerCase() === 'gato'
+    var badgeCor = (c.pet_especie || '').toLowerCase() === 'gato'
       ? '<span class="badge" style="background:#8b5cf6;color:#fff;">Gato</span>'
-      : '<span class="badge badge-info">' + esc(c.especie) + '</span>';
+      : '<span class="badge badge-info">' + esc(c.pet_especie) + '</span>';
     var statusHtml = isAtendido
       ? '<button class="btn-status-atendido" disabled><i class="bi bi-check-circle-fill"></i> Atendido</button>'
       : '<button class="btn-status-atender" onclick="atenderCastracao(this)" data-id="' + c.id + '"><i class="bi bi-check-lg"></i> Atender</button>';
     tr.innerHTML =
       '<td data-label="Ticket"><strong>' + esc(ticketNum) + '</strong></td>' +
-      '<td data-label="Pet">' + esc(c.nome_pet) + '</td>' +
-      '<td data-label="Respons\u00e1vel">' + esc(c.nome) + '</td>' +
+      '<td data-label="Pet">' + esc(c.pet_nome) + '</td>' +
+      '<td data-label="Respons\u00e1vel">' + esc(c.tutor_nome) + '</td>' +
       '<td data-label="Esp\u00e9cie">' + badgeCor + '</td>' +
       '<td data-label="Cl\u00ednica">' + esc(c.clinica) + '</td>' +
       '<td data-label="Data">' + fmtDate(c.origem) + '</td>' +

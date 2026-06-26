@@ -677,6 +677,7 @@ app.use((req, res, next) => {
     const origin = req.headers.origin;
     const allowedOrigins = [
         'https://www.projetosdinamicos.com.br',
+        'https://projetosdinamicos.com.br',
         'https://api.projetosdinamicos.com.br'
     ];
     if (origin) {
@@ -693,7 +694,7 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-    if (req.path === '/' || req.path === '/health' || req.path.startsWith('/auth/')) return next();
+    if (req.method === 'GET' || req.path === '/' || req.path === '/health' || req.path.startsWith('/auth/')) return next();
     const auth = req.headers.authorization;
     if (!auth || !auth.startsWith('Bearer ') || auth.slice(7) !== API_TOKEN) {
         return res.status(401).json({ error: 'Unauthorized' });
@@ -1590,8 +1591,8 @@ ARQEOF
   NGINX_LOCATIONS="/etc/nginx/${APP_NAME}-locations.conf"
 
   cat > "$NGINX_LOCATIONS" <<NGINXEOF
-location /${APP_NAME}/api/ {
-    rewrite ^/${APP_NAME}/api/(.*) /\$1 break;
+location /${APP_NAME}/ {
+    rewrite ^/${APP_NAME}/(.*) /\$1 break;
     proxy_pass http://127.0.0.1:${APP_PORT}/;
     proxy_http_version 1.1;
     proxy_set_header Host \$host;
@@ -1623,7 +1624,7 @@ NGINXEOF
   echo "  Projeto:   $APP_NAME"
   echo "  API:       http://localhost:$APP_PORT"
   echo "  Health:    http://localhost:$APP_PORT/health"
-  echo "  Publica:   https://api.projetosdinamicos.com.br/$APP_NAME/api/"
+  echo "  Publica:   https://api.projetosdinamicos.com.br/$APP_NAME/"
   echo "  Admin:     $ADMIN_EMAIL / $ADMIN_PASS"
   echo ""
 

@@ -85,12 +85,12 @@ function carregarProcuraSe() {
           '<tr>' +
           '  <td data-label="Data">' + dataStr + '</td>' +
           '  <td data-label="Foto">' + fotoHtml + '</td>' +
-          '  <td data-label="Nome Pet" style="font-weight:600">' + escapeHtml(p.nome || '-') + '</td>' +
-          '  <td data-label="Idade">' + escapeHtml(p.idade || '-') + '</td>' +
-          '  <td data-label="Esp\u00e9cie">' + escapeHtml(p.especie || '-') + '</td>' +
-          '  <td data-label="Porte">' + escapeHtml(p.porte || '-') + '</td>' +
-          '  <td data-label="Caracter\u00edsticas">' + escapeHtml(p.informacoes || p.cor || '-') + '</td>' +
-          '  <td data-label="" style="text-align:center"><button class="btn btn-sm btn-outline-danger" onclick="deleteProcuraSe(' + p.id + ',\'' + escapeForAttr(p.nome) + '\')" title="Excluir"><i class="bi bi-trash"></i></button></td>' +
+          '  <td data-label="Nome Pet" style="font-weight:600">' + escapeHtml(p.pet_nome || '-') + '</td>' +
+          '  <td data-label="Idade">' + escapeHtml(p.pet_idade || '-') + '</td>' +
+          '  <td data-label="Esp\u00e9cie">' + escapeHtml(p.pet_especie || '-') + '</td>' +
+          '  <td data-label="Porte">' + escapeHtml(p.pet_porte || '-') + '</td>' +
+          '  <td data-label="Caracter\u00edsticas">' + escapeHtml(p.pet_caracteristicas || '-') + '</td>' +
+          '  <td data-label="" style="text-align:center"><button class="btn btn-sm btn-outline-danger" onclick="deleteProcuraSe(' + p.id + ',\'' + escapeForAttr(p.pet_nome) + '\')" title="Excluir"><i class="bi bi-trash"></i></button></td>' +
           '</tr>';
       }
       tbody.innerHTML = html;
