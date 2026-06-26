@@ -786,10 +786,7 @@ app.post('/auth/login', async (req, res) => {
             return res.status(401).json({ error: 'Usuário ou senha inválidos' });
         }
         const user = result.rows[0];
-        const token = crypto.createHash('sha256')
-            .update(user.usuario + Date.now() + 'amoranimal_secret')
-            .digest('hex');
-        res.json({ success: true, token, usuario: user });
+        res.json({ success: true, token: API_TOKEN, usuario: user });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -1471,6 +1468,12 @@ API_TOKEN=$API_TOKEN
 ADMIN_EMAIL=$ADMIN_EMAIL
 ADMIN_NOME=$ADMIN_NOME
 ADMIN_PASS=$ADMIN_PASS
+EOF
+
+  # ==============================================================
+  info "Gerando static/js/api_token.js..."
+  cat > "$SCRIPT_DIR/static/js/api_token.js" <<EOF
+window.API_TOKEN = '$API_TOKEN';
 EOF
 
   # ==============================================================

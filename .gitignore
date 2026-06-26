@@ -3,3 +3,4 @@ api/
 db/
 docker-compose.yml
 .env
+static/js/api_token.js
