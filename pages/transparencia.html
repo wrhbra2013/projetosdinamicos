@@ -196,7 +196,7 @@ function carregarLista(tipo) {
   document.getElementById('lista-titulo').textContent = titulo;
   document.getElementById('lista-conteudo').innerHTML = '<div id="loading-docs"><i class="bi bi-hourglass-split"></i><p>Carregando documentos...</p></div>';
 
-  fetch(API_BASE + '/transparencia')
+  apiFetch('/transparencia')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var docs = Array.isArray(data) ? data.filter(function(d) { return d.tipo === tipo; }) : [];
@@ -263,7 +263,7 @@ function renderizarLista(docs, tipo) {
 function deletarDocumento(id, arquivo) {
   if (!confirm('Tem certeza que deseja excluir este documento?')) return;
 
-  fetch(API_BASE + '/transparencia/' + id + '/' + arquivo, { method: 'POST' })
+  apiFetch('/transparencia/' + id + '/' + arquivo, { method: 'POST' })
     .then(function(r) {
       if (!r.ok) throw new Error('Erro');
       var tipo = document.getElementById('lista-titulo').textContent;
@@ -298,7 +298,7 @@ function enviarDocumento(e) {
   reader.onload = function(ev) {
     var base64 = ev.target.result;
 
-    fetch(API_BASE + '/transparencia', {
+    apiFetch('/transparencia', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

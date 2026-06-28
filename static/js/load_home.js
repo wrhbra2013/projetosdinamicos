@@ -1,14 +1,14 @@
 var BASE = window.API_BASE;
 
 document.addEventListener('DOMContentLoaded', function () {
-  fetchAndRender(BASE + '/eventos', renderEvents);
-  fetchAndRender(BASE + '/castracao', renderCastracoes);
-  fetchAndRender(BASE + '/adocao', renderAnimais);
-  fetchAndRender(BASE + '/voluntario', renderVoluntarios);
+  fetchAndRender('/eventos', renderEvents);
+  fetchAndRender('/castracao', renderCastracoes);
+  fetchAndRender('/adocao', renderAnimais);
+  fetchAndRender('/voluntario', renderVoluntarios);
 });
 
 function fetchAndRender(url, renderFn) {
-  fetch(url)
+  apiFetch(url)
     .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function (data) { if (data && Array.isArray(data)) renderFn(data); })
     .catch(function () {});

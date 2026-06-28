@@ -257,9 +257,9 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
-    var fetchUrl = endpoint === 'adotado' ? API_BASE + '/adocao' : API_BASE + '/' + endpoint;
+    var fetchUrl = endpoint === 'adotado' ? '/adocao' : '/' + endpoint;
 
-    fetch(fetchUrl)
+    apiFetch(fetchUrl)
       .then(function(r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  fetch(API_BASE + '/eventos')
+  apiFetch('/eventos')
     .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function(data) {
       var eventosEl = document.getElementById('section-eventos');
@@ -714,7 +714,7 @@ document.addEventListener('click', function(e) {
   e.stopPropagation();
   var id = btn.dataset.id;
   if (!confirm('Tem certeza que deseja excluir este evento?')) return;
-  fetch(window.API_BASE + '/eventos/' + encodeURIComponent(id), { method: 'DELETE' })
+  apiFetch('/eventos/' + encodeURIComponent(id), { method: 'DELETE' })
     .then(function(r) {
       if (!r.ok) throw new Error('Erro ao excluir');
       var card = btn.closest('.event-card-hover');
@@ -731,7 +731,7 @@ document.addEventListener('click', function(e) {
   e.stopPropagation();
   var id = btn.dataset.id;
   if (!confirm('Tem certeza que deseja excluir este pet?')) return;
-  fetch(window.API_BASE + '/adocao/' + encodeURIComponent(id), { method: 'DELETE' })
+  apiFetch('/adocao/' + encodeURIComponent(id), { method: 'DELETE' })
     .then(function(r) {
       if (!r.ok) throw new Error('Erro ao excluir');
       var card = btn.closest('.pet-carousel-item');
@@ -748,7 +748,7 @@ document.addEventListener('click', function(e) {
   e.stopPropagation();
   var id = btn.dataset.id;
   if (!confirm('Tem certeza que deseja excluir este volunt\u00e1rio?')) return;
-  fetch(window.API_BASE + '/voluntario/' + encodeURIComponent(id), { method: 'DELETE' })
+  apiFetch('/voluntario/' + encodeURIComponent(id), { method: 'DELETE' })
     .then(function(r) {
       if (!r.ok) throw new Error('Erro ao excluir');
       var card = btn.closest('.voluntario-card');
@@ -764,7 +764,7 @@ document.addEventListener('click', function(e) {
 function excluirCastracao(btn) {
   var id = btn.dataset.id;
   if (!confirm('Tem certeza que deseja excluir este agendamento?')) return;
-  fetch(window.API_BASE + '/castracao/' + encodeURIComponent(id), { method: 'DELETE' })
+  apiFetch('/castracao/' + encodeURIComponent(id), { method: 'DELETE' })
     .then(function(r) {
       if (!r.ok) throw new Error('Erro ao excluir');
       var tr = btn.closest('tr');
@@ -778,7 +778,7 @@ function excluirCastracao(btn) {
 function atenderCastracao(btn) {
   var id = btn.dataset.id;
   if (!confirm('Marcar este agendamento como Atendido?')) return;
-  fetch(window.API_BASE + '/castracao/' + encodeURIComponent(id), {
+  apiFetch('/castracao/' + encodeURIComponent(id), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ status: 'Atendido' })

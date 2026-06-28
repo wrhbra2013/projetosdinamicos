@@ -185,7 +185,7 @@
 <script>
 const API_BASE = window.API_BASE;
 
-fetch(API_BASE + '/settings')
+apiFetch('/settings')
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data['clinica_baixo']) document.getElementById('b_clinica').value = data['clinica_baixo'];
@@ -283,7 +283,7 @@ function cadastrarBaixoCusto(e) {
   btn.disabled = true; btn.textContent = 'Enviando...';
 
   const promises = petsBC.map(function(pet) {
-    return fetch(API_BASE + '/castracao', {
+    return apiFetch('/castracao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

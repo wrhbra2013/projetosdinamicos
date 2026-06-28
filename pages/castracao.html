@@ -118,7 +118,7 @@
 const API_BASE = window.API_BASE;
 
 function carregarClinicasAdmin() {
-  fetch(API_BASE + '/settings')
+  apiFetch('/settings')
     .then(r => r.json())
     .then(data => {
       const baixo = data['clinica_baixo'] || '';
@@ -137,9 +137,9 @@ function salvarClinicaAdmin(tipo) {
   const key = 'clinica_' + (tipo === 'baixo' ? 'baixo' : 'pets');
   const token = localStorage.getItem('amoranimal_token');
   if (!token) { alert('Faça login primeiro.'); return; }
-  fetch(API_BASE + '/settings', {
+  apiFetch('/settings', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ key: key, value: val })
   })
     .then(r => r.json())

@@ -93,7 +93,7 @@ document.getElementById('form-evento').addEventListener('submit', function(e) {
       fotos: fotoBase64 || null
     };
 
-    fetch(API_BASE + '/eventos', {
+    apiFetch('/eventos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)

@@ -138,7 +138,7 @@ function cadastrarProcuraSe(e) {
     };
     if (fotoBase64) payload.foto_url = fotoBase64;
 
-    fetch(API_BASE + '/procura_se', {
+    apiFetch('/procura_se', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

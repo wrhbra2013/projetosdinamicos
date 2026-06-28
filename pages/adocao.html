@@ -129,7 +129,7 @@ document.getElementById('form-adocao-cadastro').addEventListener('submit', async
       status: 'disponivel'
     };
 
-    const resp = await fetch(API_BASE + '/adocao', {
+    const resp = await apiFetch('/adocao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)

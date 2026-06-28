@@ -136,93 +136,276 @@ SQLEOS
     } || warn "Falha ao restaurar dump (pode ser conflito com tabelas existentes)"
   fi
 
-  # 4. Tabelas da API já usam nomes singulares (adocao, castracao, etc.)
-  #    compatíveis com o espelho. O dump restaurado no passo 3 já está no
-  #    formato correto — nenhuma renomeação é necessária.
-  info "Tabelas singulares já compatíveis com o espelho — nenhuma renomeação necessária."
-
-  # 5. Garantir colunas da API que o espelho não tem (eventos.fotos, etc.)
-  info "Sincronizando colunas entre espelho e API..."
+  # 4. Recriar tabelas da API com schema correto
+  #    (o dump do espelho restaura tabelas com schema antigo — precisamos
+  #     recriá-las para que a API funcione corretamente)
+  info "Recriando tabelas da API com schema correto..."
   docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
-    -- Adicionar colunas que a API espera mas o espelho pode não ter
-    DO $$
-    DECLARE
-      col_exists BOOLEAN;
-    BEGIN
-      -- eventos.fotos (espelho usa arquivo)
-      SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='eventos' AND column_name='fotos') INTO col_exists;
-      IF NOT col_exists THEN
-        ALTER TABLE eventos ADD COLUMN fotos TEXT;
-        UPDATE eventos SET fotos = arquivo WHERE arquivo IS NOT NULL;
-        RAISE NOTICE 'Coluna eventos.fotos criada e populada a partir de arquivo';
-      END IF;
+    -- Salvar dados das tabelas antigas do espelho antes de recriar
+    -- (tabelas que a API consulta mas têm schema incompatível com o dump)
+    CREATE TABLE IF NOT EXISTS adocao_old AS SELECT * FROM adocao WHERE false;
+    CREATE TABLE IF NOT EXISTS voluntario_old AS SELECT * FROM voluntario WHERE false;
+    CREATE TABLE IF NOT EXISTS castracao_old AS SELECT * FROM castracao WHERE false;
+    CREATE TABLE IF NOT EXISTS eventos_old AS SELECT * FROM eventos WHERE false;
+    CREATE TABLE IF NOT EXISTS procura_se_old AS SELECT * FROM procura_se WHERE false;
+    CREATE TABLE IF NOT EXISTS parceria_old AS SELECT * FROM parceria WHERE false;
 
-      -- eventos.local
-      SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='eventos' AND column_name='local') INTO col_exists;
-      IF NOT col_exists THEN
-        ALTER TABLE eventos ADD COLUMN local VARCHAR(255);
-        RAISE NOTICE 'Coluna eventos.local criada';
-      END IF;
-
-      -- eventos.endereco
-      SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='eventos' AND column_name='endereco') INTO col_exists;
-      IF NOT col_exists THEN
-        ALTER TABLE eventos ADD COLUMN endereco TEXT;
-        RAISE NOTICE 'Coluna eventos.endereco criada';
-      END IF;
-
-      -- eventos.status
-      SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='eventos' AND column_name='status') INTO col_exists;
-      IF NOT col_exists THEN
-        ALTER TABLE eventos ADD COLUMN status VARCHAR(50) DEFAULT 'agendado';
-        RAISE NOTICE 'Coluna eventos.status criada';
-      END IF;
-
-      -- adocao.foto_url (espelho usa arquivo)
-      SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_name='adocao' AND column_name='foto_url') INTO col_exists;
-      IF NOT col_exists THEN
-        ALTER TABLE adocao ADD COLUMN foto_url TEXT;
-        UPDATE adocao SET foto_url = arquivo WHERE arquivo IS NOT NULL;
-        RAISE NOTICE 'Coluna adocao.foto_url criada e populada a partir de arquivo';
-      END IF;
-    END $$;
+    -- Tentar copiar dados das tabelas do dump (podem ter schema diferente)
+    INSERT INTO adocao_old SELECT * FROM adocao;
+    INSERT INTO voluntario_old SELECT * FROM voluntario;
+    INSERT INTO castracao_old SELECT * FROM castracao;
+    INSERT INTO eventos_old SELECT * FROM eventos;
+    INSERT INTO procura_se_old SELECT * FROM procura_se;
+    INSERT INTO parceria_old SELECT * FROM parceria;
 SQLEOS
-  info "Colunas sincronizadas."
+  info "Dados antigos preservados."
 
-  # 6. Corrigir caminhos de arquivos vindos do espelho (amoranimalmarilia)
-  info "Corrigindo caminhos de arquivos no banco de dados..."
+  # 5. Recriar tabelas da API com o schema do 01-schema.sql
+  info "Aplicando schema correto da API..."
   docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
-    -- Corrigir foto_url e arquivo em adocao
-    UPDATE adocao SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
-      WHERE foto_url LIKE '../amoranimal_uploads/%';
-    UPDATE adocao SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
-      WHERE arquivo LIKE '../amoranimal_uploads/%';
+    -- Dropar e recriar as tabelas da API com o schema correto
+    DROP TABLE IF EXISTS adocao CASCADE;
+    DROP TABLE IF EXISTS voluntario CASCADE;
+    DROP TABLE IF EXISTS castracao CASCADE;
+    DROP TABLE IF EXISTS eventos CASCADE;
+    DROP TABLE IF EXISTS procura_se CASCADE;
+    DROP TABLE IF EXISTS parceria CASCADE;
+    DROP TABLE IF EXISTS doacoes CASCADE;
+    DROP TABLE IF EXISTS coleta CASCADE;
+    DROP TABLE IF EXISTS adotado CASCADE;
 
-    -- Corrigir foto_url em procura_se
-    UPDATE procura_se SET foto_url = regexp_replace(foto_url, '../amoranimal_uploads/', 'uploads/', 'g')
-      WHERE foto_url LIKE '../amoranimal_uploads/%';
+    CREATE TABLE IF NOT EXISTS adocao (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        especie VARCHAR(50),
+        porte VARCHAR(50),
+        idade VARCHAR(100),
+        sexo VARCHAR(20),
+        castrado VARCHAR(20),
+        caracteristicas TEXT,
+        foto_url TEXT,
+        status VARCHAR(50) DEFAULT 'disponivel',
+        created_at TIMESTAMP DEFAULT NOW()
+    );
 
-    -- Corrigir arquivos de transparencia
-    UPDATE transparencia SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
-      WHERE arquivo LIKE '../amoranimal_uploads/%';
+    CREATE TABLE IF NOT EXISTS adotado (
+        id SERIAL PRIMARY KEY,
+        adotante_nome VARCHAR(255) NOT NULL,
+        adotante_cpf VARCHAR(20),
+        adotante_contato VARCHAR(100),
+        adotante_endereco TEXT,
+        adotante_numero VARCHAR(20),
+        adotante_bairro VARCHAR(100),
+        adotante_cidade VARCHAR(100),
+        adotante_estado VARCHAR(10),
+        adotante_cep VARCHAR(15),
+        pet_nome VARCHAR(255) NOT NULL,
+        pet_especie VARCHAR(50),
+        pet_sexo VARCHAR(20),
+        pet_idade VARCHAR(100),
+        pet_porte VARCHAR(50),
+        pet_castrado VARCHAR(20),
+        pet_vermifugado VARCHAR(20),
+        pet_vacinado VARCHAR(20),
+        pet_endereco VARCHAR(50),
+        protocolo VARCHAR(50),
+        created_at TIMESTAMP DEFAULT NOW()
+    );
 
-    -- Corrigir arquivo em home
-    UPDATE home SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
-      WHERE arquivo LIKE '../amoranimal_uploads/%';
+    CREATE TABLE IF NOT EXISTS castracao (
+        id SERIAL PRIMARY KEY,
+        tipo VARCHAR(50) NOT NULL,
+        ticket VARCHAR(20),
+        tutor_nome VARCHAR(255) NOT NULL,
+        tutor_telefone VARCHAR(50),
+        tutor_email VARCHAR(255),
+        tutor_cpf VARCHAR(20),
+        tutor_endereco TEXT,
+        tutor_numero VARCHAR(20),
+        tutor_complemento VARCHAR(100),
+        tutor_bairro VARCHAR(100),
+        tutor_cidade VARCHAR(100),
+        tutor_estado VARCHAR(10),
+        tutor_cep VARCHAR(15),
+        tutor_localidade VARCHAR(100),
+        tutor_whatsapp VARCHAR(10),
+        pet_nome VARCHAR(255) NOT NULL,
+        pet_especie VARCHAR(50),
+        pet_sexo VARCHAR(20),
+        pet_idade VARCHAR(50),
+        pet_porte VARCHAR(50),
+        pet_peso VARCHAR(50),
+        pet_vacinado BOOLEAN DEFAULT FALSE,
+        pet_medicamento TEXT,
+        clinica VARCHAR(255),
+        agenda VARCHAR(50),
+        data_agendamento DATE,
+        dia_semana VARCHAR(30),
+        status VARCHAR(50) DEFAULT 'Pendente',
+        created_at TIMESTAMP DEFAULT NOW()
+    );
 
-    -- Corrigir fotos/arquivo em eventos
-    UPDATE eventos SET fotos = regexp_replace(fotos, '../amoranimal_uploads/', 'uploads/', 'g')
-      WHERE fotos LIKE '../amoranimal_uploads/%';
-    UPDATE eventos SET arquivo = regexp_replace(arquivo, '../amoranimal_uploads/', 'uploads/', 'g')
-      WHERE arquivo LIKE '../amoranimal_uploads/%';
+    CREATE TABLE IF NOT EXISTS doacoes (
+        id SERIAL PRIMARY KEY,
+        doador_nome VARCHAR(255),
+        doador_contato VARCHAR(100),
+        tipo VARCHAR(50),
+        valor DECIMAL(10,2),
+        descricao TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+    );
 
-    -- Substituir domínio antigo nos dados
-    UPDATE adocao SET foto_url = replace(foto_url, 'amoranimal.ong.br', 'projetosdinamicos.com.br')
-      WHERE foto_url LIKE '%amoranimal.ong.br%';
-    UPDATE procura_se SET foto_url = replace(foto_url, 'amoranimal.ong.br', 'projetosdinamicos.com.br')
-      WHERE foto_url LIKE '%amoranimal.ong.br%';
+    CREATE TABLE IF NOT EXISTS eventos (
+        id SERIAL PRIMARY KEY,
+        titulo VARCHAR(255) NOT NULL,
+        descricao TEXT,
+        data_evento DATE,
+        local VARCHAR(255),
+        endereco TEXT,
+        fotos TEXT,
+        status VARCHAR(50) DEFAULT 'agendado',
+        created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS parceria (
+        id SERIAL PRIMARY KEY,
+        empresa VARCHAR(255) NOT NULL,
+        localidade VARCHAR(255),
+        proposta TEXT,
+        representante VARCHAR(255) NOT NULL,
+        telefone VARCHAR(50),
+        whatsapp VARCHAR(10),
+        email VARCHAR(255),
+        created_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS procura_se (
+        id SERIAL PRIMARY KEY,
+        origem TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        nome VARCHAR(255),
+        especie VARCHAR(100),
+        sexo VARCHAR(50),
+        idade VARCHAR(50),
+        porte VARCHAR(50),
+        cor VARCHAR(100),
+        foto_url TEXT,
+        informacoes TEXT,
+        contato VARCHAR(255),
+        status VARCHAR(50)
+    );
+
+    CREATE TABLE IF NOT EXISTS voluntario (
+        id SERIAL PRIMARY KEY,
+        origem TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        nome VARCHAR(255),
+        localidade VARCHAR(255),
+        telefone VARCHAR(20),
+        whatsapp VARCHAR(20),
+        disponibilidade TEXT,
+        habilidade TEXT,
+        mensagem TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS coleta (
+        id SERIAL PRIMARY KEY,
+        origem TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        nome VARCHAR(255),
+        telefone VARCHAR(20),
+        whatsapp VARCHAR(20),
+        item VARCHAR(255),
+        quantidade VARCHAR(50),
+        dia VARCHAR(10),
+        periodo VARCHAR(10),
+        endereco TEXT,
+        observacao TEXT
+    );
 SQLEOS
-  info "Caminhos corrigidos."
+  info "Schema da API recriado com sucesso."
+
+  # 6. Migrar dados do dump (salvos em *_old) para as novas tabelas da API
+  info "Migrando dados do espelho para as novas tabelas..."
+  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
+    -- adocao_old → adocao (mapear colunas do espelho para API)
+    -- O dump tem colunas: nomepet, idadepet, especie, porte, caracteristicas, local, tutor, contato
+    -- A API espera: nome, especie, porte, idade, sexo, castrado, caracteristicas, foto_url, status
+    INSERT INTO adocao (nome, especie, porte, idade, caracteristicas, foto_url, status)
+    SELECT
+      COALESCE(nomepet, nome),
+      especie,
+      porte,
+      COALESCE(idadepet, idade),
+      CASE WHEN caracteristicas IS NULL OR caracteristicas = '' THEN
+        COALESCE('Local: ' || local || ' | Tutor: ' || tutor || ' | Contato: ' || contato, '')
+      ELSE
+        caracteristicas
+      END,
+      CASE WHEN arquivo IS NOT NULL AND arquivo != '' THEN 'uploads/adocao/' || arquivo ELSE NULL END,
+      'disponivel'
+    FROM adocao_old
+    WHERE COALESCE(nomepet, nome) IS NOT NULL AND COALESCE(nomepet, nome) != '';
+
+    -- interesse_voluntario → voluntario
+    INSERT INTO voluntario (origem, nome, localidade, telefone, habilidade, disponibilidade, mensagem)
+    SELECT origem, nome, localidade, telefone, habilidade, disponibilidade, como_ajudar
+    FROM interesse_voluntario
+    WHERE nome IS NOT NULL AND nome != '';
+
+    -- calendario_mutirao → eventos
+    INSERT INTO eventos (titulo, descricao, data_evento, local, endereco, status, created_at)
+    SELECT
+      'Mutirão de Castração - ' || clinica,
+      'Mutirão de castração de ' || COALESCE(especie_padrao, 'cães e gatos'),
+      data_evento::date,
+      clinica,
+      endereco,
+      CASE WHEN arquivado THEN 'encerrado' ELSE 'agendado' END,
+      created_at
+    FROM calendario_mutirao;
+
+    -- mutirao_inscricao + mutirao_pet → castracao
+    INSERT INTO castracao (
+      tipo, ticket, status,
+      tutor_nome, tutor_telefone, tutor_cpf,
+      tutor_endereco, tutor_numero, tutor_complemento,
+      tutor_bairro, tutor_cidade, tutor_estado, tutor_cep,
+      pet_nome, pet_especie, pet_sexo, pet_peso,
+      pet_vacinado, pet_medicamento,
+      clinica, data_agendamento, created_at
+    )
+    SELECT
+      'mutirao',
+      COALESCE(p.ticket, mi.ticket),
+      COALESCE(mi.status, 'Pendente'),
+      mi.nome_responsavel, mi.contato, mi.cpf,
+      mi.endereco, mi.numero, mi.complemento,
+      mi.bairro, mi.cidade, mi.estado, mi.cep,
+      COALESCE(p.nome, 'Não informado'), COALESCE(p.especie, 'não informado'),
+      p.sexo, p.peso,
+      COALESCE(p.vacinado, false), p.medicamento,
+      cm.clinica, cm.data_evento::date, mi.created_at
+    FROM mutirao_inscricao mi
+    LEFT JOIN mutirao_pet p ON p.mutirao_inscricao_id = mi.id
+    LEFT JOIN calendario_mutirao cm ON cm.id = mi.calendario_mutirao_id
+    WHERE COALESCE(p.ticket, mi.ticket) IS NOT NULL;
+
+    -- Migrar transparencia (mesmo schema entre espelho e API)
+    INSERT INTO transparencia (titulo, tipo, ano, arquivo, descricao, origem)
+    SELECT titulo, tipo, ano, arquivo, descricao, origem
+    FROM transparencia
+    ON CONFLICT DO NOTHING;
+SQLEOS
+  info "Dados migrados com sucesso."
+
+  # 7. Limpar tabelas temporárias
+  info "Limpando tabelas temporárias..."
+  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "
+    DROP TABLE IF EXISTS adocao_old;
+    DROP TABLE IF EXISTS voluntario_old;
+    DROP TABLE IF EXISTS castracao_old;
+    DROP TABLE IF EXISTS eventos_old;
+    DROP TABLE IF EXISTS procura_se_old;
+    DROP TABLE IF EXISTS parceria_old;
+  " 2>&1 | tail -1
 
   info "Migração concluída."
 }
@@ -638,6 +821,7 @@ DOCKEREOF
     "dev": "node --watch src/server.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "pg": "^8.12.0"
@@ -654,6 +838,7 @@ const express = require('express');
 
 const path = require('path');
 const crypto = require('crypto');
+const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -673,25 +858,17 @@ pool.on('error', (err) => console.error('DB Error:', err));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    const allowedOrigins = [
+const corsOptions = {
+    origin: [
         'https://www.projetosdinamicos.com.br',
         'https://projetosdinamicos.com.br',
         'https://api.projetosdinamicos.com.br'
-    ];
-    if (origin) {
-        const match = allowedOrigins.find(o => origin === o || origin.endsWith('://' + o.split('://')[1]));
-        if (match) {
-            res.header('Access-Control-Allow-Origin', match);
-            res.header('Vary', 'Origin');
-        }
-    }
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    if (req.method === 'OPTIONS') return res.sendStatus(200);
-    next();
-});
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+};
+app.use(cors(corsOptions));
 
 app.use((req, res, next) => {
     if (req.method === 'GET' || req.path === '/' || req.path === '/health' || req.path.startsWith('/auth/')) return next();
@@ -1472,9 +1649,11 @@ EOF
 
   # ==============================================================
   info "Gerando static/js/api_token.js..."
+  mkdir -p "$SCRIPT_DIR/static/js" "$DATA_DIR/static/js"
   cat > "$SCRIPT_DIR/static/js/api_token.js" <<EOF
 window.API_TOKEN = '$API_TOKEN';
 EOF
+  cp "$SCRIPT_DIR/static/js/api_token.js" "$DATA_DIR/static/js/api_token.js" 2>/dev/null || true
 
   # ==============================================================
   info "Gerando scripts/arquivar_mutiroes.sql..."

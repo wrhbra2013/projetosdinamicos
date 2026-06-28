@@ -253,7 +253,7 @@ function carregarVoluntarios() {
   var count = document.getElementById('voluntarios-count');
   var isAdmin = !!localStorage.getItem('amoranimal_token');
   grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted-color)"><i class="bi bi-hourglass-split" style="font-size:2em"></i><p>Carregando voluntários...</p></div>';
-  fetch(API_BASE + '/voluntario')
+  apiFetch('/voluntario')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (!data || data.length === 0) {
@@ -338,7 +338,7 @@ function carregarInteressados() {
   thAcoes.style.display = isAdmin ? '' : 'none';
   var colspan = isAdmin ? 8 : 7;
   tbody.innerHTML = '<tr><td colspan="' + colspan + '" style="text-align:center;padding:40px;color:var(--muted-color)"><i class="bi bi-hourglass-split" style="font-size:2em"></i><p>Carregando...</p></td></tr>';
-  fetch(API_BASE + '/voluntario')
+  apiFetch('/voluntario')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (!data || data.length === 0) {
@@ -405,7 +405,7 @@ document.getElementById('voluntarioForm').addEventListener('submit', function(e)
   var btn = this.querySelector('button[type="submit"]');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="margin-right:5px"></span> Enviando...';
-  fetch(API_BASE + '/voluntario', {
+  apiFetch('/voluntario', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -460,7 +460,7 @@ document.getElementById('interesseForm').addEventListener('submit', function(e) 
   var btn = this.querySelector('button[type="submit"]');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="margin-right:5px"></span> Enviando...';
-  fetch(API_BASE + '/voluntario', {
+  apiFetch('/voluntario', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -490,7 +490,7 @@ document.getElementById('interesseForm').addEventListener('submit', function(e) 
 
 function deleteInteressado(id, nome) {
   if (!confirm('Tem certeza que deseja excluir o registro de "' + nome + '"?\n\nEsta a\u00e7\u00e3o n\u00e3o poder\u00e1 ser desfeita.')) return;
-  fetch(API_BASE + '/voluntario/' + id, { method: 'DELETE' })
+  apiFetch('/voluntario/' + id, { method: 'DELETE' })
     .then(function(r) {
       if (!r.ok) throw new Error('Erro ao excluir');
       carregarInteressados();
@@ -502,7 +502,7 @@ function deleteInteressado(id, nome) {
 
 function deleteVoluntario(id, nome) {
   if (!confirm('Tem certeza que deseja excluir o volunt\u00e1rio "' + nome + '"?\n\nEsta a\u00e7\u00e3o n\u00e3o poder\u00e1 ser desfeita.')) return;
-  fetch(API_BASE + '/voluntario/' + id, { method: 'DELETE' })
+  apiFetch('/voluntario/' + id, { method: 'DELETE' })
     .then(function(r) {
       if (!r.ok) throw new Error('Erro ao excluir');
       carregarVoluntarios();

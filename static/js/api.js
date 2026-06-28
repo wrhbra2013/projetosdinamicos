@@ -12,3 +12,13 @@ window.getApiToken = function() {
   }
   return token || null;
 };
+
+window.apiFetch = function(url, options) {
+  options = options || {};
+  options.headers = options.headers || {};
+  var token = window.getApiToken();
+  if (token) {
+    options.headers['Authorization'] = 'Bearer ' + token;
+  }
+  return fetch(window.API_BASE + url, options);
+};

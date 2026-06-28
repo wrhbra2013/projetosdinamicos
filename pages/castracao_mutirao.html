@@ -274,10 +274,10 @@ function mostrarRelatorioGeral(eventoId, data, local) {
   document.getElementById('modal-body').innerHTML = '<div class="modal-loading"><i class="bi bi-hourglass-split" style="font-size:2rem;"></i><p>Carregando inscrições...</p></div>';
   document.getElementById('modal-relatorio').style.display = 'flex';
 
-  var url = API_BASE + '/mutirao_inscricao';
+  var url = '/mutirao_inscricao';
   if (eventoId) url += '?calendario_mutirao_id=' + eventoId;
 
-  fetch(url)
+  apiFetch(url)
     .then(function(r) { return r.json(); })
     .then(function(items) {
       var inscricoes = Array.isArray(items) ? items : [];
@@ -328,16 +328,13 @@ function excluirEvento(index, btn) {
   if (!ev) return;
   if (!confirm('Excluir mutirão de ' + ev.data + ' (' + ev.local + ')?\n\nTodas as inscrições deste mutirão também serão excluídas permanentemente.')) return;
 
-  var token = localStorage.getItem('amoranimal_token');
-  if (!token) { alert('Faça login primeiro.'); return; }
+  if (!window.getApiToken()) { alert('Faça login primeiro.'); return; }
 
   if (btn) { btn.disabled = true; btn.textContent = 'Excluindo...'; }
 
-  var headers = { 'Authorization': 'Bearer ' + token };
-
   function excluirInscricoes() {
     if (!ev._id) return Promise.resolve();
-    return fetch(API_BASE + '/mutirao_inscricao')
+    return apiFetch('/mutirao_inscricao')
       .then(function(r) { return r.json(); })
       .then(function(items) {
         var inscricoes = Array.isArray(items) ? items : [];
@@ -346,7 +343,7 @@ function excluirEvento(index, btn) {
         });
         if (paraExcluir.length === 0) return;
         return Promise.all(paraExcluir.map(function(ins) {
-          return fetch(API_BASE + '/mutirao_inscricao/' + ins.id, { method: 'DELETE', headers: headers })
+          return apiFetch('/mutirao_inscricao/' + ins.id, { method: 'DELETE' })
             .then(function(r) { if (!r.ok) throw new Error('Erro ao excluir inscrição'); });
         }));
       });
@@ -354,7 +351,7 @@ function excluirEvento(index, btn) {
 
   function excluirEventoAPI() {
     if (!ev._api || !ev._id) return Promise.resolve();
-    return fetch(API_BASE + '/calendario_mutirao/' + ev._id, { method: 'DELETE', headers: headers })
+    return apiFetch('/calendario_mutirao/' + ev._id, { method: 'DELETE' })
       .then(function(r) { if (!r.ok) throw new Error('Erro ao excluir evento'); });
   }
 
@@ -410,7 +407,7 @@ function carregarEventos() {
 var clinicasCache = [];
 
 function carregarClinicas() {
-  return fetch(API_BASE + '/clinicas')
+  return apiFetch('/clinicas')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       clinicasCache = Array.isArray(data) ? data : [];
@@ -480,9 +477,9 @@ function salvarNovaClinica() {
   btn.disabled = true;
   btn.innerHTML = 'Salvando...';
 
-  fetch(API_BASE + '/clinicas', {
+  apiFetch('/clinicas', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ nome: nome, endereco: endereco })
   })
     .then(function(r) { return r.json().then(function(d) { if (!r.ok) throw new Error(d.erro || 'Erro ao salvar'); return d; }); })
@@ -532,9 +529,9 @@ function cadastrarEventoAdmin(e) {
 
   var token = localStorage.getItem('amoranimal_token');
   if (token) {
-    fetch(API_BASE + '/calendario_mutirao', {
+    apiFetch('/calendario_mutirao', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         data_evento: formatarDataISOInverso(evento.data),
         clinica: evento.local,
@@ -601,7 +598,7 @@ function atualizarAdminLista() {
 }
 
 function carregarEventosAPI() {
-  return fetch(API_BASE + '/calendario_mutirao')
+  return apiFetch('/calendario_mutirao')
     .then(function(r) { return r.json(); })
     .then(function(data) { eventosAPI = Array.isArray(data) ? data : []; })
     .catch(function() { eventosAPI = []; });

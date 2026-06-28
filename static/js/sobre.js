@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     var container = document.getElementById('volunteersContainer');
 
-    fetch(window.API_BASE + '/voluntario')
+    apiFetch('/voluntario')
       .then(function(r) { return r.json(); })
       .then(function(voluntarios) {
         if (!voluntarios || !voluntarios.length) {

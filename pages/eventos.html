@@ -44,7 +44,7 @@ function fmtData(d) {
   return d;
 }
 
-fetch(API_BASE + '/eventos')
+apiFetch('/eventos')
   .then(function(r) { return r.json(); })
   .then(function(eventos) {
     var container = document.getElementById('eventos-container');

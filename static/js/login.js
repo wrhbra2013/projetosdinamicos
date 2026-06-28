@@ -126,7 +126,7 @@ class LoginFormHandler {
       const valor = this.usuarioInput.value.trim();
       const senha = this.senhaInput.value;
 
-      fetch(window.API_BASE + '/auth/login', {
+      apiFetch('/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ usuario: valor, senha })

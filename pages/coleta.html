@@ -203,7 +203,7 @@ document.getElementById('form-coleta').addEventListener('submit', function(e) {
     estado: document.getElementById('estado').value,
     mensagem: document.getElementById('mensagem').value
   };
-  fetch(window.API_BASE + '/coleta', {
+  apiFetch('/coleta', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)

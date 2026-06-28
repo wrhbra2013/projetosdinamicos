@@ -63,7 +63,7 @@ function updateEmptyState() {
 
 function confirmDelete(id, nome) {
     if (confirm(`Tem certeza que deseja excluir o volunt\u00e1rio "${nome}"?\n\nEsta a\u00e7\u00e3o n\u00e3o poder\u00e1 ser desfeita.`)) {
-        fetch(window.API_BASE + '/voluntario/' + id, { method: 'DELETE' })
+        apiFetch('/voluntario/' + id, { method: 'DELETE' })
             .then(function(r) {
                 if (!r.ok) throw new Error('Erro ao excluir');
                 if (typeof carregarVoluntarios === 'function') carregarVoluntarios();

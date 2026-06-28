@@ -267,7 +267,7 @@ function verificarVagas() {
   statusEl.textContent = 'Verificando vagas...';
   statusEl.style.color = 'var(--muted-color)';
 
-  fetch(API_BASE + '/castracao')
+  apiFetch('/castracao')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var inscricoes = Array.isArray(data) ? data : [];
@@ -475,7 +475,7 @@ function cadastrarMutirao(e) {
   btn.disabled = true; btn.textContent = 'Enviando...';
 
   var promises = pets.map(function(pet) {
-    return fetch(API_BASE + '/castracao', {
+    return apiFetch('/castracao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

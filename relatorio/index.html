@@ -250,7 +250,7 @@
         </div>
       `;
 
-      fetch(`${API_BASE}/${tabela}`)
+      apiFetch(`/${tabela}`)
         .then(r => {
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
           return r.json();
@@ -338,7 +338,7 @@
 
     function excluirRegistro(tabela, id) {
       if (!confirm(`Tem certeza que deseja excluir o registro #${id} da tabela "${TABLE_LABELS[tabela] || tabela}"?`)) return;
-      fetch(`${API_BASE}/${tabela}/${id}`, { method: 'DELETE' })
+      apiFetch(`/${tabela}/${id}`, { method: 'DELETE' })
         .then(r => {
           if (!r.ok) throw new Error('Erro ao excluir');
           return r.json();
