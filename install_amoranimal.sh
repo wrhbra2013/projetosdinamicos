@@ -3,7 +3,7 @@ set -eu
 
 # ==============================================================
 # Script de instalação — API Amor Animal (Docker)
-# Uso: sudo bash install.sh                          (menu interativo)
+# Uso: sudo bash install.sh                          (instalar)
 #       sudo bash install.sh install                 (instalar)
 #       sudo bash install.sh uninstall               (desinstalar)
 #       sudo bash install.sh reconfig                (alterar porta)
@@ -11,15 +11,24 @@ set -eu
 #       sudo bash install.sh free-ports              (liberar porta)
 #       sudo bash install.sh logs                    (ver logs)
 #       sudo bash install.sh stop                    (parar containers)
+#       sudo bash install.sh restore-dump            (restaurar banco do dump)
+#       sudo bash install.sh link-uploads            (link simbolico uploads)
 # ==============================================================
 
-SCRIPT_DIR="$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 info()  { printf "${GREEN}[INFO]${NC} %s\n" "$1"; }
 warn()  { printf "${YELLOW}[WARN]${NC} %s\n" "$1" >&2; }
 error() { printf "${RED}[ERRO]${NC} %s\n" "$1" >&2; exit 1; }
 
 [ "$(id -u)" -eq 0 ] || error "Execute como root: sudo bash install.sh"
+
+_load_env() {
+  if [ -f "$SCRIPT_DIR/.env" ]; then
+    . "$SCRIPT_DIR/.env"
+    [ -n "${DATA_DIR:-}" ] && [ -f "$DATA_DIR/.env" ] && . "$DATA_DIR/.env"
+  fi
+}
 
 # ==============================================================
 # Helpers
@@ -38,6 +47,7 @@ _diagnostic_api() {
   echo ""
   warn "===== DIAGNÓSTICO DE FALHA ($APP_NAME) ====="
   local api_container="${APP_NAME:-amoranimal}-api"
+  local compose_dir="${DATA_DIR:-$SCRIPT_DIR}"
   if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "$api_container"; then
     local actual_port
     actual_port=$(docker logs "$api_container" 2>&1 | grep -oP 'port \K\d+' | tail -1)
@@ -54,9 +64,9 @@ _diagnostic_api() {
   else
     warn "Container $api_container ($APP_NAME) não está rodando"
     warn "--- Status dos containers ---"
-    docker compose -f "$SCRIPT_DIR/docker-compose.yml" ps 2>&1
+    docker compose -f "$compose_dir/docker-compose.yml" ps 2>&1
     warn "--- Logs completos da API ---"
-    docker compose -f "$SCRIPT_DIR/docker-compose.yml" logs --tail=30 api 2>&1
+    docker compose -f "$compose_dir/docker-compose.yml" logs --tail=30 api 2>&1
   fi
   echo ""
 }
@@ -77,338 +87,20 @@ _test_endpoint() {
 }
 
 # ==============================================================
-# migrate_schema — garantir tabelas login/home e corrigir paths
+# Substitui placeholders {{VAR}} em templates lidos de stdin
 # ==============================================================
-migrate_schema() {
-  [ -f "$SCRIPT_DIR/.env" ] && . "$SCRIPT_DIR/.env" || true
-  local DB_CONTAINER="${APP_NAME:-amoranimal}-db"
-  local DB_NAME="${DB_NAME:-${APP_NAME:-amoranimal}_db}"
-  local DB_USER="postgres"
-
-  info "Verificando schema do banco de dados..."
-
-  # Tabelas auxiliares da API (não existem no espelho)
-  # 1. login
-  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -tAc \
-    "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name='login');" 2>/dev/null | grep -q 't' || {
-    info "Criando tabela 'login' a partir de 'usuarios'..."
-    docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
-      CREATE TABLE IF NOT EXISTS login (
-          id SERIAL PRIMARY KEY,
-          usuario VARCHAR(255) NOT NULL UNIQUE,
-          senha VARCHAR(255) NOT NULL,
-          isadmin BOOLEAN DEFAULT false,
-          origem TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-
-      INSERT INTO login (usuario, senha, isadmin)
-      SELECT COALESCE(email, nome), senha, (tipo = 'admin')
-      FROM usuarios
-      WHERE NOT EXISTS (SELECT 1 FROM login LIMIT 1)
-      ON CONFLICT (usuario) DO NOTHING;
-SQLEOS
-    info "Tabela 'login' criada com dados migrados de 'usuarios'."
-  }
-
-  # 2. home (substitui settings — estrutura diferente)
-  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -tAc \
-    "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name='home');" 2>/dev/null | grep -q 't' || {
-    info "Criando tabela 'home'..."
-    docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
-      CREATE TABLE IF NOT EXISTS home (
-          id SERIAL PRIMARY KEY,
-          origem TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          arquivo VARCHAR(255),
-          titulo VARCHAR(255),
-          mensagem TEXT,
-          link VARCHAR(2083)
-      );
-SQLEOS
-    info "Tabela 'home' criada."
-  }
-
-  # 3. Tentar restaurar dump do espelho se existir
-  if [ -f /tmp/${APP_NAME}_dump.sql ]; then
-    info "Dump encontrado em /tmp/${APP_NAME}_dump.sql. Restaurando..."
-    docker cp /tmp/${APP_NAME}_dump.sql "$DB_CONTAINER":/tmp/dump.sql
-    docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -f /tmp/dump.sql 2>/dev/null && {
-      info "Dump restaurado com sucesso!"
-    } || warn "Falha ao restaurar dump (pode ser conflito com tabelas existentes)"
-  fi
-
-  # 4. Recriar tabelas da API com schema correto
-  #    (o dump do espelho restaura tabelas com schema antigo — precisamos
-  #     recriá-las para que a API funcione corretamente)
-  info "Recriando tabelas da API com schema correto..."
-  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
-    -- Salvar dados das tabelas antigas do espelho antes de recriar
-    -- (tabelas que a API consulta mas têm schema incompatível com o dump)
-    CREATE TABLE IF NOT EXISTS adocao_old AS SELECT * FROM adocao WHERE false;
-    CREATE TABLE IF NOT EXISTS voluntario_old AS SELECT * FROM voluntario WHERE false;
-    CREATE TABLE IF NOT EXISTS castracao_old AS SELECT * FROM castracao WHERE false;
-    CREATE TABLE IF NOT EXISTS eventos_old AS SELECT * FROM eventos WHERE false;
-    CREATE TABLE IF NOT EXISTS procura_se_old AS SELECT * FROM procura_se WHERE false;
-    CREATE TABLE IF NOT EXISTS parceria_old AS SELECT * FROM parceria WHERE false;
-
-    -- Tentar copiar dados das tabelas do dump (podem ter schema diferente)
-    INSERT INTO adocao_old SELECT * FROM adocao;
-    INSERT INTO voluntario_old SELECT * FROM voluntario;
-    INSERT INTO castracao_old SELECT * FROM castracao;
-    INSERT INTO eventos_old SELECT * FROM eventos;
-    INSERT INTO procura_se_old SELECT * FROM procura_se;
-    INSERT INTO parceria_old SELECT * FROM parceria;
-SQLEOS
-  info "Dados antigos preservados."
-
-  # 5. Recriar tabelas da API com o schema do 01-schema.sql
-  info "Aplicando schema correto da API..."
-  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
-    -- Dropar e recriar as tabelas da API com o schema correto
-    DROP TABLE IF EXISTS adocao CASCADE;
-    DROP TABLE IF EXISTS voluntario CASCADE;
-    DROP TABLE IF EXISTS castracao CASCADE;
-    DROP TABLE IF EXISTS eventos CASCADE;
-    DROP TABLE IF EXISTS procura_se CASCADE;
-    DROP TABLE IF EXISTS parceria CASCADE;
-    DROP TABLE IF EXISTS doacoes CASCADE;
-    DROP TABLE IF EXISTS coleta CASCADE;
-    DROP TABLE IF EXISTS adotado CASCADE;
-
-    CREATE TABLE IF NOT EXISTS adocao (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(255) NOT NULL,
-        especie VARCHAR(50),
-        porte VARCHAR(50),
-        idade VARCHAR(100),
-        sexo VARCHAR(20),
-        castrado VARCHAR(20),
-        caracteristicas TEXT,
-        foto_url TEXT,
-        status VARCHAR(50) DEFAULT 'disponivel',
-        created_at TIMESTAMP DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS adotado (
-        id SERIAL PRIMARY KEY,
-        adotante_nome VARCHAR(255) NOT NULL,
-        adotante_cpf VARCHAR(20),
-        adotante_contato VARCHAR(100),
-        adotante_endereco TEXT,
-        adotante_numero VARCHAR(20),
-        adotante_bairro VARCHAR(100),
-        adotante_cidade VARCHAR(100),
-        adotante_estado VARCHAR(10),
-        adotante_cep VARCHAR(15),
-        pet_nome VARCHAR(255) NOT NULL,
-        pet_especie VARCHAR(50),
-        pet_sexo VARCHAR(20),
-        pet_idade VARCHAR(100),
-        pet_porte VARCHAR(50),
-        pet_castrado VARCHAR(20),
-        pet_vermifugado VARCHAR(20),
-        pet_vacinado VARCHAR(20),
-        pet_endereco VARCHAR(50),
-        protocolo VARCHAR(50),
-        created_at TIMESTAMP DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS castracao (
-        id SERIAL PRIMARY KEY,
-        tipo VARCHAR(50) NOT NULL,
-        ticket VARCHAR(20),
-        tutor_nome VARCHAR(255) NOT NULL,
-        tutor_telefone VARCHAR(50),
-        tutor_email VARCHAR(255),
-        tutor_cpf VARCHAR(20),
-        tutor_endereco TEXT,
-        tutor_numero VARCHAR(20),
-        tutor_complemento VARCHAR(100),
-        tutor_bairro VARCHAR(100),
-        tutor_cidade VARCHAR(100),
-        tutor_estado VARCHAR(10),
-        tutor_cep VARCHAR(15),
-        tutor_localidade VARCHAR(100),
-        tutor_whatsapp VARCHAR(10),
-        pet_nome VARCHAR(255) NOT NULL,
-        pet_especie VARCHAR(50),
-        pet_sexo VARCHAR(20),
-        pet_idade VARCHAR(50),
-        pet_porte VARCHAR(50),
-        pet_peso VARCHAR(50),
-        pet_vacinado BOOLEAN DEFAULT FALSE,
-        pet_medicamento TEXT,
-        clinica VARCHAR(255),
-        agenda VARCHAR(50),
-        data_agendamento DATE,
-        dia_semana VARCHAR(30),
-        status VARCHAR(50) DEFAULT 'Pendente',
-        created_at TIMESTAMP DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS doacoes (
-        id SERIAL PRIMARY KEY,
-        doador_nome VARCHAR(255),
-        doador_contato VARCHAR(100),
-        tipo VARCHAR(50),
-        valor DECIMAL(10,2),
-        descricao TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS eventos (
-        id SERIAL PRIMARY KEY,
-        titulo VARCHAR(255) NOT NULL,
-        descricao TEXT,
-        data_evento DATE,
-        local VARCHAR(255),
-        endereco TEXT,
-        fotos TEXT,
-        status VARCHAR(50) DEFAULT 'agendado',
-        created_at TIMESTAMP DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS parceria (
-        id SERIAL PRIMARY KEY,
-        empresa VARCHAR(255) NOT NULL,
-        localidade VARCHAR(255),
-        proposta TEXT,
-        representante VARCHAR(255) NOT NULL,
-        telefone VARCHAR(50),
-        whatsapp VARCHAR(10),
-        email VARCHAR(255),
-        created_at TIMESTAMP DEFAULT NOW()
-    );
-
-    CREATE TABLE IF NOT EXISTS procura_se (
-        id SERIAL PRIMARY KEY,
-        origem TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        nome VARCHAR(255),
-        especie VARCHAR(100),
-        sexo VARCHAR(50),
-        idade VARCHAR(50),
-        porte VARCHAR(50),
-        cor VARCHAR(100),
-        foto_url TEXT,
-        informacoes TEXT,
-        contato VARCHAR(255),
-        status VARCHAR(50)
-    );
-
-    CREATE TABLE IF NOT EXISTS voluntario (
-        id SERIAL PRIMARY KEY,
-        origem TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        nome VARCHAR(255),
-        localidade VARCHAR(255),
-        telefone VARCHAR(20),
-        whatsapp VARCHAR(20),
-        disponibilidade TEXT,
-        habilidade TEXT,
-        mensagem TEXT
-    );
-
-    CREATE TABLE IF NOT EXISTS coleta (
-        id SERIAL PRIMARY KEY,
-        origem TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        nome VARCHAR(255),
-        telefone VARCHAR(20),
-        whatsapp VARCHAR(20),
-        item VARCHAR(255),
-        quantidade VARCHAR(50),
-        dia VARCHAR(10),
-        periodo VARCHAR(10),
-        endereco TEXT,
-        observacao TEXT
-    );
-SQLEOS
-  info "Schema da API recriado com sucesso."
-
-  # 6. Migrar dados do dump (salvos em *_old) para as novas tabelas da API
-  info "Migrando dados do espelho para as novas tabelas..."
-  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" <<-'SQLEOS'
-    -- adocao_old → adocao (mapear colunas do espelho para API)
-    -- O dump tem colunas: nomepet, idadepet, especie, porte, caracteristicas, local, tutor, contato
-    -- A API espera: nome, especie, porte, idade, sexo, castrado, caracteristicas, foto_url, status
-    INSERT INTO adocao (nome, especie, porte, idade, caracteristicas, foto_url, status)
-    SELECT
-      COALESCE(nomepet, nome),
-      especie,
-      porte,
-      COALESCE(idadepet, idade),
-      CASE WHEN caracteristicas IS NULL OR caracteristicas = '' THEN
-        COALESCE('Local: ' || local || ' | Tutor: ' || tutor || ' | Contato: ' || contato, '')
-      ELSE
-        caracteristicas
-      END,
-      CASE WHEN arquivo IS NOT NULL AND arquivo != '' THEN 'uploads/adocao/' || arquivo ELSE NULL END,
-      'disponivel'
-    FROM adocao_old
-    WHERE COALESCE(nomepet, nome) IS NOT NULL AND COALESCE(nomepet, nome) != '';
-
-    -- interesse_voluntario → voluntario
-    INSERT INTO voluntario (origem, nome, localidade, telefone, habilidade, disponibilidade, mensagem)
-    SELECT origem, nome, localidade, telefone, habilidade, disponibilidade, como_ajudar
-    FROM interesse_voluntario
-    WHERE nome IS NOT NULL AND nome != '';
-
-    -- calendario_mutirao → eventos
-    INSERT INTO eventos (titulo, descricao, data_evento, local, endereco, status, created_at)
-    SELECT
-      'Mutirão de Castração - ' || clinica,
-      'Mutirão de castração de ' || COALESCE(especie_padrao, 'cães e gatos'),
-      data_evento::date,
-      clinica,
-      endereco,
-      CASE WHEN arquivado THEN 'encerrado' ELSE 'agendado' END,
-      created_at
-    FROM calendario_mutirao;
-
-    -- mutirao_inscricao + mutirao_pet → castracao
-    INSERT INTO castracao (
-      tipo, ticket, status,
-      tutor_nome, tutor_telefone, tutor_cpf,
-      tutor_endereco, tutor_numero, tutor_complemento,
-      tutor_bairro, tutor_cidade, tutor_estado, tutor_cep,
-      pet_nome, pet_especie, pet_sexo, pet_peso,
-      pet_vacinado, pet_medicamento,
-      clinica, data_agendamento, created_at
-    )
-    SELECT
-      'mutirao',
-      COALESCE(p.ticket, mi.ticket),
-      COALESCE(mi.status, 'Pendente'),
-      mi.nome_responsavel, mi.contato, mi.cpf,
-      mi.endereco, mi.numero, mi.complemento,
-      mi.bairro, mi.cidade, mi.estado, mi.cep,
-      COALESCE(p.nome, 'Não informado'), COALESCE(p.especie, 'não informado'),
-      p.sexo, p.peso,
-      COALESCE(p.vacinado, false), p.medicamento,
-      cm.clinica, cm.data_evento::date, mi.created_at
-    FROM mutirao_inscricao mi
-    LEFT JOIN mutirao_pet p ON p.mutirao_inscricao_id = mi.id
-    LEFT JOIN calendario_mutirao cm ON cm.id = mi.calendario_mutirao_id
-    WHERE COALESCE(p.ticket, mi.ticket) IS NOT NULL;
-
-    -- Migrar transparencia (mesmo schema entre espelho e API)
-    INSERT INTO transparencia (titulo, tipo, ano, arquivo, descricao, origem)
-    SELECT titulo, tipo, ano, arquivo, descricao, origem
-    FROM transparencia
-    ON CONFLICT DO NOTHING;
-SQLEOS
-  info "Dados migrados com sucesso."
-
-  # 7. Limpar tabelas temporárias
-  info "Limpando tabelas temporárias..."
-  docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -c "
-    DROP TABLE IF EXISTS adocao_old;
-    DROP TABLE IF EXISTS voluntario_old;
-    DROP TABLE IF EXISTS castracao_old;
-    DROP TABLE IF EXISTS eventos_old;
-    DROP TABLE IF EXISTS procura_se_old;
-    DROP TABLE IF EXISTS parceria_old;
-  " 2>&1 | tail -1
-
-  info "Migração concluída."
+_write_template() {
+  local dst="$1"
+  mkdir -p "$(dirname "$dst")"
+  sed \
+    -e "s/{{APP_NAME}}/${APP_NAME}/g" \
+    -e "s/{{DB_NAME}}/${DB_NAME:-${APP_NAME}_db}/g" \
+    -e "s/{{ADMIN_EMAIL}}/${ADMIN_EMAIL:-admin@${APP_NAME}.ong.br}/g" \
+    -e "s/{{ADMIN_PASS}}/${ADMIN_PASS:-@admin}/g" \
+    -e "s/{{APP_PORT}}/${APP_PORT:-3000}/g" \
+    > "$dst"
 }
+
 
 # ==============================================================
 # Uninstall
@@ -418,41 +110,53 @@ uninstall() {
   info "===== Iniciando desinstalação da API Amor Animal (Docker) ====="
   echo ""
 
-  [ -f "$SCRIPT_DIR/.env" ] && . "$SCRIPT_DIR/.env" || true
+  _load_env
+
+  DB_NAME="${DB_NAME:-${APP_NAME}_db}"
 
   echo ""
-  info "[1/4] Parando containers Docker..."
-  docker compose -f "$SCRIPT_DIR/docker-compose.yml" down 2>/dev/null || true
-  info "Containers parados."
+  info "[1/6] Removendo banco de dados e tabelas..."
+  if docker ps -q -f name="${APP_NAME}-db" 2>/dev/null | grep -q .; then
+    docker exec "${APP_NAME}-db" psql -U postgres -c "DROP DATABASE IF EXISTS \"${DB_NAME}\";" 2>/dev/null && \
+      info "Banco de dados ${DB_NAME} removido." || \
+      warn "Falha ao remover banco de dados ${DB_NAME}."
+  else
+    info "Container ${APP_NAME}-db não está rodando — pula remoção do banco."
+  fi
 
   echo ""
-  info "[2/4] Removendo .env..."
-  rm -f "$SCRIPT_DIR/.env" && info ".env removido" || warn ".env não encontrado"
+  info "[2/6] Parando e removendo containers Docker..."
+  docker compose -f "$DATA_DIR/docker-compose.yml" down 2>/dev/null || true
+  info "Containers removidos."
 
   echo ""
-  info "[3/4] Removendo configuracao nginx..."
+  info "[3/6] Removendo configuracao nginx..."
   NGINX_CONF="/etc/nginx/sites-available/default"
-  NGINX_LOCATIONS="/etc/nginx/${APP_NAME:-amoranimal}-locations.conf"
+  NGINX_LOCATIONS="/etc/nginx/${APP_NAME}-locations.conf"
   rm -f "$NGINX_LOCATIONS" && info "${NGINX_LOCATIONS} removido" || warn "Falha ao remover ${NGINX_LOCATIONS}"
-  sed -i "/${APP_NAME:-amoranimal}-locations.conf/d" "$NGINX_CONF" 2>/dev/null || true
-  if nginx -t 2>/dev/null; then
-    systemctl reload nginx.service 2>/dev/null && info "Nginx recarregado" || true
-  fi
+  sed -i "/${APP_NAME}-locations.conf/d" "$NGINX_CONF" 2>/dev/null || true
 
-  if [ -n "${DATA_DIR:-}" ] && [ -d "$DATA_DIR" ]; then
-    echo ""
-    warn "Diretório de dados encontrado: $DATA_DIR"
-    printf "  Remover todo o diretório $DATA_DIR? (upload, backup, banco) [s/N]: "; read -r RM_DATA
-    case "$RM_DATA" in
-      [Ss])
-        info "Removendo $DATA_DIR..."
-        rm -rf "$DATA_DIR" && info "Diretório removido." || warn "Falha ao remover diretório."
-        ;;
-    esac
+  echo ""
+  info "[4/6] Liberando porta $PORT..."
+  fuser -k "$PORT/tcp" 2>/dev/null && info "Porta $PORT liberada." || info "Porta $PORT já estava livre."
+
+  echo ""
+  info "[5/6] Reiniciando nginx..."
+  if nginx -t 2>/dev/null; then
+    systemctl reload nginx.service 2>/dev/null && info "Nginx reiniciado." || warn "Falha ao reiniciar nginx."
+  else
+    warn "Configuracao do nginx invalida — verifique manualmente."
   fi
 
   echo ""
-  info "[4/4] Desinstalação concluída!"
+  info "[6/6] Removendo diretorio de dados..."
+  rm -f "$SCRIPT_DIR/.env" "$DATA_DIR/.env" 2>/dev/null || true
+  if [ -n "${DATA_DIR:-}" ] && [ -d "$DATA_DIR" ]; then
+    rm -rf "$DATA_DIR" && info "${DATA_DIR} removido." || warn "Falha ao remover ${DATA_DIR}."
+  fi
+
+  echo ""
+  info "===== Desinstalação concluída! ====="
 }
 
 # ==============================================================
@@ -463,10 +167,8 @@ reconfig() {
   info "===== Reconfiguração da API Amor Animal ====="
   echo ""
 
-  [ -f "$SCRIPT_DIR/.env" ] || error ".env não encontrado. Execute a instalação primeiro."
-
-  # Carregar configuração atual
-  . "$SCRIPT_DIR/.env"
+  _load_env
+  [ -z "${DATA_DIR:-}" ] && error ".env não encontrado. Execute a instalação primeiro."
 
   echo "Configuração atual:"
   echo "  Porta:      $PORT"
@@ -497,35 +199,27 @@ reconfig() {
     exit 0
   fi
 
-  # Garantir DATA_DIR no .env (compatibilidade com instalações antigas)
-  if ! grep -q '^DATA_DIR=' "$SCRIPT_DIR/.env" 2>/dev/null; then
-    DATA_DIR="${DATA_DIR:-/var/www/${DB_NAME:-amoranimal}}"
-    echo "DATA_DIR=$DATA_DIR" >> "$SCRIPT_DIR/.env"
-    info "DATA_DIR adicionado ao .env: $DATA_DIR"
-  fi
-
   # Atualizar .env com a nova porta
   info "Atualizando .env com porta $APP_PORT..."
-  sed -i "s/^PORT=.*/PORT=$APP_PORT/" "$SCRIPT_DIR/.env"
+  sed -i "s/^PORT=.*/PORT=$APP_PORT/" "$DATA_DIR/.env"
 
   # Corrigir docker-compose.yml existente: remover PORT do environment
-  # (versão antiga tinha PORT: \${PORT:-3000} que causava mismatch)
-  if grep -q '^\s*PORT:.*\$' "$SCRIPT_DIR/docker-compose.yml" 2>/dev/null; then
+  if grep -q '^\s*PORT:.*\$' "$DATA_DIR/docker-compose.yml" 2>/dev/null; then
     info "Corrigindo docker-compose.yml (removendo PORT do environment)..."
-    sed -i '/^\s*PORT:\s*\${/d' "$SCRIPT_DIR/docker-compose.yml"
+    sed -i '/^\s*PORT:\s*\${/d' "$DATA_DIR/docker-compose.yml"
   fi
 
   # Corrigir docker-compose.yml: substituir volumes nomeados por bind mounts
-  if grep -q '^\s*- pgdata:' "$SCRIPT_DIR/docker-compose.yml" 2>/dev/null; then
+  if grep -q '^\s*- pgdata:' "$DATA_DIR/docker-compose.yml" 2>/dev/null; then
     info "Atualizando docker-compose.yml para usar bind mounts..."
-    sed -i "s|^\s*- pgdata:|      - \${DATA_DIR}/pgdata:|" "$SCRIPT_DIR/docker-compose.yml"
-    sed -i "s|^\s*- api_uploads:|      - \${DATA_DIR}/uploads:|" "$SCRIPT_DIR/docker-compose.yml"
-    sed -i "s|^\s*- api_backups:|      - \${DATA_DIR}/backups:|" "$SCRIPT_DIR/docker-compose.yml"
-    sed -i '/^volumes:/,/^[a-z]/ { /^volumes:/d; /^  [a-z].*:$/d; }' "$SCRIPT_DIR/docker-compose.yml" 2>/dev/null || true
+    sed -i "s|^\s*- pgdata:|      - \${DATA_DIR}/pgdata:|" "$DATA_DIR/docker-compose.yml"
+    sed -i "s|^\s*- api_uploads:|      - \${DATA_DIR}/uploads:|" "$DATA_DIR/docker-compose.yml"
+    sed -i "s|^\s*- api_backups:|      - \${DATA_DIR}/backups:|" "$DATA_DIR/docker-compose.yml"
+    sed -i '/^volumes:/,/^[a-z]/ { /^volumes:/d; /^  [a-z].*:$/d; }' "$DATA_DIR/docker-compose.yml" 2>/dev/null || true
   fi
 
   info "Recriando container com a nova porta..."
-  docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d --build || {
+  docker compose -f "$DATA_DIR/docker-compose.yml" up -d --build || {
     error "Falha ao recriar container"
     _diagnostic_api
     exit 1
@@ -545,12 +239,12 @@ recreate() {
   echo ""
   info "===== Recriando container da API ====="
   echo ""
-  [ -f "$SCRIPT_DIR/.env" ] || error ".env não encontrado."
-  . "$SCRIPT_DIR/.env"
+  _load_env
+  [ -z "${DATA_DIR:-}" ] && error ".env não encontrado."
 
-  docker compose -f "$SCRIPT_DIR/docker-compose.yml" down 2>/dev/null || true
+  docker compose -f "$DATA_DIR/docker-compose.yml" down 2>/dev/null || true
   info "Container parado. Recriando..."
-  docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d --build || {
+  docker compose -f "$DATA_DIR/docker-compose.yml" up -d --build || {
     error "Falha ao recriar container"
     _diagnostic_api
     exit 1
@@ -566,8 +260,8 @@ free_ports() {
   echo ""
   info "===== Liberando portas ====="
   echo ""
-  [ -f "$SCRIPT_DIR/.env" ] || error ".env não encontrado."
-  . "$SCRIPT_DIR/.env"
+  _load_env
+  [ -z "${DATA_DIR:-}" ] && error ".env não encontrado."
 
   local port_atual=$PORT
   if _check_port "$port_atual"; then
@@ -585,13 +279,12 @@ free_ports() {
     info "Porta $port_atual já está livre."
   fi
 
-  # Verificar containers parados com a mesma porta
   if docker ps -a --format '{{.Ports}}' 2>/dev/null | grep -q "$port_atual"; then
     warn "A porta $port_atual também está mapeada em um container Docker."
     printf "  Parar e remover container? [s/N]: "; read -r STOP_DOCKER
     case "$STOP_DOCKER" in
       [Ss])
-        docker compose -f "$SCRIPT_DIR/docker-compose.yml" down 2>/dev/null || true
+        docker compose -f "$DATA_DIR/docker-compose.yml" down 2>/dev/null || true
         info "Container Docker parado."
         ;;
     esac
@@ -603,6 +296,7 @@ free_ports() {
 # Logs API — mostrar logs da API
 # ==============================================================
 logs_api() {
+  _load_env
   local api_container="${APP_NAME:-amoranimal}-api"
   echo ""
   info "===== Logs da API (últimas 30 linhas) ====="
@@ -613,7 +307,7 @@ logs_api() {
     info "Para acompanhar em tempo real: docker logs -f $api_container"
   else
     warn "Container $api_container não está rodando."
-    docker compose -f "$SCRIPT_DIR/docker-compose.yml" logs --tail=30 api 2>&1 || \
+    docker compose -f "${DATA_DIR:-$SCRIPT_DIR}/docker-compose.yml" logs --tail=30 api 2>&1 || \
       warn "Nenhum log disponível."
   fi
 }
@@ -622,11 +316,13 @@ logs_api() {
 # Stop — parar containers
 # ==============================================================
 stop_containers() {
+  _load_env
   echo ""
   info "===== Parando containers ====="
   echo ""
-  if [ -f "$SCRIPT_DIR/docker-compose.yml" ]; then
-    docker compose -f "$SCRIPT_DIR/docker-compose.yml" down 2>/dev/null || true
+  local compose_file="${DATA_DIR:-$SCRIPT_DIR}/docker-compose.yml"
+  if [ -f "$compose_file" ]; then
+    docker compose -f "$compose_file" down 2>/dev/null || true
     info "Containers parados."
   else
     warn "docker-compose.yml não encontrado."
@@ -707,10 +403,8 @@ install_flow() {
 
   printf "Nome do app (ex: amoranimal): "; read -r APP_NAME
   APP_NAME=${APP_NAME:-amoranimal}
-  # Sanitizar: lower case, underscores, sem espaços
   APP_NAME=$(printf '%s' "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9_' '_')
 
-  # Derivar configurações do nome do app
   DB_NAME="${APP_NAME}_db"
   DB_PASS=postgres
   DATA_DIR="/var/www/${APP_NAME}"
@@ -726,24 +420,24 @@ install_flow() {
   # Criar estrutura de diretórios
   # ==============================================================
   info "Criando estrutura de diretórios..."
-  mkdir -p "$SCRIPT_DIR/api/src" "$SCRIPT_DIR/db/init" "$DATA_DIR"/{pgdata,uploads,backups}
+  mkdir -p "$DATA_DIR/api/src" "$DATA_DIR/db/init" "$DATA_DIR"/{pgdata,uploads,backups}
 
   # ==============================================================
-  # Gerar arquivos necessários via heredoc
+  # Gerar arquivos a partir das templates embutidas
   # ==============================================================
 
   info "Gerando docker-compose.yml..."
-  cat > "$SCRIPT_DIR/docker-compose.yml" <<'COMPOSEEOF'
+  cat << 'HEREDOC' | _write_template "$DATA_DIR/docker-compose.yml"
 services:
   db:
     image: postgres:16-alpine
-    container_name: amoranimal-db
+    container_name: {{APP_NAME}}-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASS:-postgres}
-      POSTGRES_DB: ${DB_NAME:-amoranimal_db}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@amoranimal.ong.br}
+      POSTGRES_DB: ${DB_NAME:-{{DB_NAME}}}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-{{ADMIN_EMAIL}}}
       ADMIN_NOME: ${ADMIN_NOME:-admin}
       ADMIN_PASS: ${ADMIN_PASS:-@admin}
     volumes:
@@ -751,7 +445,7 @@ services:
       - ./db/init/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./db/init/02-seed.sh:/docker-entrypoint-initdb.d/02-seed.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${DB_USER:-postgres} -d $${DB_NAME:-amoranimal_db}"]
+      test: ["CMD-SHELL", "pg_isready -U $${DB_USER:-postgres} -d $${DB_NAME:-{{DB_NAME}}}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -760,7 +454,7 @@ services:
     build:
       context: ./api
       dockerfile: Dockerfile
-    container_name: amoranimal-api
+    container_name: {{APP_NAME}}-api
     restart: unless-stopped
     depends_on:
       db:
@@ -769,7 +463,7 @@ services:
       APP_NAME: ${APP_NAME:-amoranimal}
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-amoranimal_db}
+      DB_NAME: ${DB_NAME:-{{DB_NAME}}}
       DB_USER: ${DB_USER:-postgres}
       DB_PASS: ${DB_PASS:-postgres}
       API_TOKEN: ${API_TOKEN}
@@ -778,16 +472,10 @@ services:
       - ${DATA_DIR}/backups:/app/backups
     ports:
       - "${PORT:-3000}:3000"
-COMPOSEEOF
-
-  # Corrigir nomes hardcoded no docker-compose.yml
-  sed -i "s/container_name: amoranimal-db/container_name: ${APP_NAME}-db/g" "$SCRIPT_DIR/docker-compose.yml"
-  sed -i "s/container_name: amoranimal-api/container_name: ${APP_NAME}-api/g" "$SCRIPT_DIR/docker-compose.yml"
-  sed -i "s/amoranimal_db/${APP_NAME}_db/g" "$SCRIPT_DIR/docker-compose.yml"
-  sed -i "s|ADMIN_EMAIL: \${ADMIN_EMAIL:-admin@amoranimal.ong.br}|ADMIN_EMAIL: \${ADMIN_EMAIL:-${ADMIN_EMAIL}}|g" "$SCRIPT_DIR/docker-compose.yml"
+HEREDOC
 
   info "Gerando api/Dockerfile..."
-  cat > "$SCRIPT_DIR/api/Dockerfile" <<'DOCKEREOF'
+  cat > "$DATA_DIR/api/Dockerfile" << 'HEREDOC'
 FROM node:20-alpine
 
 WORKDIR /app
@@ -808,12 +496,12 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
 CMD ["node", "src/server.js"]
-DOCKEREOF
+HEREDOC
 
   info "Gerando api/package.json..."
-  cat > "$SCRIPT_DIR/api/package.json" <<'PKGEOF'
+  cat << 'HEREDOC' | _write_template "$DATA_DIR/api/package.json"
 {
-  "name": "amoranimal-api",
+  "name": "{{APP_NAME}}-api",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -827,12 +515,10 @@ DOCKEREOF
     "pg": "^8.12.0"
   }
 }
-PKGEOF
-
-  sed -i "s|\"name\": \"amoranimal-api\"|\"name\": \"${APP_NAME}-api\"|" "$SCRIPT_DIR/api/package.json"
+HEREDOC
 
   info "Gerando api/src/server.js..."
-  cat > "$SCRIPT_DIR/api/src/server.js" <<'SVREOF'
+  cat << 'HEREDOC' | _write_template "$DATA_DIR/api/src/server.js"
 const { Pool } = require('pg');
 const express = require('express');
 
@@ -842,13 +528,13 @@ const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const PROJETO = process.env.APP_NAME || 'amoranimal';
+const PROJETO = process.env.APP_NAME || '{{APP_NAME}}';
 const API_TOKEN = process.env.API_TOKEN || '';
 
 const pool = new Pool({
     host: process.env.DB_HOST || 'db',
     port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'amoranimal_db',
+    database: process.env.DB_NAME || '{{DB_NAME}}',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASS || 'postgres'
 });
@@ -1289,7 +975,7 @@ app.post('/relatorio/backup', async (req, res) => {
             SELECT table_name FROM information_schema.tables
             WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
         `);
-        let sql = '-- Backup Amor Animal - ' + new Date().toISOString() + '\n\n';
+        let sql = '-- Backup {{APP_NAME}} - ' + new Date().toISOString() + '\n\n';
         for (const row of result.rows) {
             const tableName = row.table_name;
             const data = await pool.query(`SELECT * FROM "${tableName}"`);
@@ -1383,16 +1069,10 @@ app.post('/relatorio/maintenance', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-SVREOF
-
-  # Corrigir defaults e strings hardcoded no server.js
-  sed -i "s#process.env.APP_NAME || 'amoranimal'#process.env.APP_NAME || '${APP_NAME}'#" "$SCRIPT_DIR/api/src/server.js"
-  sed -i "s#process.env.DB_NAME || 'amoranimal_db'#process.env.DB_NAME || '${APP_NAME}_db'#" "$SCRIPT_DIR/api/src/server.js"
-  sed -i "s/'amoranimal_secret'/'${APP_NAME}_secret'/g" "$SCRIPT_DIR/api/src/server.js"
-  sed -i "s|-- Backup Amor Animal|-- Backup ${APP_NAME}|" "$SCRIPT_DIR/api/src/server.js"
+HEREDOC
 
   info "Gerando db/init/01-schema.sql..."
-  cat > "$SCRIPT_DIR/db/init/01-schema.sql" <<'SQLEOF'
+  cat > "$DATA_DIR/db/init/01-schema.sql" << 'HEREDOC'
 CREATE TABLE IF NOT EXISTS settings (
     chave VARCHAR(100) PRIMARY KEY,
     valor TEXT
@@ -1611,28 +1291,28 @@ BEGIN
     RETURN afetados;
 END;
 $$ LANGUAGE plpgsql;
-SQLEOF
+HEREDOC
 
   info "Gerando db/init/02-seed.sh..."
-  cat > "$SCRIPT_DIR/db/init/02-seed.sh" <<SEEDEOF
+  cat << 'HEREDOC' | _write_template "$DATA_DIR/db/init/02-seed.sh"
 #!/bin/bash
 set -e
 
-psql -v ON_ERROR_STOP=1 --username "\$POSTGRES_USER" --dbname "\$POSTGRES_DB" <<-EOSQL
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
     INSERT INTO settings (chave, valor) VALUES ('clinica_baixo', 'E O BICHO') ON CONFLICT (chave) DO NOTHING;
     INSERT INTO settings (chave, valor) VALUES ('clinica_pets', 'E O BICHO') ON CONFLICT (chave) DO NOTHING;
 
     INSERT INTO login (usuario, senha, isadmin)
-    VALUES ('${ADMIN_EMAIL}', '${ADMIN_PASS}', true)
+    VALUES ('{{ADMIN_EMAIL}}', '{{ADMIN_PASS}}', true)
     ON CONFLICT (usuario) DO NOTHING;
 EOSQL
-SEEDEOF
-  chmod +x "$SCRIPT_DIR/db/init/02-seed.sh"
+HEREDOC
+  chmod +x "$DATA_DIR/db/init/02-seed.sh"
 
   # ==============================================================
   API_TOKEN=$(openssl rand -hex 32)
   info "Criando .env (API_TOKEN gerado)"
-  cat > "$SCRIPT_DIR/.env" <<EOF
+  cat > "$DATA_DIR/.env" <<EOF
 PORT=$APP_PORT
 APP_NAME=$APP_NAME
 DATA_DIR=$DATA_DIR
@@ -1647,19 +1327,25 @@ ADMIN_NOME=$ADMIN_NOME
 ADMIN_PASS=$ADMIN_PASS
 EOF
 
+  # Ponteiro no diretório do script para as outras funções encontrarem
+  cat > "$SCRIPT_DIR/.env" <<EOF
+APP_NAME=$APP_NAME
+DATA_DIR=$DATA_DIR
+EOF
+  info ".env criado em $DATA_DIR/.env"
+
   # ==============================================================
   info "Gerando static/js/api_token.js..."
-  mkdir -p "$SCRIPT_DIR/static/js" "$DATA_DIR/static/js"
-  cat > "$SCRIPT_DIR/static/js/api_token.js" <<EOF
+  mkdir -p "$DATA_DIR/static/js"
+  cat > "$DATA_DIR/static/js/api_token.js" <<EOF
 window.API_TOKEN = '$API_TOKEN';
 EOF
-  cp "$SCRIPT_DIR/static/js/api_token.js" "$DATA_DIR/static/js/api_token.js" 2>/dev/null || true
 
   # ==============================================================
   info "Gerando scripts/arquivar_mutiroes.sql..."
-  mkdir -p "$SCRIPT_DIR/scripts"
-  cat > "$SCRIPT_DIR/scripts/arquivar_mutiroes.sql" <<'ARQEOF'
-docker exec -i amoranimal-db psql -U postgres -d amoranimal_db <<'FIMSQL'
+  mkdir -p "$DATA_DIR/scripts"
+  cat << 'HEREDOC' | _write_template "$DATA_DIR/scripts/arquivar_mutiroes.sql"
+docker exec -i {{APP_NAME}}-db psql -U postgres -d {{DB_NAME}} <<'FIMSQL'
 CREATE OR REPLACE FUNCTION encerrar_mutiroes() RETURNS INTEGER AS $$
 DECLARE
     afetados INTEGER;
@@ -1695,72 +1381,25 @@ FIMSQL
 echo ""
 echo "---"
 echo "Criar funções (uma vez):   bash scripts/arquivar_mutiroes.sql"
-echo "Encerrar mutirões:         docker exec amoranimal-db psql -U postgres -d amoranimal_db -c 'SELECT encerrar_mutiroes();'"
-echo "Atender castrações:        docker exec amoranimal-db psql -U postgres -d amoranimal_db -c 'SELECT atender_castracao_mutirao();'"
-ARQEOF
-  chmod +x "$SCRIPT_DIR/scripts/arquivar_mutiroes.sql"
-
-  # ==============================================================
-  # Migrar dados do banco espelho (amoranimalmarilia)
-  # ==============================================================
-  echo ""
-  printf "Deseja clonar dados do banco 'espelho' e copiar uploads do amoranimalmarilia? [s/N]: "
-  read -r CLONE_ESPELHO
-  case "$CLONE_ESPELHO" in
-    [Ss])
-      # Descobrir caminho do projeto amoranimalmarilia
-      ESPELHO_DIR=""
-      for try_dir in "/home/debian/amoranimalmarilia" "/home/wander/Public/amoranimalmarilia" "/var/www/amoranimalmarilia" "/opt/amoranimalmarilia"; do
-        [ -d "$try_dir" ] && ESPELHO_DIR="$try_dir" && break
-      done
-
-      # Dump do banco espelho local
-      if command -v pg_dump >/dev/null 2>&1; then
-        info "Exportando banco 'espelho' local..."
-        if sudo -u postgres pg_dump -d espelho > "/tmp/${APP_NAME}_dump.sql" 2>/dev/null; then
-          info "Banco 'espelho' exportado para /tmp/${APP_NAME}_dump.sql"
-        elif PGPASSWORD="$DB_PASS" pg_dump -h 127.0.0.1 -U postgres -d espelho > "/tmp/${APP_NAME}_dump.sql" 2>/dev/null; then
-          info "Banco 'espelho' exportado (TCP) para /tmp/${APP_NAME}_dump.sql"
-        else
-          warn "Não foi possível exportar banco 'espelho'. Pule esta etapa ou execute manualmente depois."
-        fi
-      else
-        warn "pg_dump não encontrado. Instale o postgresql-client ou exporte manualmente."
-      fi
-
-      # Copiar uploads do amoranimalmarilia
-      UPLOADS_SRC=""
-      if [ -n "$ESPELHO_DIR" ] && [ -d "${ESPELHO_DIR%/*}/amoranimal_uploads" ]; then
-        UPLOADS_SRC="${ESPELHO_DIR%/*}/amoranimal_uploads"
-      elif [ -d "/home/debian/amoranimal_uploads" ]; then
-        UPLOADS_SRC="/home/debian/amoranimal_uploads"
-      fi
-      if [ -n "$UPLOADS_SRC" ]; then
-        info "Copiando uploads de $UPLOADS_SRC para $DATA_DIR/uploads..."
-        mkdir -p "$DATA_DIR/uploads"
-        cp -rn "$UPLOADS_SRC/"* "$DATA_DIR/uploads/" 2>/dev/null && \
-          info "Uploads copiados com sucesso!" || \
-          warn "Falha ao copiar alguns arquivos (podem já existir)."
-      else
-        warn "Diretório de uploads do amoranimalmarilia não encontrado."
-      fi
-      ;;
-  esac
+echo "Encerrar mutirões:         docker exec {{APP_NAME}}-db psql -U postgres -d {{DB_NAME}} -c 'SELECT encerrar_mutiroes();'"
+echo "Atender castrações:        docker exec {{APP_NAME}}-db psql -U postgres -d {{DB_NAME}} -c 'SELECT atender_castracao_mutirao();'"
+HEREDOC
+  chmod +x "$DATA_DIR/scripts/arquivar_mutiroes.sql"
 
   # ==============================================================
   # Construir e iniciar containers
   # ==============================================================
   info "Parando containers existentes (se houver)..."
-  docker compose -f "$SCRIPT_DIR/docker-compose.yml" down 2>/dev/null || true
+  docker compose -f "$DATA_DIR/docker-compose.yml" down 2>/dev/null || true
 
   info "Construindo e iniciando containers..."
-  if ! docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d --build; then
+  if ! docker compose -f "$DATA_DIR/docker-compose.yml" up -d --build; then
     echo ""
     error "Falha ao construir/iniciar containers"
     _diagnostic_api
     echo ""
     info "Tente corrigir e executar manualmente:"
-    echo "  sudo docker compose -f $SCRIPT_DIR/docker-compose.yml up -d --build"
+    echo "  sudo docker compose -f $DATA_DIR/docker-compose.yml up -d --build"
     exit 1
   fi
 
@@ -1772,17 +1411,17 @@ ARQEOF
   NGINX_CONF="/etc/nginx/sites-available/default"
   NGINX_LOCATIONS="/etc/nginx/${APP_NAME}-locations.conf"
 
-  cat > "$NGINX_LOCATIONS" <<NGINXEOF
-location /${APP_NAME}/ {
-    rewrite ^/${APP_NAME}/(.*) /\$1 break;
-    proxy_pass http://127.0.0.1:${APP_PORT}/;
+  cat << 'HEREDOC' | _write_template "$NGINX_LOCATIONS"
+location /{{APP_NAME}}/ {
+    rewrite ^/{{APP_NAME}}/(.*) /$1 break;
+    proxy_pass http://127.0.0.1:{{APP_PORT}}/;
     proxy_http_version 1.1;
-    proxy_set_header Host \$host;
-    proxy_set_header X-Real-IP \$remote_addr;
-    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
 }
-NGINXEOF
+HEREDOC
   info "${NGINX_LOCATIONS} criado"
 
   if [ -f "$NGINX_CONF" ]; then
@@ -1809,13 +1448,6 @@ NGINXEOF
   echo "  Publica:   https://api.projetosdinamicos.com.br/$APP_NAME/"
   echo "  Admin:     $ADMIN_EMAIL / $ADMIN_PASS"
   echo ""
-
-  # ==============================================================
-  # Migrar schema do banco (criar tabelas login, home e restaurar dump)
-  # ==============================================================
-  info "Aguardando banco de dados ficar pronto..."
-  sleep 5
-  migrate_schema 2>/dev/null || warn "Migração automática falhou (pode executar manualmente depois)"
 
   # ==============================================================
   # Testes com curl e diagnóstico automático
@@ -1852,10 +1484,10 @@ NGINXEOF
       case "$RECRIAR" in
         [Ss])
           info "Recriando containers..."
-          docker compose -f "$SCRIPT_DIR/docker-compose.yml" down -v 2>/dev/null || true
-          docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d --build || {
+          docker compose -f "$DATA_DIR/docker-compose.yml" down -v 2>/dev/null || true
+          docker compose -f "$DATA_DIR/docker-compose.yml" up -d --build || {
             error "Falha ao recriar containers. Execute manualmente:"
-            echo "  sudo docker compose -f $SCRIPT_DIR/docker-compose.yml up -d --build"
+            echo "  sudo docker compose -f $DATA_DIR/docker-compose.yml up -d --build"
             exit 1
           }
           sleep 5
@@ -1879,21 +1511,123 @@ NGINXEOF
   echo "  Admin:    $ADMIN_EMAIL / $ADMIN_PASS"
   echo ""
   info "Comandos úteis:"
-  echo "  docker compose logs -f api   (ver logs da API)"
-  echo "  docker compose logs -f db    (ver logs do banco)"
-  echo "  docker compose restart api   (reiniciar API)"
-  echo "  docker compose down          (parar tudo)"
+  echo "  docker compose -f $DATA_DIR/docker-compose.yml logs -f api   (ver logs da API)"
+  echo "  docker compose -f $DATA_DIR/docker-compose.yml logs -f db    (ver logs do banco)"
+  echo "  docker compose -f $DATA_DIR/docker-compose.yml restart api   (reiniciar API)"
+  echo "  docker compose -f $DATA_DIR/docker-compose.yml down          (parar tudo)"
   echo "  curl http://localhost:$APP_PORT/health"
 }
 
-case "${1:-}" in
-  install) install_flow ;;
+# ==============================================================
+# Restore dump — recriar banco a partir de /tmp/amoranimal_dump.sql
+# ==============================================================
+restore_dump() {
+  _load_env
+  DB_NAME="${DB_NAME:-${APP_NAME}_db}"
+  DUMP_FILE="/tmp/${APP_NAME}_dump.sql"
+
+  echo ""
+  info "===== Restaurar banco a partir de dump ====="
+  echo ""
+
+  if [ ! -f "$DUMP_FILE" ]; then
+    error "Dump nao encontrado: $DUMP_FILE"
+  fi
+
+  echo "Dump:    $DUMP_FILE"
+  echo "Banco:   $DB_NAME"
+  echo "App:     $APP_NAME"
+  echo ""
+
+  printf "Deseja realmente recriar o banco $DB_NAME? Todos os dados atuais serao perdidos! [s/N]: "
+  read -r CONFIRM
+  case "$CONFIRM" in
+    [Ss]) ;;
+    *) info "Operacao cancelada."; exit 0 ;;
+  esac
+
+  echo ""
+  info "--- Etapa 1/4: Drop database ---"
+  echo "  sudo docker exec -i ${APP_NAME}-db psql -U postgres -c \"DROP DATABASE IF EXISTS \\\"$DB_NAME\\\";\""
+  docker exec -i "${APP_NAME}-db" psql -U postgres -c "DROP DATABASE IF EXISTS \"$DB_NAME\";" || {
+    warn "Falha ao dropar banco (possivelmente conectado). Tentando com kill de conexoes..."
+    docker exec -i "${APP_NAME}-db" psql -U postgres -c "
+      SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB_NAME';
+    " 2>/dev/null || true
+    docker exec -i "${APP_NAME}-db" psql -U postgres -c "DROP DATABASE IF EXISTS \"$DB_NAME\";"
+  }
+  info "OK"
+
+  echo ""
+  info "--- Etapa 2/4: Create database ---"
+  echo "  sudo docker exec -i ${APP_NAME}-db psql -U postgres -c \"CREATE DATABASE \\\"$DB_NAME\\\";\""
+  docker exec -i "${APP_NAME}-db" psql -U postgres -c "CREATE DATABASE \"$DB_NAME\";"
+  info "OK"
+
+  echo ""
+  info "--- Etapa 3/4: Restore dump ---"
+  echo "  sudo docker exec -i ${APP_NAME}-db psql -U postgres -d \"$DB_NAME\" < $DUMP_FILE"
+  docker exec -i "${APP_NAME}-db" psql -U postgres -d "$DB_NAME" < "$DUMP_FILE" || warn "Restore com erros (verifique acima)"
+  info "OK"
+
+  echo ""
+  info "--- Etapa 4/4: Restart API container ---"
+  echo "  sudo docker compose -f $DATA_DIR/docker-compose.yml restart api"
+  docker compose -f "$DATA_DIR/docker-compose.yml" restart api 2>/dev/null || true
+  info "OK"
+
+  echo ""
+  info "===== Restauracao concluida! ====="
+  echo "  Banco:  $DB_NAME"
+  echo "  Dump:   $DUMP_FILE"
+  echo "  API:    http://localhost:$PORT"
+  echo ""
+}
+
+# ==============================================================
+# Link uploads — link simbolico para pasta externa de uploads
+# ==============================================================
+link_uploads() {
+  _load_env
+  SRC="/home/debian/${APP_NAME}_uploads"
+  DEST="${DATA_DIR}/uploads"
+
+  echo ""
+  info "===== Link simbolico de uploads ====="
+  echo ""
+
+  echo "[1/3] Removendo diretorio uploads do container..."
+  echo "  sudo rm -rf $DEST"
+  sudo rm -rf "$DEST"
+  info "OK"
+
+  echo ""
+  echo "[2/3] Criando link simbolico..."
+  echo "  sudo ln -sf $SRC $DEST"
+  sudo ln -sf "$SRC" "$DEST"
+  info "OK"
+
+  echo ""
+  echo "[3/3] Reiniciando container api..."
+  echo "  sudo docker compose -f $DATA_DIR/docker-compose.yml restart api"
+  docker compose -f "$DATA_DIR/docker-compose.yml" restart api
+  info "OK"
+
+  echo ""
+  info "===== Concluido! ====="
+  echo "  Link: $(ls -la "$DEST" 2>/dev/null | awk '{print $NF}')"
+  echo ""
+}
+
+case "${1:-install}" in
+  install|"") install_flow ;;
   uninstall) uninstall ;;
   reconfig) reconfig ;;
   recreate) recreate ;;
   free-ports) free_ports ;;
   logs) logs_api ;;
   stop) stop_containers ;;
-  migrate) migrate_schema ;;
-  *) error "Uso: $0 {install|uninstall|reconfig|recreate|free-ports|logs|stop|migrate}" ;;
+  restore-dump) restore_dump ;;
+  link-uploads) link_uploads ;;
+  *) error "Uso: $0 {install|uninstall|reconfig|recreate|free-ports|logs|stop|restore-dump|link-uploads}" ;;
 esac
