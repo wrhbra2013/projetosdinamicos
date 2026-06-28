@@ -1,18 +1,23 @@
 var BASE = window.API_BASE;
 
 document.addEventListener('DOMContentLoaded', function () {
-  fetchAndRender('/eventos', renderEvents);
-  fetchAndRender('/castracao', renderCastracoes);
-  fetchAndRender('/adocao', renderAnimais);
-  fetchAndRender('/voluntario', renderVoluntarios);
-});
-
-function fetchAndRender(url, renderFn) {
-  apiFetch(url)
+  apiFetch('/eventos')
     .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function (data) { if (data && Array.isArray(data)) renderFn(data); })
+    .then(function (data) { if (data && Array.isArray(data)) renderEvents(data); })
     .catch(function () {});
-}
+  apiFetch('/castracao')
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (data) { if (data && Array.isArray(data)) renderCastracoes(data); })
+    .catch(function () {});
+  apiFetch('/adocao')
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (data) { if (data && Array.isArray(data)) renderAnimais(data); })
+    .catch(function () {});
+  apiFetch('/voluntario')
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (data) { if (data && Array.isArray(data)) renderVoluntarios(data); })
+    .catch(function () {});
+});
 
 function renderEvents(events) {
   var container = document.querySelector('.events-grid');
@@ -60,10 +65,10 @@ function renderCastracoes(castracoes) {
     tr.setAttribute('data-responsavel', c.tutor_nome || '');
     tr.setAttribute('data-especie', c.pet_especie || '');
     tr.setAttribute('data-sexo', c.pet_sexo || '');
-    tr.setAttribute('data-porte', c.porte || '');
+    tr.setAttribute('data-porte', c.pet_porte || '');
     tr.setAttribute('data-idade', c.pet_idade || '');
     tr.setAttribute('data-clinica', c.clinica || '');
-    tr.setAttribute('data-data', fmtDate(c.origem));
+    tr.setAttribute('data-data', fmtDate(c.created_at));
     tr.setAttribute('data-status', c.status || 'Pendente');
     tr.setAttribute('data-contato', c.tutor_telefone || '');
     tr.setAttribute('data-tipo', c.tipo || '');
@@ -87,7 +92,7 @@ function renderCastracoes(castracoes) {
       '<td data-label="Respons\u00e1vel">' + esc(c.tutor_nome) + '</td>' +
       '<td data-label="Esp\u00e9cie">' + badgeCor + '</td>' +
       '<td data-label="Cl\u00ednica">' + esc(c.clinica) + '</td>' +
-      '<td data-label="Data">' + fmtDate(c.origem) + '</td>' +
+      '<td data-label="Data">' + fmtDate(c.created_at) + '</td>' +
       '<td data-label="Status">' + statusHtml + '</td>' +
       '<td data-label="A\u00e7\u00f5es">' +
         '<button class="btn-comprovante" onclick="gerarComprovante(this)"><i class="bi bi-file-earmark-text"></i> Comprovante</button> ' +
