@@ -61,18 +61,18 @@ function renderCastracoes(castracoes) {
     var tr = document.createElement('tr');
     if (isAtendido) { tr.className = 'status-atendido'; tr.style.display = 'none'; }
     tr.setAttribute('data-ticket', ticketNum);
-    tr.setAttribute('data-pet', c.pet_nome || '');
-    tr.setAttribute('data-responsavel', c.tutor_nome || '');
-    tr.setAttribute('data-especie', c.pet_especie || '');
-    tr.setAttribute('data-sexo', c.pet_sexo || '');
-    tr.setAttribute('data-porte', c.pet_porte || '');
-    tr.setAttribute('data-idade', c.pet_idade || '');
+    tr.setAttribute('data-pet', c.nome_pet || c.pet_nome || '');
+    tr.setAttribute('data-responsavel', c.nome || c.tutor_nome || '');
+    tr.setAttribute('data-especie', c.especie || c.pet_especie || '');
+    tr.setAttribute('data-sexo', c.sexo || c.pet_sexo || '');
+    tr.setAttribute('data-porte', c.porte || c.pet_porte || '');
+    tr.setAttribute('data-idade', c.idade || c.pet_idade || '');
     tr.setAttribute('data-clinica', c.clinica || '');
-    tr.setAttribute('data-data', fmtDate(c.created_at));
+    tr.setAttribute('data-data', fmtDate(c.origem || c.created_at));
     tr.setAttribute('data-status', c.status || 'Pendente');
-    tr.setAttribute('data-contato', c.tutor_telefone || '');
+    tr.setAttribute('data-contato', c.contato || c.tutor_telefone || '');
     tr.setAttribute('data-tipo', c.tipo || '');
-    tr.setAttribute('data-dia', c.dia_semana || '');
+    tr.setAttribute('data-dia', c.dia_semana || c.agenda || '');
     tr.setAttribute('data-cpf', c.tutor_cpf || '');
     tr.setAttribute('data-endereco', c.tutor_endereco || '');
     tr.setAttribute('data-numero', c.tutor_numero || '');
@@ -80,19 +80,19 @@ function renderCastracoes(castracoes) {
     tr.setAttribute('data-cidade', c.tutor_cidade || '');
     tr.setAttribute('data-estado', c.tutor_estado || '');
     tr.setAttribute('data-cep', c.tutor_cep || '');
-    var badgeCor = (c.pet_especie || '').toLowerCase() === 'gato'
+    var badgeCor = (c.especie || c.pet_especie || '').toLowerCase() === 'gato'
       ? '<span class="badge" style="background:#8b5cf6;color:#fff;">Gato</span>'
-      : '<span class="badge badge-info">' + esc(c.pet_especie) + '</span>';
+      : '<span class="badge badge-info">' + esc(c.especie || c.pet_especie) + '</span>';
     var statusHtml = isAtendido
       ? '<button class="btn-status-atendido" disabled><i class="bi bi-check-circle-fill"></i> Atendido</button>'
       : '<button class="btn-status-atender" onclick="atenderCastracao(this)" data-id="' + c.id + '"><i class="bi bi-check-lg"></i> Atender</button>';
     tr.innerHTML =
       '<td data-label="Ticket"><strong>' + esc(ticketNum) + '</strong></td>' +
-      '<td data-label="Pet">' + esc(c.pet_nome) + '</td>' +
-      '<td data-label="Respons\u00e1vel">' + esc(c.tutor_nome) + '</td>' +
+      '<td data-label="Pet">' + esc(c.nome_pet || c.pet_nome) + '</td>' +
+      '<td data-label="Respons\u00e1vel">' + esc(c.nome || c.tutor_nome) + '</td>' +
       '<td data-label="Esp\u00e9cie">' + badgeCor + '</td>' +
       '<td data-label="Cl\u00ednica">' + esc(c.clinica) + '</td>' +
-      '<td data-label="Data">' + fmtDate(c.created_at) + '</td>' +
+      '<td data-label="Data">' + fmtDate(c.origem || c.created_at) + '</td>' +
       '<td data-label="Status">' + statusHtml + '</td>' +
       '<td data-label="A\u00e7\u00f5es">' +
         '<button class="btn-comprovante" onclick="gerarComprovante(this)"><i class="bi bi-file-earmark-text"></i> Comprovante</button> ' +
