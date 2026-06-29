@@ -215,15 +215,15 @@
         <div class="stat-card-number" id="stat-count-procura_se">0</div>
         <div class="stat-card-label">Desaparecidos</div>
       </div>
-      <div class="stat-card" data-endpoint="castracao" data-section="section-castracao">
+      <div class="stat-card" id="card-mutirao_pet" data-endpoint="mutirao_pet">
         <div class="stat-card-icon" style="color: var(--brand-green);"><i class="bi bi-person-heart"></i></div>
-        <div class="stat-card-number" id="stat-count-castracao">0</div>
-        <div class="stat-card-label">Castrações</div>
-      </div>
-      <div class="stat-card" data-endpoint="mutirao_inscricao">
-        <div class="stat-card-icon" style="color: var(--brand-green);"><i class="bi bi-calendar-check"></i></div>
-        <div class="stat-card-number" id="stat-count-mutirao_inscricao">0</div>
-        <div class="stat-card-label">Inscrições Mutirão</div>
+        <div class="stat-card-number" id="stat-count-mutirao_pet">0</div>
+        <div class="stat-card-label">Castrações <span id="stat-year-label-mutirao_pet">2026</span></div>
+        <div class="stat-card-year-nav" style="margin-top:6px;display:flex;gap:6px;justify-content:center;font-size:13px;">
+          <button class="year-btn" data-year="2025" style="background:none;border:1px solid #ccc;border-radius:4px;padding:2px 10px;cursor:pointer;opacity:.5">2025</button>
+          <button class="year-btn year-active" data-year="2026" style="background:none;border:1px solid var(--brand-green);border-radius:4px;padding:2px 10px;cursor:pointer;color:var(--brand-green);font-weight:600">2026</button>
+          <button class="year-btn" data-year="2027" style="background:none;border:1px solid #ccc;border-radius:4px;padding:2px 10px;cursor:pointer;opacity:.5">2027</button>
+        </div>
       </div>
       <div class="stat-card" data-endpoint="parceria">
         <div class="stat-card-icon" style="color: var(--brand-yellow);"><i class="bi bi-hand-thumbs-up"></i></div>
@@ -256,9 +256,46 @@ document.addEventListener('DOMContentLoaded', function() {
   fetchCount('/adocao', 'adocao', 'section-pets', function(a) { return (a.status || '').toLowerCase() === 'disponivel'; });
   fetchCount('/adocao', 'adotado', null, function(a) { return (a.status || '').toLowerCase() === 'adotado'; });
   fetchCount('/procura_se', 'procura_se');
-  fetchCount('/castracao', 'castracao', 'section-castracao');
   fetchCount('/parceria', 'parceria');
-  fetchCount('/mutirao_inscricao', 'mutirao_inscricao');
+  (function() {
+    var anoAtual = 2026;
+    function carregarMutiraoPet(ano) {
+      apiFetch('/mutirao_pet')
+        .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function(data) {
+          var c = Array.isArray(data) ? data.filter(function(p) {
+            return p.created_at && p.created_at.slice(0,4) === String(ano);
+          }).length : 0;
+          var el = document.getElementById('stat-count-mutirao_pet');
+          if (el) el.textContent = c;
+          var label = document.getElementById('stat-year-label-mutirao_pet');
+          if (label) label.textContent = ano;
+          var card = document.getElementById('card-mutirao_pet');
+          if (card) card.style.display = c > 0 ? '' : 'none';
+          document.querySelectorAll('#card-mutirao_pet .year-btn').forEach(function(btn) {
+            var y = parseInt(btn.getAttribute('data-year'));
+            if (y === ano) {
+              btn.style.borderColor = 'var(--brand-green)';
+              btn.style.color = 'var(--brand-green)';
+              btn.style.fontWeight = '600';
+              btn.style.opacity = '1';
+            } else {
+              btn.style.borderColor = '#ccc';
+              btn.style.color = '';
+              btn.style.fontWeight = '';
+              btn.style.opacity = '.5';
+            }
+          });
+        })
+        .catch(function() { mostrar('mutirao_pet', 0); });
+    }
+    carregarMutiraoPet(anoAtual);
+    document.querySelectorAll('#card-mutirao_pet .year-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        carregarMutiraoPet(parseInt(this.getAttribute('data-year')));
+      });
+    });
+  })();
 
   apiFetch('/eventos')
     .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })

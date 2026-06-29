@@ -470,6 +470,7 @@ services:
     volumes:
       - ${DATA_DIR}/uploads:/app/uploads
       - ${DATA_DIR}/backups:/app/backups
+      - ./api/src:/app/src
     ports:
       - "${PORT:-3000}:3000"
 HEREDOC
@@ -688,55 +689,63 @@ app.get('/search', async (req, res) => {
     try {
         const term = '%' + q.toLowerCase() + '%';
         const results = [];
+        const queries = [];
 
         if (await tabelaExiste('eventos')) {
-            const r = await pool.query(
-                `SELECT id, titulo, LEFT(COALESCE(descricao,''),100) as descricao, 'eventos' as tabela FROM eventos WHERE LOWER(titulo) LIKE $1 OR LOWER(COALESCE(descricao,'')) LIKE $1 LIMIT 5`,
-                [term]
+            queries.push(
+                pool.query(
+                    `SELECT id, titulo, LEFT(COALESCE(descricao,''),100) as descricao, 'eventos' as tabela FROM eventos WHERE LOWER(titulo) LIKE $1 OR LOWER(COALESCE(descricao,'')) LIKE $1 LIMIT 5`,
+                    [term]
+                ).then(r => results.push(...r.rows)).catch(e => console.error('Search eventos:', e.message))
             );
-            results.push(...r.rows);
         }
 
         if (await tabelaExiste('castracao')) {
-            const r = await pool.query(
-                `SELECT id, COALESCE(nome_pet,nome) as titulo, COALESCE(clinica,'') as descricao, 'castracao' as tabela FROM castracao WHERE LOWER(COALESCE(nome_pet,nome)) LIKE $1 OR LOWER(COALESCE(clinica,'')) LIKE $1 LIMIT 5`,
-                [term]
+            queries.push(
+                pool.query(
+                    `SELECT id, COALESCE(nome_pet,nome) as titulo, COALESCE(clinica,'') as descricao, 'castracao' as tabela FROM castracao WHERE LOWER(COALESCE(nome_pet,nome)) LIKE $1 OR LOWER(COALESCE(clinica,'')) LIKE $1 LIMIT 5`,
+                    [term]
+                ).then(r => results.push(...r.rows)).catch(e => console.error('Search castracao:', e.message))
             );
-            results.push(...r.rows);
         }
 
         if (await tabelaExiste('adocao')) {
-            const r = await pool.query(
-                `SELECT id, nome as titulo, COALESCE(especie,'') || ' - ' || LEFT(COALESCE(caracteristicas,''),100) as descricao, 'adocao' as tabela FROM adocao WHERE LOWER(nome) LIKE $1 OR LOWER(COALESCE(especie,'')) LIKE $1 OR LOWER(COALESCE(caracteristicas,'')) LIKE $1 LIMIT 5`,
-                [term]
+            queries.push(
+                pool.query(
+                    `SELECT id, nome as titulo, COALESCE(especie,'') || ' - ' || LEFT(COALESCE(caracteristicas,''),100) as descricao, 'adocao' as tabela FROM adocao WHERE LOWER(nome) LIKE $1 OR LOWER(COALESCE(especie,'')) LIKE $1 OR LOWER(COALESCE(caracteristicas,'')) LIKE $1 LIMIT 5`,
+                    [term]
+                ).then(r => results.push(...r.rows)).catch(e => console.error('Search adocao:', e.message))
             );
-            results.push(...r.rows);
         }
 
         if (await tabelaExiste('voluntario')) {
-            const r = await pool.query(
-                `SELECT id, nome as titulo, COALESCE(localidade,'') || ' - ' || LEFT(COALESCE(habilidade,''),100) as descricao, 'voluntario' as tabela FROM voluntario WHERE LOWER(nome) LIKE $1 OR LOWER(COALESCE(localidade,'')) LIKE $1 OR LOWER(COALESCE(habilidade,'')) LIKE $1 LIMIT 5`,
-                [term]
+            queries.push(
+                pool.query(
+                    `SELECT id, nome as titulo, COALESCE(localidade,'') || ' - ' || LEFT(COALESCE(habilidade,''),100) as descricao, 'voluntario' as tabela FROM voluntario WHERE LOWER(nome) LIKE $1 OR LOWER(COALESCE(localidade,'')) LIKE $1 OR LOWER(COALESCE(habilidade,'')) LIKE $1 LIMIT 5`,
+                    [term]
+                ).then(r => results.push(...r.rows)).catch(e => console.error('Search voluntario:', e.message))
             );
-            results.push(...r.rows);
         }
 
         if (await tabelaExiste('parceria')) {
-            const r = await pool.query(
-                `SELECT id, empresa as titulo, COALESCE(localidade,'') || ' - ' || COALESCE(representante,'') as descricao, 'parceria' as tabela FROM parceria WHERE LOWER(empresa) LIKE $1 OR LOWER(COALESCE(localidade,'')) LIKE $1 OR LOWER(COALESCE(representante,'')) LIKE $1 LIMIT 5`,
-                [term]
+            queries.push(
+                pool.query(
+                    `SELECT id, empresa as titulo, COALESCE(localidade,'') || ' - ' || COALESCE(representante,'') as descricao, 'parceria' as tabela FROM parceria WHERE LOWER(empresa) LIKE $1 OR LOWER(COALESCE(localidade,'')) LIKE $1 OR LOWER(COALESCE(representante,'')) LIKE $1 LIMIT 5`,
+                    [term]
+                ).then(r => results.push(...r.rows)).catch(e => console.error('Search parceria:', e.message))
             );
-            results.push(...r.rows);
         }
 
         if (await tabelaExiste('procura_se')) {
-            const r = await pool.query(
-                `SELECT id, COALESCE(nome,'') as titulo, COALESCE(especie,'') || ' - ' || LEFT(COALESCE(informacoes,''),100) as descricao, 'procura_se' as tabela FROM procura_se WHERE LOWER(COALESCE(nome,'')) LIKE $1 OR LOWER(COALESCE(especie,'')) LIKE $1 OR LOWER(COALESCE(informacoes,'')) LIKE $1 LIMIT 5`,
-                [term]
+            queries.push(
+                pool.query(
+                    `SELECT id, COALESCE(nome,'') as titulo, COALESCE(especie,'') || ' - ' || LEFT(COALESCE(informacoes,''),100) as descricao, 'procura_se' as tabela FROM procura_se WHERE LOWER(COALESCE(nome,'')) LIKE $1 OR LOWER(COALESCE(especie,'')) LIKE $1 OR LOWER(COALESCE(informacoes,'')) LIKE $1 LIMIT 5`,
+                    [term]
+                ).then(r => results.push(...r.rows)).catch(e => console.error('Search procura_se:', e.message))
             );
-            results.push(...r.rows);
         }
 
+        await Promise.all(queries);
         res.json({ results });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -814,6 +823,57 @@ app.put('/eventos/:id', async (req, res) => {
 });
 // --- End eventos photo upload handlers ---
 
+app.get('/transparencia', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM transparencia ORDER BY ano DESC, origem DESC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/transparencia', async (req, res) => {
+    const { titulo, tipo, ano, descricao, arquivo, arquivo_nome, arquivo_data } = req.body;
+    if (!titulo || !tipo || !ano) {
+        return res.status(400).json({ error: 'titulo, tipo e ano são obrigatórios' });
+    }
+    try {
+        const fs = require('fs');
+        let nomeArquivo = arquivo || null;
+
+        if (arquivo_data && arquivo_nome) {
+            const uploadDir = path.join(__dirname, '..', 'uploads', 'transparencia');
+            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+            const ext = path.extname(arquivo_nome) || '.bin';
+            const base = path.basename(arquivo_nome, ext)
+                .toLowerCase()
+                .replace(/[\s]+/g, '_')
+                .replace(/[^a-z0-9_-]/g, '');
+            const timestamp = Date.now();
+            nomeArquivo = base + '_' + timestamp + ext;
+
+            const matches = arquivo_data.match(/^data:([^;]+);base64,(.+)$/);
+            if (matches) {
+                const buffer = Buffer.from(matches[2], 'base64');
+                fs.writeFileSync(path.join(uploadDir, nomeArquivo), buffer);
+            } else {
+                const buffer = Buffer.from(arquivo_data, 'base64');
+                fs.writeFileSync(path.join(uploadDir, nomeArquivo), buffer);
+            }
+        }
+
+        const result = await pool.query(
+            `INSERT INTO transparencia (titulo, tipo, ano, descricao, arquivo)
+             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            [titulo, tipo, ano, descricao || null, nomeArquivo]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/:tabela', async (req, res) => {
     const { tabela } = req.params;
     if (!(await tabelaExiste(tabela))) {
@@ -880,57 +940,6 @@ app.delete('/:tabela/:id', async (req, res) => {
     try {
         await pool.query(`DELETE FROM "${tabela}" WHERE id = $1`, [id]);
         res.json({ success: true, message: 'Registro excluído' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.get('/transparencia', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT * FROM transparencia ORDER BY ano DESC, origem DESC');
-        res.json(result.rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.post('/transparencia', async (req, res) => {
-    const { titulo, tipo, ano, descricao, arquivo, arquivo_nome, arquivo_data } = req.body;
-    if (!titulo || !tipo || !ano) {
-        return res.status(400).json({ error: 'titulo, tipo e ano são obrigatórios' });
-    }
-    try {
-        const fs = require('fs');
-        let nomeArquivo = arquivo || null;
-
-        if (arquivo_data && arquivo_nome) {
-            const uploadDir = path.join(__dirname, '..', 'uploads', 'transparencia');
-            if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-            const ext = path.extname(arquivo_nome) || '.bin';
-            const base = path.basename(arquivo_nome, ext)
-                .toLowerCase()
-                .replace(/[\s]+/g, '_')
-                .replace(/[^a-z0-9_-]/g, '');
-            const timestamp = Date.now();
-            nomeArquivo = base + '_' + timestamp + ext;
-
-            const matches = arquivo_data.match(/^data:([^;]+);base64,(.+)$/);
-            if (matches) {
-                const buffer = Buffer.from(matches[2], 'base64');
-                fs.writeFileSync(path.join(uploadDir, nomeArquivo), buffer);
-            } else {
-                const buffer = Buffer.from(arquivo_data, 'base64');
-                fs.writeFileSync(path.join(uploadDir, nomeArquivo), buffer);
-            }
-        }
-
-        const result = await pool.query(
-            `INSERT INTO transparencia (titulo, tipo, ano, descricao, arquivo)
-             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-            [titulo, tipo, ano, descricao || null, nomeArquivo]
-        );
-        res.json(result.rows[0]);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
