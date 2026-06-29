@@ -5,10 +5,14 @@ document.addEventListener('DOMContentLoaded', function () {
     .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function (data) { if (data && Array.isArray(data)) renderEvents(data); })
     .catch(function () {});
-  apiFetch('/castracao')
-    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function (data) { if (data && Array.isArray(data)) renderCastracoes(data); })
-    .catch(function () {});
+  Promise.all([
+    apiFetch('/castracao').then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).catch(function () { return []; }),
+    apiFetch('/mutirao_inscricao').then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).catch(function () { return []; }),
+    apiFetch('/mutirao_pet').then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).catch(function () { return []; }),
+    apiFetch('/calendario_mutirao').then(function (r) { if (!r.ok) throw new Error(); return r.json(); }).catch(function () { return []; })
+  ]).then(function (results) {
+    renderCastracoes(mergeCastracoes(results[0], results[1], results[2], results[3]));
+  });
   apiFetch('/adocao')
     .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(function (data) { if (data && Array.isArray(data)) renderAnimais(data); })
@@ -47,6 +51,55 @@ function renderEvents(events) {
   });
 }
 
+function mergeCastracoes(castracoes, inscricoes, pets, calendarios) {
+  var calMap = {};
+  if (Array.isArray(calendarios)) calendarios.forEach(function (c) { calMap[c.id] = c; });
+  var petsByIns = {};
+  if (Array.isArray(pets)) pets.forEach(function (p) {
+    var k = p.mutirao_inscricao_id;
+    if (!petsByIns[k]) petsByIns[k] = [];
+    petsByIns[k].push(p);
+  });
+  var all = [];
+  if (Array.isArray(castracoes)) castracoes.forEach(function (c) {
+    all.push({ _origem: 'castracao', _raw: c, id: c.id,
+      ticket: c.ticket, pet_nome: c.nome_pet || c.pet_nome, tutor_nome: c.nome || c.tutor_nome,
+      especie: c.especie || c.pet_especie, sexo: c.sexo || c.pet_sexo, porte: c.porte || c.pet_porte,
+      idade: c.idade || c.pet_idade, clinica: c.clinica, data: c.origem || c.created_at,
+      status: c.status, contato: c.contato || c.tutor_telefone, tipo: c.tipo || '',
+      cpf: c.tutor_cpf || '', endereco: c.tutor_endereco || '', numero: c.tutor_numero || '',
+      bairro: c.tutor_bairro || '', cidade: c.tutor_cidade || '', estado: c.tutor_estado || '',
+      cep: c.tutor_cep || '', agenda: c.dia_semana || c.agenda || '' });
+  });
+  if (Array.isArray(inscricoes)) inscricoes.forEach(function (ins) {
+    var cal = calMap[ins.calendario_mutirao_id] || {};
+    var lista = petsByIns[ins.id] || [];
+    if (!lista.length) {
+      all.push({ _origem: 'mutirao', _raw: ins, id: 'mutirao_' + ins.id,
+        ticket: ins.ticket, pet_nome: '', tutor_nome: ins.nome_responsavel,
+        especie: '', sexo: '', porte: '', idade: '',
+        clinica: cal.local || '', data: cal.data || ins.created_at,
+        status: ins.status, contato: ins.contato || '', tipo: 'Mutirão',
+        cpf: ins.cpf || '', endereco: ins.endereco || '', numero: ins.numero || '',
+        bairro: ins.bairro || '', cidade: ins.cidade || '', estado: ins.estado || '',
+        cep: ins.cep || '', agenda: cal.data || '' });
+    } else {
+      lista.forEach(function (pet) {
+        all.push({ _origem: 'mutirao', _raw: { ins: ins, pet: pet }, id: 'mutirao_' + ins.id + '_' + pet.id,
+          ticket: pet.ticket || ins.ticket, pet_nome: pet.nome, tutor_nome: ins.nome_responsavel,
+          especie: pet.especie, sexo: pet.sexo, porte: '', idade: pet.idade,
+          clinica: cal.local || '', data: cal.data || ins.created_at,
+          status: ins.status, contato: ins.contato || '', tipo: 'Mutirão',
+          cpf: ins.cpf || '', endereco: ins.endereco || '', numero: ins.numero || '',
+          bairro: ins.bairro || '', cidade: ins.cidade || '', estado: ins.estado || '',
+          cep: ins.cep || '', agenda: cal.data || '' });
+      });
+    }
+  });
+  all.sort(function (a, b) { return (b.data || '') > (a.data || '') ? 1 : -1; });
+  return all;
+}
+
 function renderCastracoes(castracoes) {
   var tbody = document.querySelector('.castracao-table table tbody');
   if (!tbody) return;
@@ -61,42 +114,46 @@ function renderCastracoes(castracoes) {
     var tr = document.createElement('tr');
     if (isAtendido) { tr.className = 'status-atendido'; tr.style.display = 'none'; }
     tr.setAttribute('data-ticket', ticketNum);
-    tr.setAttribute('data-pet', c.nome_pet || c.pet_nome || '');
-    tr.setAttribute('data-responsavel', c.nome || c.tutor_nome || '');
-    tr.setAttribute('data-especie', c.especie || c.pet_especie || '');
-    tr.setAttribute('data-sexo', c.sexo || c.pet_sexo || '');
-    tr.setAttribute('data-porte', c.porte || c.pet_porte || '');
-    tr.setAttribute('data-idade', c.idade || c.pet_idade || '');
+    tr.setAttribute('data-pet', c.pet_nome || '');
+    tr.setAttribute('data-responsavel', c.tutor_nome || '');
+    tr.setAttribute('data-especie', c.especie || '');
+    tr.setAttribute('data-sexo', c.sexo || '');
+    tr.setAttribute('data-porte', c.porte || '');
+    tr.setAttribute('data-idade', c.idade || '');
     tr.setAttribute('data-clinica', c.clinica || '');
-    tr.setAttribute('data-data', fmtDate(c.origem || c.created_at));
+    tr.setAttribute('data-data', fmtDate(c.data));
     tr.setAttribute('data-status', c.status || 'Pendente');
-    tr.setAttribute('data-contato', c.contato || c.tutor_telefone || '');
+    tr.setAttribute('data-contato', c.contato || '');
     tr.setAttribute('data-tipo', c.tipo || '');
-    tr.setAttribute('data-dia', c.dia_semana || c.agenda || '');
-    tr.setAttribute('data-cpf', c.tutor_cpf || '');
-    tr.setAttribute('data-endereco', c.tutor_endereco || '');
-    tr.setAttribute('data-numero', c.tutor_numero || '');
-    tr.setAttribute('data-bairro', c.tutor_bairro || '');
-    tr.setAttribute('data-cidade', c.tutor_cidade || '');
-    tr.setAttribute('data-estado', c.tutor_estado || '');
-    tr.setAttribute('data-cep', c.tutor_cep || '');
-    var badgeCor = (c.especie || c.pet_especie || '').toLowerCase() === 'gato'
+    tr.setAttribute('data-dia', c.agenda || '');
+    tr.setAttribute('data-cpf', c.cpf || '');
+    tr.setAttribute('data-endereco', c.endereco || '');
+    tr.setAttribute('data-numero', c.numero || '');
+    tr.setAttribute('data-bairro', c.bairro || '');
+    tr.setAttribute('data-cidade', c.cidade || '');
+    tr.setAttribute('data-estado', c.estado || '');
+    tr.setAttribute('data-cep', c.cep || '');
+    var badgeCor = (c.especie || '').toLowerCase() === 'gato'
       ? '<span class="badge" style="background:#8b5cf6;color:#fff;">Gato</span>'
-      : '<span class="badge badge-info">' + esc(c.especie || c.pet_especie) + '</span>';
+      : '<span class="badge badge-info">' + esc(c.especie) + '</span>';
     var statusHtml = isAtendido
       ? '<button class="btn-status-atendido" disabled><i class="bi bi-check-circle-fill"></i> Atendido</button>'
-      : '<button class="btn-status-atender" onclick="atenderCastracao(this)" data-id="' + c.id + '"><i class="bi bi-check-lg"></i> Atender</button>';
+      : (c._origem === 'castracao'
+        ? '<button class="btn-status-atender" onclick="atenderCastracao(this)" data-id="' + c.id + '"><i class="bi bi-check-lg"></i> Atender</button>'
+        : '<button class="btn-status-atendido" disabled style="opacity:0.5;"><i class="bi bi-check-circle-fill"></i> ' + esc(c.status) + '</button>');
     tr.innerHTML =
       '<td data-label="Ticket"><strong>' + esc(ticketNum) + '</strong></td>' +
-      '<td data-label="Pet">' + esc(c.nome_pet || c.pet_nome) + '</td>' +
-      '<td data-label="Respons\u00e1vel">' + esc(c.nome || c.tutor_nome) + '</td>' +
+      '<td data-label="Pet">' + esc(c.pet_nome) + '</td>' +
+      '<td data-label="Respons\u00e1vel">' + esc(c.tutor_nome) + '</td>' +
       '<td data-label="Esp\u00e9cie">' + badgeCor + '</td>' +
       '<td data-label="Cl\u00ednica">' + esc(c.clinica) + '</td>' +
-      '<td data-label="Data">' + fmtDate(c.origem || c.created_at) + '</td>' +
+      '<td data-label="Data">' + fmtDate(c.data) + '</td>' +
       '<td data-label="Status">' + statusHtml + '</td>' +
       '<td data-label="A\u00e7\u00f5es">' +
         '<button class="btn-comprovante" onclick="gerarComprovante(this)"><i class="bi bi-file-earmark-text"></i> Comprovante</button> ' +
-        '<button class="btn-excluir-castracao admin-only" onclick="excluirCastracao(this)" data-id="' + c.id + '" title="Excluir"><i class="bi bi-trash"></i> Excluir</button>' +
+        (c._origem === 'castracao'
+          ? '<button class="btn-excluir-castracao admin-only" onclick="excluirCastracao(this)" data-id="' + c.id + '" title="Excluir"><i class="bi bi-trash"></i> Excluir</button>'
+          : '') +
       '</td>';
     tbody.appendChild(tr);
   });
