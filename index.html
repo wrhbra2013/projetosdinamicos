@@ -253,8 +253,17 @@ document.addEventListener('DOMContentLoaded', function() {
       .catch(function() { mostrar(endpoint, 0, sectionId); });
   }
   fetchCount('/voluntario', 'voluntario', 'section-voluntarios');
-  fetchCount('/adocao', 'adocao', 'section-pets', function(a) { return (a.status || '').toLowerCase() === 'disponivel'; });
+  fetchCount('/adocao', 'adocao');
   fetchCount('/adocao', 'adotado', null, function(a) { return (a.status || '').toLowerCase() === 'adotado'; });
+  (function() {
+    apiFetch('/adocao')
+      .then(function(r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function(data) {
+        var sec = document.getElementById('section-pets');
+        if (sec) sec.style.display = (Array.isArray(data) && data.length > 0) ? 'block' : 'none';
+      })
+      .catch(function() {});
+  })();
   fetchCount('/procura_se', 'procura_se');
   fetchCount('/parceria', 'parceria');
   (function() {

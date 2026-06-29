@@ -558,7 +558,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.use((req, res, next) => {
-    if (req.method === 'GET' || req.path === '/' || req.path === '/health' || req.path.startsWith('/auth/')) return next();
+    if (req.method === 'GET' || req.method === 'HEAD' || req.path === '/' || req.path === '/health' || req.path.startsWith('/auth/')) return next();
     const auth = req.headers.authorization;
     if (!auth || !auth.startsWith('Bearer ') || auth.slice(7) !== API_TOKEN) {
         return res.status(401).json({ error: 'Unauthorized' });
@@ -1580,7 +1580,25 @@ restore_dump() {
   info "OK"
 
   echo ""
-  info "--- Etapa 4/4: Restart API container ---"
+  info "--- Etapa 4/5: Restaurar uploads (link simbolico) ---"
+  if [ -d "$DATA_DIR/uploads" ]; then
+    info "Removendo diretorio uploads existente..."
+    rm -rf "$DATA_DIR/uploads"
+  fi
+  UPLOADS_SRC="/home/debian/amoranimal_uploads"
+  if [ -d "$UPLOADS_SRC" ]; then
+    info "Criando link simbolico: $UPLOADS_SRC -> $DATA_DIR/uploads"
+    ln -sf "$UPLOADS_SRC" "$DATA_DIR/uploads"
+    info "OK - uploads vinculado a $UPLOADS_SRC"
+  else
+    warn "Pasta de uploads nao encontrada: $UPLOADS_SRC"
+    warn "Crie o link manualmente: ln -s $UPLOADS_SRC $DATA_DIR/uploads"
+    mkdir -p "$DATA_DIR/uploads"
+  fi
+  info "OK"
+
+  echo ""
+  info "--- Etapa 5/5: Restart API container ---"
   echo "  sudo docker compose -f $DATA_DIR/docker-compose.yml restart api"
   docker compose -f "$DATA_DIR/docker-compose.yml" restart api 2>/dev/null || true
   info "OK"
@@ -1589,6 +1607,7 @@ restore_dump() {
   info "===== Restauracao concluida! ====="
   echo "  Banco:  $DB_NAME"
   echo "  Dump:   $DUMP_FILE"
+  echo "  Uploads: $DATA_DIR/uploads -> $UPLOADS_SRC"
   echo "  API:    http://localhost:$PORT"
   echo ""
 }
