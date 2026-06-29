@@ -213,10 +213,17 @@ function renderizarEventos() {
   var eventos = carregarEventos();
   var html = '';
 
+  var hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
   eventos.forEach(function(ev, idx) {
-    var isAberto = ev.status === 'aberto' || !ev.status;
+    var partesData = (ev.data || '').split('/');
+    var dataEvento = partesData.length === 3
+      ? new Date(partesData[2], partesData[1] - 1, partesData[0])
+      : null;
+    var isAberto = (ev.status === 'aberto' || !ev.status) && (!dataEvento || dataEvento >= hoje);
     var isIndisponivel = ev.status === 'indisponivel';
-    var isEncerrado = ev.status === 'encerrado';
+    var isEncerrado = ev.status === 'encerrado' || (dataEvento && dataEvento < hoje);
     var opacidade = isEncerrado ? 'style="opacity:0.6;"' : (isIndisponivel ? 'style="opacity:0.7;"' : '');
 
     var badgeHtml = '';
@@ -235,7 +242,9 @@ function renderizarEventos() {
     } else if (isEncerrado) {
       badgeHtml = '<span class="badge badge-secondary"><i class="bi bi-check-circle me-1"></i>Encerrado</span>';
       botoesHtml = '<span class="badge badge-secondary d-block text-center mt-2"><i class="bi bi-x-circle me-2"></i>Encerrado</span>';
-      botoesHtml += '<a href="../relatorio/castracao.html" onclick="event.preventDefault();sessionStorage.setItem(\'relatorio_evento\',JSON.stringify({data:\'' + ev.data + '\',local:\'' + ev.local.replace(/'/g,"\\'") + '\',id:' + (ev._id || 'null') + '}));location.href=this.href;" class="btn btn-secondary btn-sm w-100 mt-1"><i class="bi bi-bar-chart-steps me-1"></i>Ver Inscrições</a>';
+      if (isAdmin) {
+        botoesHtml += '<a href="../relatorio/castracao.html" onclick="event.preventDefault();sessionStorage.setItem(\'relatorio_evento\',JSON.stringify({data:\'' + ev.data + '\',local:\'' + ev.local.replace(/'/g,"\\'") + '\',id:' + (ev._id || 'null') + '}));location.href=this.href;" class="btn btn-secondary btn-sm w-100 mt-1"><i class="bi bi-bar-chart-steps me-1"></i>Relatório</a>';
+      }
     } else {
       badgeHtml = '<span class="badge badge-success"><i class="bi bi-people-fill me-1"></i>' + (ev.vagas || 0) + ' vagas disponíveis</span>';
       botoesHtml = '<a href="castracao_mutirao_form.html" onclick="event.preventDefault();sessionStorage.setItem(\'mutirao_evento\',JSON.stringify({data:\'' + ev.data + '\',local:\'' + ev.local.replace(/'/g,"\\'") + '\',endereco:\'' + ev.endereco.replace(/'/g,"\\'") + '\',vagas:' + ev.vagas + ',dataLimite:\'' + ev.dataLimite + '\',especiePadrao:\'' + ev.especiePadrao + '\'}));location.href=this.href;" class="btn btn-primary w-100"><i class="bi bi-pencil-square me-2"></i>Inscrever-se</a>';
