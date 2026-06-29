@@ -238,10 +238,10 @@ document.addEventListener('DOMContentLoaded', function() {
   function mostrar(endpoint, count, sectionId) {
     var el = document.getElementById('stat-count-' + endpoint);
     if (el) el.textContent = count;
-    if (count > 0) {
-      var sec = document.getElementById(sectionId);
-      if (sec) sec.style.display = 'block';
-    }
+    var card = el ? el.closest('.stat-card') : null;
+    if (card) card.style.display = count > 0 ? '' : 'none';
+    var sec = document.getElementById(sectionId);
+    if (sec) sec.style.display = count > 0 ? 'block' : 'none';
   }
   function fetchCount(url, endpoint, sectionId, filtro) {
     apiFetch(url || '/' + endpoint)
