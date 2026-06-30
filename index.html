@@ -157,6 +157,44 @@
   body.admin-mode .btn-excluir-castracao { display: inline-block; }
 
   #section-eventos, #section-castracao, #section-pets, #section-voluntarios { display: none; }
+
+  .cookie-consent-banner {
+    background: var(--container-bg, #fff);
+    border: 1px solid var(--border-color, #e0e0e0);
+  }
+  .btn-cookie {
+    padding: 8px 18px; border-radius: 6px;
+    cursor: pointer; font-size: 0.85rem; font-weight: 600;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .btn-cookie-essential {
+    background: transparent;
+    border-color: var(--text-muted, #999);
+    color: var(--text-muted, #999);
+  }
+  .btn-cookie-essential:hover {
+    background: var(--text-muted, #999);
+    color: #fff;
+  }
+  .btn-cookie-config {
+    background: transparent;
+    border-color: var(--brand-teal, #0d9488);
+    color: var(--brand-teal, #0d9488);
+  }
+  .btn-cookie-config:hover {
+    background: var(--brand-teal, #0d9488);
+    color: #fff;
+  }
+  .btn-cookie-accept {
+    background: var(--brand-teal, #0d9488);
+    border-color: var(--brand-teal, #0d9488);
+    color: #fff;
+  }
+  .btn-cookie-accept:hover {
+    background: var(--brand-teal-dark, #0f766e);
+    border-color: var(--brand-teal-dark, #0f766e);
+  }
   </style>
 </head>
 <body>
