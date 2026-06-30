@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="../static/css/relatorio.css">
   <link rel="stylesheet" href="../../static/css/icons/bootstrap-icons.min.css">
   <script src="../static/js/api.js"></script>
+  <script src="../static/js/pdfmake/pdfmake.min.js"></script>
+  <script src="../static/js/pdfmake/vfs_fonts.js"></script>
   <style>
     .page-header {
       background: var(--nav-gradient);
@@ -229,6 +231,17 @@
 
     const TABLE_COLUMNS_HIDE = ['id', 'senha', 'updated_at', 'created_at'];
 
+    function fmtDataBR(val) {
+      if (!val || typeof val !== 'string') return val;
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
+        var d = new Date(val);
+        if (!isNaN(d)) return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+      }
+      var m = val.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) return m[3] + '/' + m[2] + '/' + m[1];
+      return val;
+    }
+
     let currentTable = null;
     let currentData = null;
 
@@ -309,6 +322,7 @@
         columns.forEach(col => {
           let val = row[col];
           if (val === null || val === undefined) val = '-';
+          val = fmtDataBR(val);
           if (typeof val === 'string' && val.length > 120) val = val.substring(0, 120) + '...';
           if ((col === 'foto_url' || col === 'arquivo') && val && val !== '-') {
             val = `<a href="${val}" target="_blank" class="text-decoration-none"><i class="bi bi-image"></i> Foto</a>`;
@@ -353,50 +367,109 @@
 
     function exportarPDF() {
       if (!currentData || !currentTable) return;
-      const win = window.open('', '_blank');
-      if (!win) { alert('Pop-up bloqueado. Permita pop-ups para gerar PDF.'); return; }
 
-      let html = `
-      <html><head><meta charset="utf-8"><title>Relatório ${TABLE_LABELS[currentTable]}</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { color: #0d9488; border-bottom: 2px solid #0d9488; padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-        th { background: #0d9488; color: white; padding: 8px; text-align: left; }
-        td { padding: 6px 8px; border-bottom: 1px solid #ddd; }
-        tr:nth-child(even) { background: #f8f9fa; }
-        .footer { margin-top: 30px; font-size: 11px; color: #666; text-align: center; }
-      </style></head><body>
-      <h1>ONG Amor Animal Marília</h1>
-      <h2 style="color:#333;">Relatório: ${TABLE_LABELS[currentTable]}</h2>
-      <p>Gerado em: ${new Date().toLocaleString('pt-BR')} | Total: ${currentData.length} registro(s)</p>
-      <table>
-        <thead><tr>`;
+      var columns = Object.keys(currentData[0]).filter(function(col) { return !TABLE_COLUMNS_HIDE.includes(col); });
+      var now = new Date();
+      var emitDate = now.toLocaleDateString('pt-BR');
+      var emitTime = now.toLocaleTimeString('pt-BR');
+      var label = TABLE_LABELS[currentTable] || currentTable;
 
-      const columns = Object.keys(currentData[0]).filter(col => !TABLE_COLUMNS_HIDE.includes(col));
-      columns.forEach(col => {
-        const label = col.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        html += `<th>${label}</th>`;
-      });
-      html += '</tr></thead><tbody>';
+      var logoBase64 = '';
+      fetch('../static/css/imagem/ong.jpg')
+        .then(function(resp) { return resp.blob(); })
+        .then(function(blob) {
+          return new Promise(function(resolve) {
+            var reader = new FileReader();
+            reader.onloadend = function() { resolve(reader.result); };
+            reader.readAsDataURL(blob);
+          });
+        })
+        .catch(function() { return ''; })
+        .then(function(logo) {
+          logoBase64 = logo;
 
-      currentData.forEach(row => {
-        html += '<tr>';
-        columns.forEach(col => {
-          let val = row[col];
-          if (val === null || val === undefined) val = '-';
-          html += `<td>${String(val).substring(0, 100)}</td>`;
+          var tableBody = [];
+          tableBody.push(columns.map(function(col) {
+            var lbl = col.replace(/_/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+            return { text: lbl, style: 'tableHeader' };
+          }));
+          currentData.forEach(function(row) {
+            tableBody.push(columns.map(function(col) {
+              var val = row[col];
+              if (val === null || val === undefined) val = '-';
+              val = fmtDataBR(val);
+              return { text: String(val).substring(0, 100), style: 'tableCell' };
+            }));
+          });
+
+          var docDefinition = {
+            pageSize: 'A4',
+            pageOrientation: currentData.length > 20 ? 'landscape' : 'portrait',
+            pageMargins: [40, 80, 40, 50],
+            info: {
+              title: 'Relatorio - ' + label,
+              author: 'ONG Amor Animal Marilia'
+            },
+            header: {
+              margin: [20, 10, 20, 0],
+              table: {
+                widths: [70, '*', 140],
+                body: [[
+                  { image: logoBase64 || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAAlwSFlzAAAWJQAAFiUBSVIk8AAAAA0lEQVQI12P4z8BQDwAEgAF/QualzQAAAABJRU5ErkJggg==', width: 60, alignment: 'center', margin: [0, 2, 0, 2] },
+                  { stack: [
+                    { text: 'ONG Amor Animal Marilia', style: 'headerTitle', alignment: 'center' },
+                    { text: 'Relatorio: ' + label, style: 'headerSubtitle', alignment: 'center' },
+                    { text: 'Emitido em: ' + emitDate + ' as ' + emitTime, style: 'headerDate', alignment: 'center' }
+                  ], margin: [0, 5, 0, 0] },
+                  { text: 'Rua Pascoal Eugenio Brasini, 701\nJd. Eldorado\nMarilia - SP\nhttps://amoranimal.ong.br', style: 'addressHeader', alignment: 'right', margin: [0, 5, 5, 0] }
+                ]]
+              },
+              layout: {
+                hLineWidth: function() { return 0.5; },
+                vLineWidth: function() { return 0.5; },
+                hLineColor: function() { return '#cccccc'; },
+                vLineColor: function() { return '#cccccc'; }
+              }
+            },
+            content: [
+              { text: label, style: 'title', alignment: 'center', margin: [0, 10, 0, 10] },
+              { text: 'Total de registros: ' + currentData.length, style: 'summary', alignment: 'center', margin: [0, 0, 0, 15] },
+              {
+                table: {
+                  widths: columns.map(function() { return 'auto'; }),
+                  body: tableBody
+                },
+                layout: {
+                  hLineWidth: function(i) { return i === 0 || i === tableBody.length ? 0.5 : 0.3; },
+                  vLineWidth: function() { return 0.3; },
+                  hLineColor: function() { return '#cccccc'; },
+                  vLineColor: function() { return '#cccccc'; },
+                  fillColor: function(i) { return i === 0 ? '#0d9488' : (i % 2 === 0 ? '#f8f9fa' : null); }
+                },
+                margin: [0, 0, 0, 15]
+              }
+            ],
+            footer: {
+              margin: [20, 0, 20, 10],
+              text: 'ONG Amor Animal Marilia — https://amoranimal.ong.br',
+              alignment: 'center',
+              fontSize: 8,
+              color: '#999999'
+            },
+            styles: {
+              headerTitle: { fontSize: 14, bold: true, color: '#0066CC' },
+              headerSubtitle: { fontSize: 11, color: '#333333' },
+              headerDate: { fontSize: 8, color: '#666666' },
+              addressHeader: { fontSize: 8, color: '#555555' },
+              title: { fontSize: 18, bold: true, color: '#0d9488' },
+              summary: { fontSize: 10, color: '#666666', italics: true },
+              tableHeader: { fontSize: 8, bold: true, color: '#ffffff', fillColor: '#0d9488', alignment: 'center', margin: [2, 3, 2, 3] },
+              tableCell: { fontSize: 7, color: '#333333', margin: [2, 2, 2, 2] }
+            }
+          };
+
+          pdfMake.createPdf(docDefinition).download('relatorio_' + currentTable + '_' + now.toISOString().slice(0,10) + '.pdf');
         });
-        html += '</tr>';
-      });
-
-      html += `</tbody></table>
-      <div class="footer">ONG Amor Animal Marília — https://amoranimal.ong.br</div>
-      </body></html>`;
-
-      win.document.write(html);
-      win.document.close();
-      win.print();
     }
 
     function exportarCSV() {
@@ -407,6 +480,7 @@
         csv += columns.map(col => {
           let val = row[col];
           if (val === null || val === undefined) val = '';
+          val = fmtDataBR(val);
           return '"' + String(val).replace(/"/g, '""') + '"';
         }).join(',') + '\n';
       });

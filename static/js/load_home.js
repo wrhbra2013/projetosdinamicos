@@ -170,8 +170,10 @@ function renderAnimais(animais) {
   function item(pet) {
     var d = document.createElement('div');
     d.className = 'pet-carousel-item';
-    d.setAttribute('data-nome', pet.nome || '');
-    d.setAttribute('data-especie', pet.especie || '');
+    var sp = ({'canino':'Cachorro','felino':'Gato'})[pet.especie] || pet.especie;
+    var nm = pet.nome || (pet.caracteristicas ? pet.caracteristicas.split(',')[0].replace(/^Atende pelo nome\s*/i,'').trim() : '');
+    d.setAttribute('data-nome', nm);
+    d.setAttribute('data-especie', sp);
     d.setAttribute('data-porte', pet.porte || '');
     d.setAttribute('data-idade', pet.idade || '');
     d.setAttribute('data-caracteristicas', pet.caracteristicas || '');
@@ -179,11 +181,11 @@ function renderAnimais(animais) {
     d.innerHTML =
       '<div class="carousel-img-wrap" style="position:relative;width:100%;height:220px;overflow:hidden;">' +
         '<button class="btn-delete-pet admin-only" data-id="' + pet.id + '" title="Excluir pet"><i class="bi bi-x-lg"></i></button>' +
-        '<img src="' + imgUrl(pet.foto_url || pet.arquivo, 'adocao') + '" alt="' + esc(pet.nome) + '" style="width:100%;height:100%;object-fit:cover;">' +
+        '<img src="' + imgUrl(pet.foto_url || pet.arquivo, 'adocao') + '" alt="' + esc(nm) + '" style="width:100%;height:100%;object-fit:cover;">' +
         '<span class="carousel-badge badge badge-success" style="position:absolute;top:10px;left:10px;border-radius:20px;">' + esc(pet.status || 'Dispon\u00edvel') + '</span>' +
       '</div>' +
       '<div class="carousel-info" style="padding:1rem;">' +
-        '<div class="carousel-name" style="font-size:1.1rem;font-weight:700;color:var(--heading-color);margin-bottom:0.5rem;">' + esc(pet.nome) + '</div>' +
+        '<div class="carousel-name" style="font-size:1.1rem;font-weight:700;color:var(--heading-color);margin-bottom:0.5rem;">' + esc(nm) + '</div>' +
         '<div class="carousel-detail" style="font-size:0.85rem;color:var(--text-color);margin-bottom:0.25rem;"><span style="font-weight:600;">Idade:</span> ' + esc(pet.idade) + '</div>' +
         '<div class="carousel-detail" style="font-size:0.85rem;color:var(--text-color);margin-bottom:0.25rem;"><span style="font-weight:600;">Porte:</span> ' + esc(pet.porte) + '</div>' +
         '<div class="carousel-detail" style="font-size:0.85rem;color:var(--text-color);"><span style="font-weight:600;">Caracter\u00edsticas:</span> ' + esc(pet.caracteristicas) + '</div>' +

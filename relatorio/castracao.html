@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="../static/css/relatorio.css">
   <link rel="stylesheet" href="../../static/css/icons/bootstrap-icons.min.css">
   <script src="../static/js/api.js"></script>
+  <script src="../static/js/pdfmake/pdfmake.min.js"></script>
+  <script src="../static/js/pdfmake/vfs_fonts.js"></script>
   <style>
     .filters-bar {
       display: flex;
@@ -452,7 +454,7 @@
           html += '<td>' + (row.pet_sexo || '-') + '</td>';
           html += '<td>' + (row.pet_idade || '-') + '</td>';
           html += '<td>' + (row.clinica || '-') + '</td>';
-          html += '<td>' + (row.data_agendamento || '-') + '</td>';
+          html += '<td>' + fmtDataBR(row.data_agendamento || '-') + '</td>';
           html += '<td><span style="text-transform:capitalize;">' + ((row.tipo || '').replace(/_/g, ' ') || '-') + '</span></td>';
         }
         html += '<td><span class="badge-status ' + statusClass + '">' + (row.status || '-') + '</span></td>';
@@ -555,6 +557,7 @@
         csv += columns.map(function(col) {
           var val = row[col];
           if (val === null || val === undefined) val = '';
+          val = fmtDataBR(val);
           return '"' + String(val).replace(/"/g, '""') + '"';
         }).join(',') + '\n';
       });
@@ -567,19 +570,28 @@
       URL.revokeObjectURL(link.href);
     }
 
+    function fmtDataBR(val) {
+      if (!val || typeof val !== 'string') return val;
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
+        var d = new Date(val);
+        if (!isNaN(d)) return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+      }
+      var m = val.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) return m[3] + '/' + m[2] + '/' + m[1];
+      return val;
+    }
+
     function exportarPDF() {
       if (!currentData.length) return;
-      var win = window.open('', '_blank');
-      if (!win) { alert('Permita pop-ups para gerar PDF.'); return; }
 
       var isMutiraoInscricao = currentData[0].hasOwnProperty('nome_responsavel') && currentData[0].hasOwnProperty('calendario_mutirao_id');
       var columns, labels;
       if (isMutiraoInscricao) {
         columns = ['ticket', 'nome_responsavel', 'contato', 'cpf', 'endereco', 'bairro', 'cidade', 'status'];
-        labels = ['Ticket', 'Responsável', 'Contato', 'CPF', 'Endereço', 'Bairro', 'Cidade', 'Status'];
+        labels = ['Ticket', 'Responsavel', 'Contato', 'CPF', 'Endereco', 'Bairro', 'Cidade', 'Status'];
       } else {
         columns = ['ticket', 'tutor_nome', 'pet_nome', 'pet_especie', 'pet_sexo', 'pet_idade', 'clinica', 'data_agendamento', 'tipo', 'status'];
-        labels = ['Ticket', 'Responsável', 'Pet', 'Espécie', 'Sexo', 'Idade', 'Clínica', 'Data', 'Tipo', 'Status'];
+        labels = ['Ticket', 'Responsavel', 'Pet', 'Especie', 'Sexo', 'Idade', 'Clinica', 'Data', 'Tipo', 'Status'];
       }
 
       var ev = window._eventoRelatorio || null;
@@ -587,49 +599,109 @@
         var p = new URLSearchParams(window.location.search);
         if (p.get('data')) ev = { data: p.get('data'), local: p.get('local') };
       }
-      var tituloEvento = '';
-      if (ev) {
-        tituloEvento = ' - ' + decodeURIComponent(ev.local) + ' (' + ev.data + ')';
-      }
+      var sufixo = '';
+      if (ev) sufixo = ' - ' + decodeURIComponent(ev.local) + ' (' + ev.data + ')';
 
-      var html = `
-      <html><head><meta charset="utf-8"><title>Relatório de Castrações${tituloEvento}</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; font-size: 11px; }
-        h1 { color: #0d9488; border-bottom: 2px solid #0d9488; padding-bottom: 10px; }
-        h2 { color: #333; }
-        .info { margin: 4px 0; color: #555; }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-        th { background: #0d9488; color: white; padding: 6px; text-align: left; font-size: 10px; }
-        td { padding: 5px 6px; border-bottom: 1px solid #ddd; }
-        tr:nth-child(even) { background: #f8f9fa; }
-        .footer { margin-top: 30px; font-size: 10px; color: #666; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; }
-      </style></head><body>
-      <h1>ONG Amor Animal Marília</h1>
-      <h2>Relatório de Castrações${tituloEvento}</h2>
-      <p class="info">Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
-      <p class="info">Total de inscrições: ${currentData.length}</p>`;
+      var now = new Date();
+      var emitDate = now.toLocaleDateString('pt-BR');
+      var emitTime = now.toLocaleTimeString('pt-BR');
+      var titulo = 'Relatorio de Castracoes' + sufixo;
 
-      labels.forEach(function(l) { html += '<th>' + l + '</th>'; });
-      html += '</tr></thead><tbody>';
+      var logoBase64 = '';
+      fetch('../static/css/imagem/ong.jpg')
+        .then(function(resp) { return resp.blob(); })
+        .then(function(blob) {
+          return new Promise(function(resolve) {
+            var reader = new FileReader();
+            reader.onloadend = function() { resolve(reader.result); };
+            reader.readAsDataURL(blob);
+          });
+        })
+        .catch(function() { return ''; })
+        .then(function(logo) {
+          logoBase64 = logo;
 
-      currentData.forEach(function(row) {
-        html += '<tr>';
-        columns.forEach(function(col) {
-          var val = row[col];
-          if (val === null || val === undefined) val = '-';
-          html += '<td>' + String(val).substring(0, 80) + '</td>';
+          var tableBody = [];
+          tableBody.push(labels.map(function(l) {
+            return { text: l, style: 'tableHeader' };
+          }));
+          currentData.forEach(function(row) {
+            tableBody.push(columns.map(function(col) {
+              var val = row[col];
+              if (val === null || val === undefined) val = '-';
+              val = fmtDataBR(val);
+              return { text: String(val).substring(0, 80), style: 'tableCell' };
+            }));
+          });
+
+          var docDefinition = {
+            pageSize: 'A4',
+            pageOrientation: currentData.length > 20 ? 'landscape' : 'portrait',
+            pageMargins: [40, 80, 40, 50],
+            info: {
+              title: titulo,
+              author: 'ONG Amor Animal Marilia'
+            },
+            header: {
+              margin: [20, 10, 20, 0],
+              table: {
+                widths: [70, '*', 140],
+                body: [[
+                  { image: logoBase64 || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAAlwSFlzAAAWJQAAFiUBSVIk8AAAAA0lEQVQI12P4z8BQDwAEgAF/QualzQAAAABJRU5ErkJggg==', width: 60, alignment: 'center', margin: [0, 2, 0, 2] },
+                  { stack: [
+                    { text: 'ONG Amor Animal Marilia', style: 'headerTitle', alignment: 'center' },
+                    { text: titulo, style: 'headerSubtitle', alignment: 'center' },
+                    { text: 'Emitido em: ' + emitDate + ' as ' + emitTime, style: 'headerDate', alignment: 'center' }
+                  ], margin: [0, 5, 0, 0] },
+                  { text: 'Rua Pascoal Eugenio Brasini, 701\nJd. Eldorado\nMarilia - SP\nhttps://amoranimal.ong.br', style: 'addressHeader', alignment: 'right', margin: [0, 5, 5, 0] }
+                ]]
+              },
+              layout: {
+                hLineWidth: function() { return 0.5; },
+                vLineWidth: function() { return 0.5; },
+                hLineColor: function() { return '#cccccc'; },
+                vLineColor: function() { return '#cccccc'; }
+              }
+            },
+            content: [
+              { text: titulo, style: 'title', alignment: 'center', margin: [0, 10, 0, 10] },
+              { text: 'Total de registros: ' + currentData.length, style: 'summary', alignment: 'center', margin: [0, 0, 0, 15] },
+              {
+                table: {
+                  widths: columns.map(function() { return 'auto'; }),
+                  body: tableBody
+                },
+                layout: {
+                  hLineWidth: function(i) { return i === 0 || i === tableBody.length ? 0.5 : 0.3; },
+                  vLineWidth: function() { return 0.3; },
+                  hLineColor: function() { return '#cccccc'; },
+                  vLineColor: function() { return '#cccccc'; },
+                  fillColor: function(i) { return i === 0 ? '#0d9488' : (i % 2 === 0 ? '#f8f9fa' : null); }
+                },
+                margin: [0, 0, 0, 15]
+              }
+            ],
+            footer: {
+              margin: [20, 0, 20, 10],
+              text: 'ONG Amor Animal Marilia — https://amoranimal.ong.br',
+              alignment: 'center',
+              fontSize: 8,
+              color: '#999999'
+            },
+            styles: {
+              headerTitle: { fontSize: 14, bold: true, color: '#0066CC' },
+              headerSubtitle: { fontSize: 11, color: '#333333' },
+              headerDate: { fontSize: 8, color: '#666666' },
+              addressHeader: { fontSize: 8, color: '#555555' },
+              title: { fontSize: 18, bold: true, color: '#0d9488' },
+              summary: { fontSize: 10, color: '#666666', italics: true },
+              tableHeader: { fontSize: 8, bold: true, color: '#ffffff', fillColor: '#0d9488', alignment: 'center', margin: [2, 3, 2, 3] },
+              tableCell: { fontSize: 7, color: '#333333', margin: [2, 2, 2, 2] }
+            }
+          };
+
+          pdfMake.createPdf(docDefinition).download('relatorio_castracao_' + now.toISOString().slice(0,10) + '.pdf');
         });
-        html += '</tr>';
-      });
-
-      html += `</tbody></table>
-      <div class="footer">ONG Amor Animal Marília — https://amoranimal.ong.br</div>
-      </body></html>`;
-
-      win.document.write(html);
-      win.document.close();
-      win.print();
     }
 
     function converterDataBR(d) {
