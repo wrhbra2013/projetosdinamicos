@@ -804,6 +804,25 @@ function atenderCastracao(btn) {
 }
 </script>
 
+<script>
+(function() {
+  var banner = document.getElementById('cookie-consent-banner');
+  if (!banner) return;
+  var stored = localStorage.getItem('cookiePreference');
+  if (stored) { banner.style.display = 'none'; return; }
+  banner.style.display = 'block';
+  function setPref(level) {
+    banner.style.display = 'none';
+    localStorage.setItem('cookiePreference', JSON.stringify({ level: level, ts: Date.now() }));
+  }
+  var el = document.getElementById('accept-essential-btn');
+  if (el) el.addEventListener('click', function() { setPref('essential'); });
+  el = document.getElementById('accept-all-btn');
+  if (el) el.addEventListener('click', function() { setPref('all'); });
+  el = document.getElementById('open-preferences-btn');
+  if (el) el.addEventListener('click', function() { window.location.href = 'pages/policy.html'; });
+})();
+</script>
 <script src="static/js/load_home.js"></script>
 <script src="components/footer.js"></script>
 </body>
