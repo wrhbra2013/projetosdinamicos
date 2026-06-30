@@ -215,7 +215,7 @@
         <div class="stat-card-number" id="stat-count-procura_se">0</div>
         <div class="stat-card-label">Desaparecidos</div>
       </div>
-      <div class="stat-card" id="card-mutirao_pet" data-endpoint="mutirao_pet">
+      <div class="stat-card" id="card-mutirao_pet" data-endpoint="mutirao_pet" data-section="section-castracao">
         <div class="stat-card-icon" style="color: var(--brand-green);"><i class="bi bi-person-heart"></i></div>
         <div class="stat-card-number" id="stat-count-mutirao_pet">0</div>
         <div class="stat-card-label">Castrações <span id="stat-year-label-mutirao_pet">2026</span></div>
@@ -224,11 +224,6 @@
           <button class="year-btn year-active" data-year="2026" style="background:none;border:1px solid var(--brand-green);border-radius:4px;padding:2px 10px;cursor:pointer;color:var(--brand-green);font-weight:600">2026</button>
           <button class="year-btn" data-year="2027" style="background:none;border:1px solid #ccc;border-radius:4px;padding:2px 10px;cursor:pointer;opacity:.5">2027</button>
         </div>
-      </div>
-      <div class="stat-card" data-endpoint="castracao">
-        <div class="stat-card-icon" style="color: var(--brand-green);"><i class="bi bi-person-heart"></i></div>
-        <div class="stat-card-number" id="stat-count-castracao">0</div>
-        <div class="stat-card-label">Cast. Agendadas</div>
       </div>
       <div class="stat-card" data-endpoint="parceria">
         <div class="stat-card-icon" style="color: var(--brand-yellow);"><i class="bi bi-hand-thumbs-up"></i></div>
@@ -271,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
   })();
   fetchCount('/procura_se', 'procura_se');
   fetchCount('/parceria', 'parceria');
-  fetchCount('/castracao', 'castracao', 'section-castracao');
+  fetchCount('/mutirao_pet', 'mutirao_pet', 'section-castracao');
   (function() {
     var anoAtual = 2026;
     function carregarMutiraoPet(ano) {
