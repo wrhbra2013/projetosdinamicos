@@ -124,6 +124,7 @@
           <option value="procura_se">Procura-se</option>
           <option value="voluntario">Voluntario</option>
           <option value="coleta">Coleta</option>
+          <option value="transparencia">Transparencia</option>
         </select>
       </div>
 
@@ -170,9 +171,15 @@
             <div class="report-title">Voluntario</div>
             <div class="report-desc">Cadastro de voluntarios</div>
           </div>
+          <div class="report-option" data-table="coleta" onclick="carregarTabela('coleta')">
             <i class="bi bi-truck"></i>
             <div class="report-title">Coleta</div>
             <div class="report-desc">Solicitações de coleta</div>
+          </div>
+          <div class="report-option" data-table="transparencia" onclick="carregarTabela('transparencia')">
+            <i class="bi bi-file-earmark-text"></i>
+            <div class="report-title">Transparencia</div>
+            <div class="report-desc">Dados financeiros e prestação de contas</div>
           </div>
         </div>
       </div>
@@ -223,10 +230,12 @@
       adotado: 'Adotados',
       castracao: 'Castracao',
       doacoes: 'Doacoes',
+      eventos: 'Eventos',
       parceria: 'Parceria',
       procura_se: 'Procura-se',
       voluntario: 'Voluntario',
       coleta: 'Coleta',
+      transparencia: 'Transparencia',
     };
 
     const TABLE_COLUMNS_HIDE = ['id', 'senha', 'updated_at', 'created_at'];
