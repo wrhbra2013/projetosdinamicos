@@ -43,8 +43,8 @@
     <h1>Portal da Transparência</h1>
     <p>Acesso aos documentos e relatórios da ONG Amor Animal.</p>
 
-    <div class="admin-toggle">
-      <a onclick="toggleAdmin()"><i class="bi bi-lock me-1"></i>Área Administrativa</a>
+    <div class="admin-toggle" id="admin-toggle-link" style="display:none;">
+      <a onclick="toggleAdmin()"><i class="bi bi-shield-lock me-1"></i>Área Administrativa</a>
     </div>
 
     <div id="admin-section" class="hidden">
@@ -166,11 +166,15 @@ var icons = {
       titulo.value = this.files[0].name.replace(/\.[^/.]+$/, "");
     }
   });
+
+  if (localStorage.getItem('amoranimal_token')) {
+    document.getElementById('admin-toggle-link').style.display = '';
+  }
 })();
 
 function toggleAdmin() {
   var section = document.getElementById('admin-section');
-  section.classList.toggle('hidden');
+  if (section) section.classList.toggle('hidden');
 }
 
 function mostrarUpload() {
@@ -249,8 +253,7 @@ function renderizarLista(docs, tipo) {
     html += '<a href="' + arquivoUrl + '" target="_blank" class="btn-view"><i class="bi bi-eye-fill"></i> Visualizar</a>';
     html += '<a href="' + arquivoUrl + '" download class="btn-view" style="background:var(--button-bg);color:var(--button-text);"><i class="bi bi-download"></i> Baixar</a>';
 
-    var adminSection = document.getElementById('admin-section');
-    if (!adminSection.classList.contains('hidden')) {
+    if (localStorage.getItem('amoranimal_token')) {
       html += '<button class="btn-delete" onclick="deletarDocumento(\'' + doc.id + '\',\'' + (doc.arquivo || '') + '\')"><i class="bi bi-trash-fill"></i> Excluir</button>';
     }
 
