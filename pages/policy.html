@@ -46,8 +46,16 @@
   <p class="mt-4">A ONG AMOR ANIMAL DE MARÍLIA.</p>
   <p>Respeito pelos seus dados.</p>
   <a href="mailto:amoranimalmariliadev@gmail.com?subject=PrivacyPolicyONGAmorAnimal" class="btn btn-link p-0">Email para o Desenvolvedor</a>
-  <p class="mt-3">Marília, 2026.</p>
+  <p class="mt-3">Marília, <span id="policy-data-extenso"></span>.</p>
 </div>
+
+<script>
+  (function() {
+    var data = new Date();
+    var meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    document.getElementById('policy-data-extenso').textContent = data.getDate() + ' de ' + meses[data.getMonth()] + ' de ' + data.getFullYear();
+  })();
+</script>
 
 <script src="../components/footer.js"></script>
 
