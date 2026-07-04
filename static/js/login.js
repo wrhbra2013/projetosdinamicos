@@ -140,18 +140,18 @@ class LoginFormHandler {
         return r.json();
       })
       .then(function(data) {
-        localStorage.setItem('amoranimal_token', data.token);
-        localStorage.setItem('amoranimal_usuario', JSON.stringify(data.usuario));
-        localStorage.setItem('amoranimal_session_expiry', String(Date.now() + 600000));
+        localStorage.setItem('freelas_token', data.token);
+        localStorage.setItem('freelas_usuario', JSON.stringify(data.usuario));
+        localStorage.setItem('freelas_session_expiry', String(Date.now() + 600000));
         window.loginHandler?.showMessage('Login realizado! Redirecionando...', 'success');
         setTimeout(function() { window.location.href = '/index.html'; }, 1000);
       })
       .catch(function(err) {
         var isNetworkError = err.name === 'TypeError' && err.message.indexOf('fetch') !== -1;
         if (isNetworkError || err.message === 'Erro de conexão com o servidor (CORS).') {
-          localStorage.setItem('amoranimal_token', 'admin-static-token');
-          localStorage.setItem('amoranimal_usuario', JSON.stringify({ nome: valor, admin: true, static: true }));
-          localStorage.setItem('amoranimal_session_expiry', String(Date.now() + 600000));
+          localStorage.setItem('freelas_token', 'admin-static-token');
+          localStorage.setItem('freelas_usuario', JSON.stringify({ nome: valor, admin: true, static: true }));
+          localStorage.setItem('freelas_session_expiry', String(Date.now() + 600000));
           window.loginHandler?.showMessage('Modo administrador local ativado! Redirecionando...', 'success');
           setTimeout(function() { window.location.href = '/index.html'; }, 1000);
         } else {
@@ -251,7 +251,7 @@ class LoginFormHandler {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (localStorage.getItem('amoranimal_token')) {
+    if (localStorage.getItem('freelas_token')) {
       window.location.href = '/index.html';
       return;
     }
@@ -289,7 +289,7 @@ document.addEventListener('visibilitychange', function() {
 });
 
 window.adminLogout = function() {
-  localStorage.removeItem('amoranimal_token');
-  localStorage.removeItem('amoranimal_usuario');
+  localStorage.removeItem('freelas_token');
+  localStorage.removeItem('freelas_usuario');
   window.location.href = window.location.origin + '/index.html';
 };

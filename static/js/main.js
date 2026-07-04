@@ -1,6 +1,5 @@
 /*!
- * Amor Animal Marilia - Main JavaScript (Static Version)
- * Simplified for static pages - no backend dependencies
+ * Projetos Dinâmicos Incubadora - Main JavaScript
  */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -86,22 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-    var form = document.getElementById('form-procura-se');
-    if (form) {
-        form.addEventListener('reset', window.clearPreview);
-    }
-
-    var adoteButton = document.querySelector('.adote-button');
-    var adoteContainer = document.querySelector('.adote-container');
-    if (adoteButton && adoteContainer) {
-        adoteButton.addEventListener('click', function() {
-            adoteContainer.style.display = 'inline-block';
-            adoteButton.style.display = 'none';
-            var searchInput = document.getElementById('searchInput');
-            if (searchInput) searchInput.focus();
-        });
-    }
 });
 
 function phoneFormat(input) {
@@ -123,48 +106,6 @@ function phoneValidator(input) {
     if (!validLengths.includes(digits.length)) return false;
     var validDDDs = ['11','12','13','14','15','16','17','18','19','21','22','24','27','28','31','32','33','34','35','37','38','41','42','43','44','45','46','47','48','49','51','53','54','55','61','62','63','64','65','66','67','68','69','71','73','74','75','77','79','81','82','83','84','85','86','87','88','91','92','93','94','95','96','97','98','99'];
     return validDDDs.includes(digits.substring(0, 2));
-}
-
-function filterPets() {
-    var searchTerm = (document.getElementById('searchInput') ? document.getElementById('searchInput').value : '').toLowerCase();
-    var especieFilter = (document.getElementById('especieFilter') ? document.getElementById('especieFilter').value : '').toLowerCase();
-    var porteFilter = (document.getElementById('porteFilter') ? document.getElementById('porteFilter').value : '').toLowerCase();
-    var cards = document.querySelectorAll('.pet-card');
-
-    cards.forEach(function(card) {
-        var nome = card.dataset.nome || '';
-        var especie = card.dataset.especie || '';
-        var porte = card.dataset.porte || '';
-
-        var matchesSearch = !searchTerm || nome.includes(searchTerm);
-        var matchesEspecie = !especieFilter || especie.includes(especieFilter);
-        var matchesPorte = !porteFilter || porte.includes(porteFilter);
-
-        if (matchesSearch && matchesEspecie && matchesPorte) {
-            card.style.display = '';
-        } else {
-            card.style.display = 'none';
-        }
-    });
-
-    updateEmptyState();
-}
-
-function updateEmptyState() {
-    var visibleCards = document.querySelectorAll('.pet-card:not([style*="display: none"])');
-    var grid = document.getElementById('petsGrid');
-    if (visibleCards.length === 0 && grid) {
-        if (!document.getElementById('noResults')) {
-            var noResults = document.createElement('div');
-            noResults.id = 'noResults';
-            noResults.className = 'empty-state';
-            noResults.innerHTML = '<div class="empty-icon"><i class="bi bi-search"></i></div><h2 class="empty-title">Nenhum Pet Encontrado</h2><p class="empty-description">Tente ajustar os filtros para encontrar o pet perfeito para voc\u00ea.</p>';
-            grid.appendChild(noResults);
-        }
-    } else {
-        var noResults = document.getElementById('noResults');
-        if (noResults) noResults.remove();
-    }
 }
 
 (function() {

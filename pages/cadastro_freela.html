@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro Freelancer — Projetos Dinâmicos Freelas</title>
+  <meta name="description" content="Cadastre-se gratuitamente como freelancer de TI e encontre projetos incríveis.">
+  <link rel="stylesheet" href="../static/css/default.css">
+  <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+  <style>
+    .page-header { text-align:center; padding:3rem 1.5rem 2rem; background:linear-gradient(135deg, var(--bg-alt), var(--container-bg)); border-bottom:1px solid var(--border-color); }
+    .page-header h1 { font-size:2.2rem; margin:0 0 0.5rem; }
+    .page-header p { font-size:1.05rem; color:var(--text-muted); max-width:600px; margin:0 auto; }
+    .form-section { max-width:720px; margin:0 auto; padding:3rem 1.5rem; }
+    .form-card { background:var(--container-bg); border-radius:16px; padding:2.5rem; border:1px solid var(--container-border); box-shadow:var(--container-shadow); }
+    .form-card h2 { margin:0 0 1.5rem; font-size:1.2rem; color:var(--heading-color); }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .form-group { margin-bottom:1.2rem; }
+    .form-group label { display:block; margin-bottom:0.3rem; font-size:0.85rem; font-weight:600; color:var(--heading-color); }
+    .form-group input,.form-group select,.form-group textarea { width:100%; padding:0.65rem 0.85rem; border:1px solid var(--input-border); border-radius:8px; font-size:0.95rem; box-sizing:border-box; background:var(--input-bg); color:var(--input-text); transition:border-color 0.2s; }
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus { outline:none; border-color:var(--brand-primary); box-shadow:0 0 0 0.2rem rgba(99,102,241,0.15); }
+    .form-group textarea { resize:vertical; min-height:80px; }
+    .phone-input { transition:all 0.3s ease; }
+    .full-width { grid-column:1/-1; }
+    @media (max-width:600px) { .form-grid { grid-template-columns:1fr; } .form-card { padding:1.5rem; } .page-header h1 { font-size:1.6rem; } }
+  </style>
+</head>
+<body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
+  <main class="main-content">
+    <div class="page-header">
+      <h1><i class="bi bi-person-plus" style="margin-right:8px;color:var(--brand-primary);"></i>Cadastro Freelancer</h1>
+      <p>Grátis para profissionais de TI. Crie seu perfil e comece a receber propostas de projetos.</p>
+    </div>
+    <div class="form-section">
+      <div class="form-card">
+        <h2><i class="bi bi-person-badge" style="color:var(--brand-primary);margin-right:6px;"></i>Dados do Profissional</h2>
+        <form id="formFreela" novalidate>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="nome">Nome Completo *</label>
+              <input type="text" id="nome" name="nome" required placeholder="Seu nome">
+            </div>
+            <div class="form-group">
+              <label for="email">E-mail *</label>
+              <input type="email" id="email" name="email" required placeholder="seu@email.com">
+            </div>
+            <div class="form-group">
+              <label for="telefone">Telefone</label>
+              <input type="tel" id="telefone" name="telefone" class="phone-input" placeholder="(14) 99999-9999">
+            </div>
+            <div class="form-group">
+              <label for="categoria">Categoria *</label>
+              <select id="categoria" name="categoria" required>
+                <option value="">Selecione</option>
+                <option value="desenvolvimento">Desenvolvimento Web</option>
+                <option value="mobile">Mobile</option>
+                <option value="design">Design/UI</option>
+                <option value="devops">DevOps</option>
+                <option value="dados">Dados/IA</option>
+                <option value="suporte">Suporte Técnico</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="experiencia">Anos de Experiência</label>
+              <select id="experiencia" name="experiencia">
+                <option value="">Selecione</option>
+                <option value="1">1 ano</option>
+                <option value="2">2 anos</option>
+                <option value="3">3 anos</option>
+                <option value="5">5 anos</option>
+                <option value="10">10+ anos</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="preco_hora">Preço por Hora (opcional)</label>
+              <input type="text" id="preco_hora" name="preco_hora" placeholder="Ex: R$ 80">
+            </div>
+            <div class="form-group">
+              <label for="disponibilidade">Disponibilidade</label>
+              <select id="disponibilidade" name="disponibilidade">
+                <option value="integral">Integral (40h/sem)</option>
+                <option value="meio_periodo">Meio Período (20h/sem)</option>
+                <option value="fim_de_semana">Fim de Semana</option>
+                <option value="projeto">Por Projeto</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="localizacao">Localização</label>
+              <input type="text" id="localizacao" name="localizacao" placeholder="Remoto ou Cidade">
+            </div>
+            <div class="form-group full-width">
+              <label for="habilidades">Habilidades (separadas por vírgula) *</label>
+              <input type="text" id="habilidades" name="habilidades" required placeholder="Ex: JavaScript, React, Node.js, Python">
+            </div>
+            <div class="form-group full-width">
+              <label for="bio">Bio / Resumo Profissional</label>
+              <textarea id="bio" name="bio" placeholder="Conte um pouco sobre sua experiência, áreas de atuação e tipos de projeto que busca..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="portfolio">Link do Portfólio</label>
+              <input type="url" id="portfolio" name="portfolio" placeholder="https://">
+            </div>
+            <div class="form-group">
+              <label for="github">GitHub</label>
+              <input type="url" id="github" name="github" placeholder="https://github.com/seu-user">
+            </div>
+            <div class="form-group">
+              <label for="linkedin">LinkedIn</label>
+              <input type="url" id="linkedin" name="linkedin" placeholder="https://linkedin.com/in/seu-user">
+            </div>
+          </div>
+          <div id="msgCadastro" style="margin:1rem 0;"></div>
+          <button type="submit" class="btn btn-primary btn-lg" style="width:100%;"><i class="bi bi-check-lg"></i> Cadastrar Gratuitamente</button>
+        </form>
+      </div>
+    </div>
+  </main>
+  <script src="../static/js/api.js"></script>
+  <script src="../static/js/main.js"></script>
+  <script>
+  document.getElementById('formFreela').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = this.querySelector('button[type="submit"]');
+    var msg = document.getElementById('msgCadastro');
+    btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Cadastrando...';
+    var data = {
+      nome: document.getElementById('nome').value,
+      email: document.getElementById('email').value,
+      telefone: document.getElementById('telefone').value,
+      categoria: document.getElementById('categoria').value,
+      experiencia: document.getElementById('experiencia').value,
+      preco_hora: document.getElementById('preco_hora').value,
+      disponibilidade: document.getElementById('disponibilidade').value,
+      localizacao: document.getElementById('localizacao').value,
+      habilidades: document.getElementById('habilidades').value,
+      bio: document.getElementById('bio').value,
+      portfolio: document.getElementById('portfolio').value,
+      github: document.getElementById('github').value,
+      linkedin: document.getElementById('linkedin').value,
+      status: 'disponivel'
+    };
+    apiFetch('/freelancers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Erro ao cadastrar');
+      msg.innerHTML = '<div class="alert alert-success">Cadastro realizado com sucesso! Redirecionando...</div>';
+      setTimeout(function() { window.location.href = 'freelancers.html'; }, 2000);
+    })
+    .catch(function(err) {
+      msg.innerHTML = '<div class="alert alert-danger">Erro ao cadastrar. Tente novamente.</div>';
+      btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-lg"></i> Cadastrar Gratuitamente';
+    });
+  });
+  </script>
+  <script src="../components/footer.js"></script>
+</body>
+</html>

@@ -548,65 +548,66 @@ body.high-contrast .help-content hr {
    1. Base Styles & Variables
    ========================================================================== */
 :root {
-  /* --- Nova Paleta de Cores Landing Page Moderna --- */
-  --brand-teal: #0d9488;        /* cor primária (teal escuro) */
-  --brand-teal-dark: #0f766e;   /* hover */
-  --brand-teal-light: #14b8a6;  /* destaque claro */
-  --brand-coral: #f97316;       /* laranja vibrante / headings */
-  --brand-coral-2: #ea580c;     /* alternativa laranja */
-  --brand-purple: #8b5cf6;       /* roxo para acentos */
-  --brand-pink: #ec4899;        /* pink para highlights */
-  --brand-blue: #0ea5e9;        /* azul cielo */
-  --brand-blue-dark: #0284c7;   /* azul cielo escuro */
+  /* Incubadora Projetos Dinâmicos — Paleta Moderna */
+  --brand-primary: #6366f1;        /* indigo — cor principal */
+  --brand-primary-dark: #4f46e5;   /* hover */
+  --brand-primary-light: #818cf8;  /* destaque claro */
+  --brand-secondary: #06b6d4;      /* cyan — acento secundário */
+  --brand-secondary-dark: #0891b2;
+  --brand-accent: #f59e0b;         /* âmbar — CTA / headings */
+  --brand-accent-dark: #d97706;
+  --brand-success: #10b981;        /* verde — sucesso / growth */
+  --brand-purple: #8b5cf6;         /* roxo — inovação */
+  --brand-pink: #ec4899;           /* pink — destaques */
   
   /* Semantic aliases */
-  --primary: var(--brand-teal);
-  --primary-hover: var(--brand-teal-dark);
-  --danger: #dc3545;
-  --danger-hover: #c82333;
-  --success: #28a745;
-  --success-hover: #218838;
-  --warning: #ffc107;
-  --warning-hover: #e0a800;
-  --info: var(--brand-blue);
+  --primary: var(--brand-primary);
+  --primary-hover: var(--brand-primary-dark);
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+  --success: var(--brand-success);
+  --success-hover: #059669;
+  --warning: var(--brand-accent);
+  --warning-hover: var(--brand-accent-dark);
+  --info: var(--brand-secondary);
   
-  --bg-color: #f8fafc;          /* page background suave */
-  --bg-alt: #e2e8f0;           /* background alternativo */
-  --text-color: #1e293b;       /* texto principal escuro */
-  --text-muted: #64748b;       /* alias para muted-color */
-  --muted-color: #64748b;      /* textos secundários */
-  --container-bg: #ffffff;     /* cards e containers */
-  --container-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --bg-color: #f8fafc;
+  --bg-alt: #eef2ff;
+  --text-color: #1e293b;
+  --text-muted: #64748b;
+  --muted-color: #64748b;
+  --container-bg: #ffffff;
+  --container-shadow: 0 4px 20px rgba(99,102,241,0.10);
   --container-border: #e2e8f0;
   --card-bg: var(--container-bg);
-  --hover-bg: rgba(0,0,0,0.05);
+  --hover-bg: rgba(99,102,241,0.05);
   --alternate-bg: var(--bg-alt);
   
-  --heading-color: var(--brand-coral);
+  --heading-color: var(--brand-primary-dark);
   --paragraph-color: var(--text-color);
   
-  --link-color: var(--brand-teal);
+  --link-color: var(--brand-primary);
   --link-hover-decoration: underline;
   
   --border-color: #e2e8f0;
-  --table-header-bg: #f1f5f9;
+  --table-header-bg: #eef2ff;
   
-  --nav-bg: #0d9488;
-  --nav-text: #ffffff;
-  --nav-gradient: linear-gradient(135deg, var(--brand-teal), var(--brand-teal-dark));
+  --nav-bg: #ffffff;
+  --nav-text: #1e293b;
+  --nav-gradient: linear-gradient(135deg, #ffffff, #f8fafc);
   
-  --footer-bg: linear-gradient(135deg, #1e293b, #334155);
-  --footer-text: #e2e8f0;
+  --footer-bg: linear-gradient(135deg, #1e1b4b, #312e81);
+  --footer-text: #c7d2fe;
   
   --input-bg: #ffffff;
   --input-text: #1e293b;
   --input-border: #cbd5e1;
   
-  --button-bg: linear-gradient(135deg, var(--brand-teal), var(--brand-teal-dark));
+  --button-bg: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark));
   --button-text: #ffffff;
-  --button-hover-bg: linear-gradient(135deg, var(--brand-teal-dark), #0f5950);
+  --button-hover-bg: linear-gradient(135deg, var(--brand-primary-dark), #3730a3);
   
-  /* Variáveis de Alto Contraste */
+  /* Alto Contraste */
   --hc-bg-color: #000000;
   --hc-text-color: #ffffff;
   --hc-container-bg: #121212;
@@ -614,7 +615,7 @@ body.high-contrast .help-content hr {
   --hc-container-border: #ffffff22;
   --hc-heading-color: #ffffff;
   --hc-paragraph-color: #e6e6e6;
-  --hc-link-color: #22d3ee;
+  --hc-link-color: #818cf8;
   --hc-link-hover-decoration: underline;
   --hc-border-color: #444444;
   --hc-table-header-bg: #222222;
@@ -626,11 +627,11 @@ body.high-contrast .help-content hr {
   --hc-input-text: #ffffff;
   --hc-input-border: #555555;
   --hc-input-placeholder: #9a9a9a;
-  --hc-button-bg: #0d9488;
+  --hc-button-bg: #6366f1;
   --hc-button-text: #ffffff;
-  --hc-button-hover-bg: #0f766e;
-  --hc-primary: #22d3ee;
-  --hc-primary-hover: #67e8f9;
+  --hc-button-hover-bg: #4f46e5;
+  --hc-primary: #818cf8;
+  --hc-primary-hover: #a5b4fc;
   --hc-danger: #ff4444;
   --hc-danger-hover: #ff6666;
   --hc-success: #44ff44;
@@ -975,8 +976,197 @@ footer {
    vertical-align: middle;
  }
  
- /* ==========================================================================
-    4. Typography (Headings, Paragraphs, Links)
+/* --- Incubadora Projetos Dinâmicos: Header & Navigation --- */
+.incubator-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 1.5rem;
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark));
+  color: #fff;
+  font-size: 0.8rem;
+}
+.incubator-badge i {
+  margin-right: 6px;
+}
+.incubator-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 1.5rem 0;
+}
+.incubator-logo-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-light));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+.incubator-logo-text strong {
+  font-size: 1.3rem;
+  color: var(--heading-color);
+  display: block;
+}
+.incubator-logo-text span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.incubator-nav {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 1.5rem;
+  flex-wrap: wrap;
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+.incubator-nav a {
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: var(--nav-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.incubator-nav a:hover {
+  background: var(--bg-alt);
+  color: var(--brand-primary);
+}
+.incubator-nav a.nav-cta {
+  background: var(--button-bg);
+  color: var(--button-text);
+}
+.incubator-nav a.nav-cta:hover {
+  background: var(--button-hover-bg);
+}
+
+/* --- Footer Grid --- */
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2rem;
+  text-align: left;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+.footer-col h4 {
+  color: #e0e7ff;
+  font-size: 1rem;
+  margin: 0 0 1rem;
+}
+.footer-col p {
+  color: var(--footer-text);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.footer-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.footer-col ul li {
+  margin-bottom: 0.5rem;
+}
+.footer-col ul li a {
+  color: var(--footer-text);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+.footer-col ul li a:hover {
+  color: #a5b4fc;
+}
+.footer-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.15);
+  margin: 2rem auto;
+  max-width: 1200px;
+}
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.footer-copyright {
+  font-size: 0.8rem;
+  color: var(--footer-text);
+  margin: 0;
+}
+.footer-social {
+  display: flex;
+  gap: 12px;
+}
+.footer-social a {
+  color: var(--footer-text);
+  font-size: 1.2rem;
+  transition: color 0.2s;
+}
+.footer-social a:hover {
+  color: #a5b4fc;
+}
+footer {
+  text-align: center;
+  margin-top: 20px;
+  padding: 40px 20px 30px;
+  background: var(--footer-bg);
+  color: var(--footer-text);
+  border-top: 1px solid var(--border-color);
+}
+
+/* --- Incubator Cards --- */
+.incubator-card {
+  background: var(--container-bg);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--container-shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid var(--container-border);
+}
+.incubator-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(99,102,241,0.15);
+}
+
+/* --- Program Cards --- */
+.program-card {
+  text-align: left;
+}
+.program-card .program-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+.program-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+.program-card p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* ==========================================================================
+   4. Typography (Headings, Paragraphs, Links)
     ========================================================================== */
  h1, h2, h3, h4, h5, h6 {
    color: var(--heading-color);

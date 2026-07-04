@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planos — Projetos Dinâmicos Freelas</title>
+  <meta name="description" content="Planos para freelancers e contratantes. Grátis para profissionais de TI.">
+  <link rel="stylesheet" href="../static/css/default.css">
+  <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../static/css/home.css">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+  <style>
+    .page-hero { background: linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#3730a3 70%,#4338ca 100%); padding: 60px 1.5rem; text-align: center; }
+    .page-hero h1 { font-size: 2.5rem; color: #fff; margin: 0 0 0.5rem; font-weight: 800; }
+    .page-hero p { color: #c7d2fe; font-size: 1.05rem; max-width: 600px; margin: 0 auto; }
+    .planos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; align-items: start; }
+    .plano-card { background: var(--container-bg); border-radius: 20px; border: 2px solid var(--container-border); padding: 2rem; text-align: center; transition: transform 0.3s, box-shadow 0.3s; position: relative; }
+    .plano-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(99,102,241,0.15); }
+    .plano-destaque { border-color: var(--brand-primary); box-shadow: 0 8px 32px rgba(99,102,241,0.2); }
+    .plano-destaque-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-light)); color: #fff; padding: 4px 16px; border-radius: 100px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .plano-name { font-size: 1.3rem; font-weight: 700; color: var(--heading-color); margin: 0 0 8px; }
+    .plano-price { font-size: 2.5rem; font-weight: 800; color: var(--heading-color); margin: 0.5rem 0; }
+    .plano-price span { font-size: 1rem; font-weight: 400; color: var(--text-muted); }
+    .plano-desc { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5; }
+    .plano-features { list-style: none; padding: 0; margin: 0 0 1.5rem; text-align: left; }
+    .plano-features li { padding: 8px 0; font-size: 0.9rem; color: var(--text-color); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--bg-alt); }
+    .plano-features li:last-child { border-bottom: none; }
+    .plano-features li i { color: var(--brand-success); font-size: 1rem; width: 20px; }
+    .section-label { text-align: center; font-size: 1.1rem; font-weight: 700; color: var(--heading-color); margin: 3rem 0 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
+    @media (max-width: 768px) { .page-hero h1 { font-size: 1.8rem; } }
+  </style>
+</head>
+<body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
+  <main class="main-content">
+    <section class="page-hero">
+      <h1><i class="bi bi-card-list" style="margin-right:8px;"></i>Planos e Benefícios</h1>
+      <p>Escolha o plano ideal para seu perfil. Freelancers têm acesso gratuito à plataforma.</p>
+    </section>
+
+    <section class="landing-section">
+      <div class="landing-container">
+        <div class="section-label"><i class="bi bi-person-fill"></i> Para Freelancers</div>
+        <div class="planos-grid">
+          <div class="plano-card">
+            <div class="plano-name">Gratuito</div>
+            <div class="plano-price">Grátis <span style="font-size:0.9rem;">/sempre</span></div>
+            <div class="plano-desc">Perfil básico e candidatura a projetos. Sem compromisso.</div>
+            <ul class="plano-features">
+              <li><i class="bi bi-check-lg"></i> Perfil público com portfólio</li>
+              <li><i class="bi bi-check-lg"></i> Candidatura a projetos</li>
+              <li><i class="bi bi-check-lg"></i> Acesso ao dashboard</li>
+              <li><i class="bi bi-check-lg"></i> Notificações de projetos</li>
+            </ul>
+            <a href="cadastro_freela.html" class="btn btn-primary" style="width:100%;">Cadastre-se Grátis</a>
+          </div>
+          <div class="plano-card plano-destaque">
+            <div class="plano-destaque-badge">Popular</div>
+            <div class="plano-name">Profissional</div>
+            <div class="plano-price">R$ 29,90 <span>/mês</span></div>
+            <div class="plano-desc">Perfil destacado e matching prioritário para conseguir mais projetos.</div>
+            <ul class="plano-features">
+              <li><i class="bi bi-check-lg"></i> Tudo do Gratuito</li>
+              <li><i class="bi bi-check-lg"></i> Perfil destacado nos resultados</li>
+              <li><i class="bi bi-check-lg"></i> Matching inteligente prioritário</li>
+              <li><i class="bi bi-check-lg"></i> Suporte prioritário</li>
+              <li><i class="bi bi-check-lg"></i> Relatórios de desempenho</li>
+            </ul>
+            <a href="cadastro_freela.html" class="btn btn-primary" style="width:100%;">Assinar Agora</a>
+          </div>
+          <div class="plano-card">
+            <div class="plano-name">Premium</div>
+            <div class="plano-price">R$ 59,90 <span>/mês</span></div>
+            <div class="plano-desc">Máxima visibilidade e benefícios exclusivos para profissionais top.</div>
+            <ul class="plano-features">
+              <li><i class="bi bi-check-lg"></i> Tudo do Profissional</li>
+              <li><i class="bi bi-check-lg"></i> Selo Premium de verificação</li>
+              <li><i class="bi bi-check-lg"></i> Matching exclusivo com clientes</li>
+              <li><i class="bi bi-check-lg"></i> Garantia de tarefas concluídas</li>
+              <li><i class="bi bi-check-lg"></i> Suporte 24/7</li>
+            </ul>
+            <a href="cadastro_freela.html" class="btn btn-primary" style="width:100%;">Assinar Agora</a>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:4rem;"><i class="bi bi-building"></i> Para Contratantes</div>
+        <div class="planos-grid">
+          <div class="plano-card">
+            <div class="plano-name">Anúncio Básico</div>
+            <div class="plano-price">Grátis</div>
+            <div class="plano-desc">Publique seu projeto e receba candidaturas de freelancers.</div>
+            <ul class="plano-features">
+              <li><i class="bi bi-check-lg"></i> Projeto listado na plataforma</li>
+              <li><i class="bi bi-check-lg"></i> Candidatura de freelancers</li>
+              <li><i class="bi bi-check-lg"></i> Visualização de perfis</li>
+              <li><i class="bi bi-check-lg"></i> Pagamento combinado entre as partes</li>
+            </ul>
+            <a href="cadastro_cliente.html" class="btn btn-primary" style="width:100%;">Anunciar Grátis</a>
+          </div>
+          <div class="plano-card plano-destaque">
+            <div class="plano-destaque-badge">Recomendado</div>
+            <div class="plano-name">Anúncio Destacado</div>
+            <div class="plano-price">R$ 49,90</div>
+            <div class="plano-desc">Projeto em destaque no topo das buscas com matching inteligente.</div>
+            <ul class="plano-features">
+              <li><i class="bi bi-check-lg"></i> Tudo do Básico</li>
+              <li><i class="bi bi-check-lg"></i> Projeto destacado no topo</li>
+              <li><i class="bi bi-check-lg"></i> Matching automático com freelancers</li>
+              <li><i class="bi bi-check-lg"></i> Relatório de candidatos</li>
+              <li><i class="bi bi-check-lg"></i> Suporte dedicado</li>
+            </ul>
+            <a href="cadastro_cliente.html" class="btn btn-primary" style="width:100%;">Anunciar Agora</a>
+          </div>
+          <div class="plano-card">
+            <div class="plano-name">Anúncios</div>
+            <div class="plano-price">Sob Consulta</div>
+            <div class="plano-desc">Espaços publicitários na plataforma para sua empresa ou serviço.</div>
+            <ul class="plano-features">
+              <li><i class="bi bi-check-lg"></i> Banner no topo da plataforma</li>
+              <li><i class="bi bi-check-lg"></i> Anúncio na sidebar</li>
+              <li><i class="bi bi-check-lg"></i> Destaque em newsletters</li>
+              <li><i class="bi bi-check-lg"></i> Relatório de impressões</li>
+            </ul>
+            <a href="contato.html" class="btn btn-primary" style="width:100%;">Falar Conosco</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="../components/footer.js"></script>
+</body>
+</html>

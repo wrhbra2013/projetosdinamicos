@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recursos — Projetos Dinâmicos Freelas</title>
+  <link rel="stylesheet" href="../static/css/default.css">
+  <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+  <style>
+    .page-header {
+      text-align: center;
+      padding: 3rem 1.5rem 2rem;
+      background: linear-gradient(135deg, var(--bg-alt), var(--container-bg));
+      border-bottom: 1px solid var(--border-color);
+    }
+    .page-header h1 {
+      font-size: 2.2rem;
+      margin: 0 0 0.5rem;
+      color: var(--heading-color);
+    }
+    .page-header p {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .section-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.5rem;
+      margin: 0 0 0.5rem;
+      color: var(--heading-color);
+    }
+    .section-title i {
+      color: var(--brand-primary);
+      font-size: 1.6rem;
+    }
+    .section-desc {
+      color: var(--text-muted);
+      margin: 0 0 2rem;
+      font-size: 0.95rem;
+    }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+    }
+    .resource-card {
+      padding: 1.5rem;
+    }
+    .resource-card .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      color: #fff;
+      margin-bottom: 1rem;
+    }
+    .resource-card h3 {
+      font-size: 1.1rem;
+      margin: 0 0 0.5rem;
+      color: var(--heading-color);
+    }
+    .resource-card p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin: 0 0 1rem;
+    }
+    .resource-card .card-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .tools-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .tool-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 1rem 1.2rem;
+      background: var(--container-bg);
+      border-radius: 12px;
+      border: 1px solid var(--container-border);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .tool-item:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--container-shadow);
+    }
+    .tool-item .tool-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .tool-item .tool-info h4 {
+      margin: 0 0 2px;
+      font-size: 0.95rem;
+      color: var(--heading-color);
+    }
+    .tool-item .tool-info p {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .workshop-card {
+      padding: 2rem;
+      text-align: center;
+    }
+    .workshop-card .ws-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      color: #fff;
+      margin: 0 auto 1.2rem;
+    }
+    .workshop-card h3 {
+      font-size: 1.1rem;
+      margin: 0 0 0.5rem;
+    }
+    .workshop-card p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin: 0 0 1.2rem;
+    }
+    .workshop-meta {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .workshop-meta i {
+      margin-right: 4px;
+    }
+    @media (max-width: 768px) {
+      .page-header h1 { font-size: 1.6rem; }
+      .section-wrap { padding: 2rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
+  <main class="main-content">
+    <div class="page-header">
+      <h1><i class="bi bi-book" style="margin-right:8px;color:var(--brand-primary);"></i>Base de Conhecimento</h1>
+      <p>Tudo o que o freelancer de TI precisa para crescer: guias, templates, workshops e ferramentas recomendadas pela comunidade.</p>
+    </div>
+
+    <div class="section-wrap">
+      <div class="section-title">
+        <i class="bi bi-files"></i>
+        <h2 style="margin:0;">Guias e Templates</h2>
+      </div>
+      <p class="section-desc">Materiais práticos para estruturar sua carreira freelancer, desde propostas até entregas.</p>
+      <div class="cards-grid">
+        <div class="incubator-card resource-card">
+          <div class="card-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);"><i class="bi bi-file-text"></i></div>
+          <h3>Template de Proposta</h3>
+          <p>Modelo editável de proposta comercial para freelancers. Inclui escopo, cronograma, valores e condições de pagamento.</p>
+          <span class="card-tag" style="background:#eef2ff;color:#4f46e5;">DOCX / Google Docs</span>
+        </div>
+        <div class="incubator-card resource-card">
+          <div class="card-icon" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);"><i class="bi bi-easel"></i></div>
+          <h3>Portfólio Template</h3>
+          <p>Apresentação pronta para mostrar seus cases de sucesso, habilidades técnicas e depoimentos de clientes.</p>
+          <span class="card-tag" style="background:#ecfeff;color:#0891b2;">PPT / Google Slides</span>
+        </div>
+        <div class="incubator-card resource-card">
+          <div class="card-icon" style="background:linear-gradient(135deg,#10b981,#34d399);"><i class="bi bi-calculator"></i></div>
+          <h3>Calculadora de Preços</h3>
+          <p>Planilha para calcular hora técnica, custos operacionais, impostos e margem de lucro ideal para cada projeto.</p>
+          <span class="card-tag" style="background:#ecfdf5;color:#059669;">XLSX</span>
+        </div>
+        <div class="incubator-card resource-card">
+          <div class="card-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);"><i class="bi bi-rocket-takeoff"></i></div>
+          <h3>Checklist de Projetos</h3>
+          <p>Lista completa de etapas para gerenciar projetos freelancer: briefing, contrato, desenvolvimento, revisão e entrega.</p>
+          <span class="card-tag" style="background:#fffbeb;color:#d97706;">Notion / PDF</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-wrap" style="background:var(--bg-alt);border-radius:24px;margin:0 1.5rem 2rem;">
+      <div class="section-title">
+        <i class="bi bi-people"></i>
+        <h2 style="margin:0;">Workshops</h2>
+      </div>
+      <p class="section-desc">Sessões práticas ministradas por freelancers experientes para acelerar sua carreira.</p>
+      <div class="cards-grid">
+        <div class="incubator-card workshop-card">
+          <div class="ws-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);"><i class="bi bi-lightning"></i></div>
+          <h3>Início no Freelas</h3>
+          <p>Aprenda como dar os primeiros passos como freelancer de TI: perfil, prospecção, precificação e primeiros projetos.</p>
+          <div class="workshop-meta">
+            <span><i class="bi bi-clock"></i> 4 horas</span>
+            <span><i class="bi bi-people"></i> 20 vagas</span>
+            <span><i class="bi bi-calendar3"></i> Quinzenal</span>
+          </div>
+        </div>
+        <div class="incubator-card workshop-card">
+          <div class="ws-icon" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);"><i class="bi bi-graph-up"></i></div>
+          <h3>Growth para Freelancers</h3>
+          <p>Técnicas de marketing digital e prospecção ativa para conseguir mais clientes e projetos recorrentes.</p>
+          <div class="workshop-meta">
+            <span><i class="bi bi-clock"></i> 6 horas</span>
+            <span><i class="bi bi-people"></i> 25 vagas</span>
+            <span><i class="bi bi-calendar3"></i> Mensal</span>
+          </div>
+        </div>
+        <div class="incubator-card workshop-card">
+          <div class="ws-icon" style="background:linear-gradient(135deg,#10b981,#34d399);"><i class="bi bi-cash-stack"></i></div>
+          <h3>Gestão Financeira</h3>
+          <p>Organize suas finanças como freelancer: fluxo de caixa, reserva de emergência, impostos e planejamento.</p>
+          <div class="workshop-meta">
+            <span><i class="bi bi-clock"></i> 8 horas</span>
+            <span><i class="bi bi-people"></i> 15 vagas</span>
+            <span><i class="bi bi-calendar3"></i> Trimestral</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-wrap">
+      <div class="section-title">
+        <i class="bi bi-tools"></i>
+        <h2 style="margin:0;">Ferramentas Recomendadas</h2>
+      </div>
+      <p class="section-desc">Ferramentas que a comunidade de freelancers recomenda para cada etapa do trabalho.</p>
+      <div class="tools-list">
+        <div class="tool-item">
+          <div class="tool-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);"><i class="bi bi-github"></i></div>
+          <div class="tool-info">
+            <h4>GitHub</h4>
+            <p>Versionamento de código e portfólio de projetos.</p>
+          </div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-icon" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);"><i class="bi bi-figma"></i></div>
+          <div class="tool-info">
+            <h4>Figma</h4>
+            <p>Design de interface, prototipação e colaboração.</p>
+          </div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-icon" style="background:linear-gradient(135deg,#10b981,#34d399);"><i class="bi bi-slack"></i></div>
+          <div class="tool-info">
+            <h4>Slack</h4>
+            <p>Comunicação com clientes e comunidades de freelancers.</p>
+          </div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);"><i class="bi bi-trello"></i></div>
+          <div class="tool-info">
+            <h4>Trello</h4>
+            <p>Gestão visual de projetos e tarefas do dia a dia.</p>
+          </div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-icon" style="background:linear-gradient(135deg,#ec4899,#f472b6);"><i class="bi bi-clock"></i></div>
+          <div class="tool-info">
+            <h4>Toggl</h4>
+            <p>Controle de horas trabalhadas por projeto e cliente.</p>
+          </div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);"><i class="bi bi-google"></i></div>
+          <div class="tool-info">
+            <h4>Google Workspace</h4>
+            <p>E-mail profissional, drive e documentos colaborativos.</p>
+          </div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-icon" style="background:linear-gradient(135deg,#6366f1,#4f46e5);"><i class="bi bi-whatsapp"></i></div>
+          <div class="tool-info">
+            <h4>WhatsApp Business</h4>
+            <p>Comunicação direta com clientes e leads.</p>
+          </div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-icon" style="background:linear-gradient(135deg,#06b6d4,#0891b2);"><i class="bi bi-paypal"></i></div>
+          <div class="tool-info">
+            <h4>PayPal / Stripe</h4>
+            <p>Recebimento de pagamentos internacionais.</p>
+          </div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-icon" style="background:linear-gradient(135deg,#10b981,#059669);"><i class="bi bi-controller"></i></div>
+          <div class="tool-info">
+            <h4>Notion</h4>
+            <p>Documentação, wiki pessoal e base de conhecimento.</p>
+          </div>
+        </div>
+        <div class="tool-item">
+          <div class="tool-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706);"><i class="bi bi-camera-video"></i></div>
+          <div class="tool-info">
+            <h4>Zoom / Google Meet</h4>
+            <p>Reuniões online e apresentações para clientes.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="../components/footer.js"></script>
+</body>
+</html>

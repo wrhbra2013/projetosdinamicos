@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contato — Projetos Dinâmicos Freelas</title>
+  <link rel="stylesheet" href="../static/css/default.css">
+  <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+  <style>
+    .page-header {
+      text-align: center;
+      padding: 3rem 1.5rem 2rem;
+      background: linear-gradient(135deg, var(--bg-alt), var(--container-bg));
+      border-bottom: 1px solid var(--border-color);
+    }
+    .page-header h1 {
+      font-size: 2.2rem;
+      margin: 0 0 0.5rem;
+      color: var(--heading-color);
+    }
+    .page-header p {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .section-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+      align-items: start;
+    }
+    .contact-form-wrap {
+      background: var(--container-bg);
+      border-radius: 16px;
+      padding: 2rem;
+      border: 1px solid var(--container-border);
+      box-shadow: var(--container-shadow);
+    }
+    .contact-form-wrap h2 {
+      margin: 0 0 1.5rem;
+      font-size: 1.3rem;
+      color: var(--heading-color);
+    }
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.3rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--heading-color);
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      box-sizing: border-box;
+      background: var(--input-bg);
+      color: var(--input-text);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--brand-primary);
+      box-shadow: 0 0 0 0.2rem rgba(99,102,241,0.15);
+    }
+    .form-group textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+    .submit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 32px;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99,102,241,0.3);
+    }
+    .info-card {
+      background: var(--container-bg);
+      border-radius: 16px;
+      border: 1px solid var(--container-border);
+      box-shadow: var(--container-shadow);
+      overflow: hidden;
+    }
+    .info-card-body {
+      padding: 2rem;
+    }
+    .info-card-body h2 {
+      margin: 0 0 1.5rem;
+      font-size: 1.3rem;
+      color: var(--heading-color);
+    }
+    .info-item {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 1.5rem;
+    }
+    .info-item:last-child {
+      margin-bottom: 0;
+    }
+    .info-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .info-text h4 {
+      margin: 0 0 3px;
+      font-size: 0.95rem;
+      color: var(--heading-color);
+    }
+    .info-text p, .info-text a {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .info-text a:hover {
+      color: var(--brand-primary);
+    }
+    .social-links {
+      display: flex;
+      gap: 12px;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+    }
+    .social-links a {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: #fff;
+      text-decoration: none;
+      transition: transform 0.2s;
+    }
+    .social-links a:hover {
+      transform: translateY(-3px);
+      text-decoration: none;
+    }
+    .map-placeholder {
+      margin-top: 1.5rem;
+      height: 200px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--bg-alt), var(--container-border));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      border: 2px dashed var(--border-color);
+      font-size: 0.95rem;
+      gap: 8px;
+    }
+    .map-placeholder i {
+      font-size: 2rem;
+      color: var(--brand-primary);
+    }
+    .faq-section {
+      background: var(--bg-alt);
+      border-radius: 24px;
+      padding: 2rem;
+    }
+    .faq-section h2 {
+      margin: 0 0 1.5rem;
+      font-size: 1.3rem;
+      color: var(--heading-color);
+    }
+    .faq-item {
+      background: var(--container-bg);
+      border-radius: 12px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--container-border);
+    }
+    .faq-item:last-child {
+      margin-bottom: 0;
+    }
+    .faq-item h4 {
+      margin: 0 0 0.4rem;
+      font-size: 1rem;
+      color: var(--heading-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .faq-item h4 i {
+      color: var(--brand-primary);
+      font-size: 1.1rem;
+    }
+    .faq-item p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    @media (max-width: 768px) {
+      .page-header h1 { font-size: 1.6rem; }
+      .section-wrap { padding: 2rem 1rem; }
+      .contact-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
+  <main class="main-content">
+    <div class="page-header">
+      <h1><i class="bi bi-chat-dots" style="margin-right:8px;color:var(--brand-primary);"></i>Entre em Contato</h1>
+      <p>Tem dúvidas sobre a plataforma, quer anunciar um projeto ou propor parceria? Estamos prontos para ouvir você.</p>
+    </div>
+
+    <div class="section-wrap">
+      <div class="contact-grid">
+        <div class="contact-form-wrap">
+          <h2><i class="bi bi-send" style="color:var(--brand-primary);margin-right:6px;"></i>Envie sua Mensagem</h2>
+          <form action="#" method="post">
+            <div class="form-group">
+              <label for="nome">Nome</label>
+              <input type="text" id="nome" name="nome" placeholder="Seu nome completo" required>
+            </div>
+            <div class="form-group">
+              <label for="email">E-mail</label>
+              <input type="email" id="email" name="email" placeholder="seu@email.com" required>
+            </div>
+            <div class="form-group">
+              <label for="assunto">Assunto</label>
+              <select id="assunto" name="assunto">
+                <option value="">Selecione um assunto</option>
+                <option value="freelancer">Quero ser freelancer</option>
+                <option value="contratante">Quero contratar</option>
+                <option value="parceria">Proposta de Parceria</option>
+                <option value="duvida">Dúvida</option>
+                <option value="sugestao">Sugestão</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="mensagem">Mensagem</label>
+              <textarea id="mensagem" name="mensagem" placeholder="Escreva sua mensagem..." required></textarea>
+            </div>
+            <button type="submit" class="submit-btn"><i class="bi bi-send-fill"></i> Enviar Mensagem</button>
+          </form>
+        </div>
+
+        <div class="info-card">
+          <div class="info-card-body">
+            <h2><i class="bi bi-info-circle" style="color:var(--brand-primary);margin-right:6px;"></i>Informações de Contato</h2>
+            <div class="info-item">
+              <div class="info-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);"><i class="bi bi-envelope"></i></div>
+              <div class="info-text">
+                <h4>E-mail</h4>
+                <p><a href="mailto:contato@projetosdinamicos.com.br">contato@projetosdinamicos.com.br</a></p>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-icon" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);"><i class="bi bi-telephone"></i></div>
+              <div class="info-text">
+                <h4>Telefone</h4>
+                <p><a href="tel:+5514999999999">(14) 99999-9999</a></p>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-icon" style="background:linear-gradient(135deg,#10b981,#34d399);"><i class="bi bi-geo-alt"></i></div>
+              <div class="info-text">
+                <h4>Endereço</h4>
+                <p>Av. Sampaio Vidal, 1000 — Sala 205<br>Centro, Marília — SP, 17500-000</p>
+              </div>
+            </div>
+            <div class="info-item">
+              <div class="info-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);"><i class="bi bi-clock"></i></div>
+              <div class="info-text">
+                <h4>Horário de Atendimento</h4>
+                <p>Segunda a Sexta, 9h às 18h</p>
+              </div>
+            </div>
+            <div class="social-links">
+              <a href="#" style="background:#1877f2;" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+              <a href="#" style="background:#e4405f;" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+              <a href="#" style="background:#0a66c2;" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
+              <a href="#" style="background:#1da1f2;" aria-label="Twitter"><i class="bi bi-twitter"></i></a>
+              <a href="#" style="background:#25d366;" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+            </div>
+            <div class="map-placeholder">
+              <i class="bi bi-map"></i>
+              <span>Mapa</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-wrap" style="padding-top:0;">
+      <div class="faq-section">
+        <h2><i class="bi bi-question-circle" style="color:var(--brand-primary);margin-right:6px;"></i>Perguntas Frequentes</h2>
+        <div class="faq-item">
+          <h4><i class="bi bi-chevron-right"></i> Como faço para me cadastrar como freelancer?</h4>
+          <p>Basta acessar a página "Sou Freelancer", preencher o formulário com suas habilidades, experiência e portfólio. Seu perfil fica disponível para contratantes e nosso sistema de matching encontra projetos compatíveis.</p>
+        </div>
+        <div class="faq-item">
+          <h4><i class="bi bi-chevron-right"></i> Quanto custa ser freelancer na plataforma?</h4>
+          <p>Nada. O cadastro e o uso da plataforma são 100% gratuitos para freelancers. Você só paga se quiser um plano premium com destaque no perfil e maior visibilidade.</p>
+        </div>
+        <div class="faq-item">
+          <h4><i class="bi bi-chevron-right"></i> Como funciona o pagamento?</h4>
+          <p>O pagamento é combinado diretamente entre o freelancer e o contratante. Recomendamos PIX ou transferência bancária. A plataforma não retém comissão sobre os serviços.</p>
+        </div>
+        <div class="faq-item">
+          <h4><i class="bi bi-chevron-right"></i> Como funciona o matching inteligente?</h4>
+          <p>Nosso algoritmo analisa as habilidades, experiência, categoria e disponibilidade do freelancer e compara com os requisitos do projeto. Quanto maior a compatibilidade, maior a chance de conexão.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="../components/footer.js"></script>
+</body>
+</html>

@@ -12,34 +12,48 @@
     '<div class="help-dropdown">' +
     '  <div class="help-content">' +
     '    <h4>Ajuda</h4>' +
-    '    <p>Em caso de erros, d&uacute;vidas ou sugest&otilde;es entre em contato conosco.</p>' +
+    '    <p>Bem-vindo à Projetos Dinâmicos Freelas. Conectamos profissionais de TI a projetos incríveis.</p>' +
     '    <hr>' +
-    '    <h5>Erros comuns:</h5>' +
+    '    <h5>Dúvidas comuns:</h5>' +
     '    <ul>' +
-    '      <li><strong>Pet n&atilde;o adicionado:</strong> Preencha Nome, Esp&eacute;cie e Sexo do pet.</li>' +
-    '      <li><strong>Inscri&ccedil;&atilde;o n&atilde;o enviada:</strong> Verifique se todos os campos obrigat&oacute;rios est&atilde;o preenchidos.</li>' +
-    '      <li><strong>Vagas esgotadas:</strong> O mutir&atilde;o atingiu o limite de vagas.</li>' +
-    '      <li><strong>Mutir&atilde;o encerrado:</strong> As inscri&ccedil;&otilde;es foram encerradas ap&oacute;s a data do evento.</li>' +
+    '      <li><strong>Cadastro:</strong> Crie seu perfil gratuitamente como freelancer ou contratante.</li>' +
+    '      <li><strong>Projetos:</strong> Navegue por projetos disponíveis e candidate-se com um clique.</li>' +
+    '      <li><strong>Compatibilidade:</strong> Nosso sistema匹配 suas habilidades aos requisitos do projeto.</li>' +
     '    </ul>' +
-    '    <p>E deixe o seu melhor contato.</p>' +
-    '    <p><strong>Email:</strong> <a href="mailto:amoranimalmariliadev@gmail.com">amoranimalmariliadev@gmail.com</a></p>' +
+    '    <p><strong>Email:</strong> <a href="mailto:contato@projetosdinamicos.com.br">contato@projetosdinamicos.com.br</a></p>' +
     '  </div>' +
     '</div>' +
     '<header class="main-header">' +
-    '  <main class="main-header-controls"></main>' +
-    '  <div style="text-align:center;padding:10px 0 0">' +
+    '  <div class="incubator-top-bar">' +
+    '    <span class="incubator-badge"><i class="bi bi-code-slash"></i> Plataforma de Freelancers TI/Dev</span>' +
     '    <span id="admin-access-area">' +
-    '      <a href="' + ROOT + '/login/index.html" id="admin-login-link" style="color:var(--brand-teal);text-decoration:none;font-weight:600"><i class="bi bi-lock"></i> Acesso</a>' +
-      '      <span id="admin-logged-in" style="display:none">' +
-      '        <span id="admin-label" style="color:var(--brand-teal);font-weight:700;font-size:0.8rem;margin-right:8px;">ADMINISTRADOR</span>' +
-      '        <a href="#" id="admin-logout-link" style="color:var(--brand-coral);text-decoration:none;font-weight:600" onclick="event.preventDefault();adminLogout()"><i class="bi bi-box-arrow-right"></i> Sair</a>' +
-      '      </span>' +
+    '      <a href="' + ROOT + '/login/index.html" id="admin-login-link" style="color:var(--nav-text);text-decoration:none;font-weight:500;font-size:0.85rem"><i class="bi bi-lock"></i> Acesso</a>' +
+    '      <span id="admin-logged-in" style="display:none">' +
+    '        <span id="admin-label" style="color:var(--brand-primary);font-weight:700;font-size:0.8rem;margin-right:8px;">ADMIN</span>' +
+    '        <a href="#" id="admin-logout-link" style="color:var(--danger);text-decoration:none;font-weight:600" onclick="event.preventDefault();adminLogout()"><i class="bi bi-box-arrow-right"></i> Sair</a>' +
+    '      </span>' +
     '    </span>' +
     '  </div>' +
     '  <div class="nav-container">' +
-    '    <img src="' + ROOT + '/static/css/imagem/ong.jpg" alt="Logo ONG AMOR ANIMAL MARILIA" />' +
-    '    <p style="margin:5px 0 0;font-size:0.9rem;color:var(--muted-color);text-align:center">Sistema de Gestao de Dados da ONG</p>' +
+    '    <div class="incubator-logo">' +
+    '      <div class="incubator-logo-icon"><i class="bi bi-code-slash"></i></div>' +
+    '      <div class="incubator-logo-text">' +
+    '        <strong>Projetos Dinâmicos</strong>' +
+    '        <span>Freelas para TI/Dev</span>' +
+    '      </div>' +
+    '    </div>' +
+    '    <p style="margin:5px 0 0;font-size:0.9rem;color:var(--muted-color);text-align:center">Conectando profissionais de tecnologia a projetos inovadores</p>' +
     '  </div>' +
+    '  <nav class="incubator-nav">' +
+    '    <a href="' + ROOT + '/index.html"><i class="bi bi-house"></i> Home</a>' +
+    '    <a href="' + ROOT + '/pages/projetos.html"><i class="bi bi-briefcase"></i> Projetos</a>' +
+    '    <a href="' + ROOT + '/pages/freelancers.html"><i class="bi bi-people"></i> Freelancers</a>' +
+    '    <a href="' + ROOT + '/pages/cadastro_freela.html" class="nav-highlight"><i class="bi bi-person-plus"></i> Sou Freelancer</a>' +
+    '    <a href="' + ROOT + '/pages/cadastro_cliente.html"><i class="bi bi-building"></i> Sou Cliente</a>' +
+    '    <a href="' + ROOT + '/pages/planos.html"><i class="bi bi-card-list"></i> Planos</a>' +
+    '    <a href="' + ROOT + '/pages/sobre.html"><i class="bi bi-info-circle"></i> Sobre</a>' +
+    '    <a href="' + ROOT + '/pages/contato.html" class="nav-cta"><i class="bi bi-envelope"></i> Contato</a>' +
+    '  </nav>' +
     '  <div class="search-wrapper">' +
     '    <div class="search-bar-row">' +
     '      <a href="' + ROOT + '/index.html" class="search-home-btn" aria-label="Ir para pagina inicial"><i class="bi bi-house-door-fill"></i></a>' +
@@ -63,33 +77,26 @@
   );
 
   var PAGES = [
-    { t:"Inicio", d:"Pagina inicial da ONG Amor Animal", k:"inicio home principal ong amor animal marilia site entrada", i:"bi bi-house-door", c:"#14b8a6", u:"index.html" },
-    { t:"Adocao", d:"Animais disponiveis para adocao responsavel", k:"adocao adotar adote adocao-responsavel pet cachorro gato cao caes felino filhote lar familia quero-adotar", i:"bi bi-paw", c:"#f59e0b", u:"pages/adocao.html" },
-    { t:"Castracao", d:"Central de agendamento de castracao", k:"castracao castrar castracao-central cirurgia veterinario veterinaria animal animais esterilizar", i:"bi bi-person-heart", c:"#10b981", u:"pages/castracao.html" },
-    { t:"Castracao Baixo Custo", d:"Castracao com valor social reduzido", k:"castracao castrar baixo-custo valor-social barato economico precos preco cirurgia veterinario castracao-preco", i:"bi bi-cash", c:"#059669", u:"pages/castracao_baixo_custo.html" },
-    { t:"Mutirao de Castracao", d:"Mutiroes gratuitos de castracao", k:"castracao mutirao mutirao-castracao gratuito gratis castracao-gratuita evento castrar cirurgia coletivo inscricao", i:"bi bi-people", c:"#047857", u:"pages/castracao_mutirao.html" },
-    { t:"Inscricao Mutirao", d:"Formulario de inscricao para mutirao de castracao", k:"castracao mutirao inscricao inscrever formulario cadastro vagas castracao-gratuita", i:"bi bi-pencil-square", c:"#065f46", u:"pages/castracao_mutirao_form.html" },
-    { t:"Pets de Rua", d:"Castracao para animais de rua", k:"castracao pets-rua rua animal-anonimo comunidade cuidado veterinario", i:"bi bi-heart", c:"#dc2626", u:"pages/castracao_pets_rua.html" },
-    { t:"Castracao Sucesso", d:"Confirmacao de inscricao de castracao", k:"castracao sucesso confirmacao inscricao realizada comprovante ticket protocolo", i:"bi bi-check-circle", c:"#16a34a", u:"pages/castracao_sucesso.html" },
-    { t:"Procura-se", d:"Animais desaparecidos divulgacao", k:"procura-se perdido desaparecido busca sumido cachorro gato cao animal localizar encontrar", i:"bi bi-search", c:"#f97316", u:"pages/procura_se.html" },
-    { t:"Anunciar Desaparecimento", d:"Cadastro de animal desaparecido", k:"procura-se cadastro anunciar desaparecimento perdido sumido divulgar busca animal cachorro gato", i:"bi bi-megaphone", c:"#ea580c", u:"pages/cadastro_procura_se.html" },
-    { t:"Doacao", d:"Contribua com doacoes via PIX ou cartao", k:"doacao doar contribuir pix dinheiro ajuda financeira doe contribuicao cartao credito debito ajuda", i:"bi bi-gift", c:"#8b5cf6", u:"pages/doacao.html" },
-    { t:"Parceria", d:"Seja um parceiro apoiador da ONG", k:"parceria parceiro empresa apoiar patrocinio apoio corporativo responsabilidade-social", i:"bi bi-handshake", c:"#14b8a6", u:"pages/parceria.html" },
-    { t:"Voluntario", d:"Cadastro de voluntarios para ajudar a ONG", k:"voluntario voluntariado ajudar trabalho voluntario contribuir tempo doar", i:"bi bi-people-fill", c:"#ec4899", u:"pages/voluntario.html" },
-    { t:"Sobre", d:"Conheca a historia e missao da ONG", k:"sobre nos historia missao quem-somos equipe fundacao resgate animais", i:"bi bi-info-circle", c:"#3b82f6", u:"pages/sobre.html" },
-    { t:"Transparencia", d:"Prestacao de contas e documentos oficiais", k:"transparencia prestacao-contas contas documentos relatorio financeiro receitas despesas", i:"bi bi-file-text", c:"#6366f1", u:"pages/transparencia.html" },
-    { t:"Eventos", d:"Eventos feiras e mutiroes da ONG", k:"eventos feira adocao mutirao castracao agenda calendario bazar beneficente", i:"bi bi-calendar-event", c:"#a855f7", u:"pages/eventos.html" },
-    { t:"Politica de Privacidade", d:"Termos e politica de privacidade do site", k:"politica privacidade termos dados LGPD protecao informacao", i:"bi bi-shield-lock", c:"#6b7280", u:"pages/policy.html" },
-    { t:"Admin", d:"Painel administrativo e login do sistema", k:"admin administrador login acesso gestao painel sistema entrar", i:"bi bi-lock", c:"#64748b", u:"login/index.html" }
+    { t:"Home", d:"Página inicial da plataforma de freelancers", k:"inicio home principal freelas projetos dinamicos ti dev", i:"bi bi-house", c:"#6366f1", u:"index.html" },
+    { t:"Projetos", d:"Encontre projetos de TI e desenvolvimento", k:"projetos vagas trabalhos freelance ti desenvolvimento programacao", i:"bi bi-briefcase", c:"#10b981", u:"pages/projetos.html" },
+    { t:"Freelancers", d:"Profissionais de tecnologia disponíveis", k:"freelancers profissionais ti dev programadores designers devops", i:"bi bi-people", c:"#8b5cf6", u:"pages/freelancers.html" },
+    { t:"Sou Freelancer", d:"Cadastre-se como freelancer de TI", k:"cadastro freelancer inscrever profissional dev programador designer", i:"bi bi-person-plus", c:"#06b6d4", u:"pages/cadastro_freela.html" },
+    { t:"Sou Cliente", d:"Cadastre-se como contratante", k:"cadastro cliente contratante empresa projeto contratar freelancer", i:"bi bi-building", c:"#f59e0b", u:"pages/cadastro_cliente.html" },
+    { t:"Planos", d:"Planos e benefícios da plataforma", k:"planos precos beneficios assinatura premium comissao", i:"bi bi-card-list", c:"#ec4899", u:"pages/planos.html" },
+    { t:"Sobre", d:"Conheça a plataforma Projetos Dinâmicos", k:"sobre nos historia missao quem-somos equipe plataforma", i:"bi bi-info-circle", c:"#0ea5e9", u:"pages/sobre.html" },
+    { t:"Contato", d:"Entre em contato com a plataforma", k:"contato fale-conosco email telefone suporte", i:"bi bi-envelope", c:"#14b8a6", u:"pages/contato.html" },
+    { t:"Parceria", d:"Seja um parceiro da plataforma", k:"parceria parceiro empresa apoiar anunciar divulgar", i:"bi bi-handshake", c:"#6366f1", u:"pages/parceria.html" },
+    { t:"Politica de Privacidade", d:"Termos e política de privacidade", k:"politica privacidade termos dados LGPD protecao informacao", i:"bi bi-shield-lock", c:"#6b7280", u:"pages/policy.html" },
+    { t:"Admin", d:"Painel administrativo da plataforma", k:"admin administrador login acesso gestao painel sistema entrar", i:"bi bi-lock", c:"#64748b", u:"login/index.html" }
   ];
 
   var API_SECTIONS = [
-    { t:"Eventos na Landing", d:"Eventos cadastrados na pagina inicial", k:"evento agenda calendario programacao", i:"bi bi-calendar-event", c:"#a855f7", e:"eventos", f:"titulo" },
-    { t:"Castracoes", d:"Agendamentos de castracao realizados", k:"castracao cirurgia castrar agendamento veterinario", i:"bi bi-person-heart", c:"#10b981", e:"castracao", f:"nome_pet" },
-    { t:"Pets para Adocao", d:"Animais disponiveis para adocao", k:"pet cachorro gato cao felino adocao animal", i:"bi bi-paw", c:"#f59e0b", e:"adocao", f:"nome" },
-    { t:"Voluntarios", d:"Voluntarios cadastrados no sistema", k:"voluntario voluntariado ajuda contribuir", i:"bi bi-people-fill", c:"#ec4899", e:"voluntario", f:"nome" },
-    { t:"Parcerias", d:"Empresas parceiras da ONG", k:"parceria empresa patrocinio apoio parceiro", i:"bi bi-handshake", c:"#14b8a6", e:"parceria", f:"empresa" },
-    { t:"Animais Perdidos", d:"Animais desaparecidos divulgacao", k:"procura-se perdido desaparecido sumido busca", i:"bi bi-search", c:"#f97316", e:"procura_se", f:"nome" }
+    { t:"Projetos", d:"Projetos disponíveis para freelancers", k:"projeto vaga trabalho freelance", i:"bi bi-briefcase", c:"#10b981", e:"projetos", f:"titulo" },
+    { t:"Freelancers", d:"Profissionais cadastrados", k:"freelancer profissional dev programador", i:"bi bi-people", c:"#8b5cf6", e:"freelancers", f:"nome" },
+    { t:"Clientes", d:"Empresas contratantes", k:"cliente empresa contratante", i:"bi bi-building", c:"#f59e0b", e:"clientes", f:"nome" },
+    { t:"Eventos", d:"Eventos da comunidade", k:"evento workshop hackathon networking", i:"bi bi-calendar-event", c:"#f59e0b", e:"eventos", f:"titulo" },
+    { t:"Parcerias", d:"Empresas parceiras", k:"parceria parceiro empresa investidor", i:"bi bi-handshake", c:"#6366f1", e:"parceria", f:"empresa" },
+    { t:"Recursos", d:"Materiais educativos", k:"recurso guia template ebook ferramenta", i:"bi bi-book", c:"#ec4899", e:"recursos", f:"titulo" }
   ];
 
   function highlightText(text, query) {
@@ -98,7 +105,7 @@
     var result = text;
     for (var i = 0; i < words.length; i++) {
       var re = new RegExp('(' + words[i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-      result = result.replace(re, '<mark style="background:#fef08a;color:#333;padding:0 2px;border-radius:2px">$1</mark>');
+      result = result.replace(re, '<mark style="background:#e0e7ff;color:#3730a3;padding:0 2px;border-radius:2px">$1</mark>');
     }
     return result;
   }
@@ -110,16 +117,16 @@
   }
 
   var API_SEARCH_MAP = {
-    eventos: { i: 'bi bi-calendar-event', c: '#a855f7' },
-    castracao: { i: 'bi bi-person-heart', c: '#10b981' },
-    adocao: { i: 'bi bi-paw', c: '#f59e0b' },
-    voluntario: { i: 'bi bi-people-fill', c: '#ec4899' },
-    parceria: { i: 'bi bi-handshake', c: '#14b8a6' },
-    procura_se: { i: 'bi bi-search', c: '#f97316' }
+    projetos: { i: 'bi bi-briefcase', c: '#10b981' },
+    freelancers: { i: 'bi bi-people', c: '#8b5cf6' },
+    clientes: { i: 'bi bi-building', c: '#f59e0b' },
+    eventos: { i: 'bi bi-calendar-event', c: '#f59e0b' },
+    parceria: { i: 'bi bi-handshake', c: '#6366f1' },
+    recursos: { i: 'bi bi-book', c: '#ec4899' }
   };
 
   function apiSearch(q, callback) {
-    var BASE = window.API_BASE || 'https://api.projetosdinamicos.com.br/amoranimal';
+    var BASE = window.API_BASE || 'https://api.projetosdinamicos.com.br/freelas';
     fetch(BASE + '/search?q=' + encodeURIComponent(q))
       .then(function(r) { return r.json(); })
       .then(function(data) {
@@ -224,12 +231,12 @@
 
   function sectionUrl(s) {
     var map = {
+      projetos: 'pages/projetos.html',
+      freelancers: 'pages/freelancers.html',
+      clientes: 'pages/cadastro_cliente.html',
       eventos: 'pages/eventos.html',
-      castracao: 'pages/castracao.html',
-      adocao: 'pages/adocao.html',
-      voluntario: 'pages/voluntario.html',
       parceria: 'pages/parceria.html',
-      procura_se: 'pages/procura_se.html'
+      recursos: 'pages/recursos.html'
     };
     return map[s.e] || 'index.html';
   }
@@ -279,7 +286,7 @@
 
   function trackPageVisit() {
     var page = location.pathname.replace('/projetosdinamicos/', '').replace(/^\//, '') || 'index.html';
-    var key = 'page_visits';
+    var key = 'freelas_page_visits';
     try {
       var visits = JSON.parse(localStorage.getItem(key) || '{}');
       visits[page] = (visits[page] || 0) + 1;
@@ -291,10 +298,10 @@
     var input = document.getElementById('site-search');
     if (!input) return;
 
-    var defaultText = 'Pesquisar em todo o site...';
+    var defaultText = 'Pesquisar na plataforma...';
 
     try {
-      var visits = JSON.parse(localStorage.getItem('page_visits') || '{}');
+      var visits = JSON.parse(localStorage.getItem('freelas_page_visits') || '{}');
       var entries = Object.keys(visits).map(function(k) { return { page: k, count: visits[k] }; });
       entries.sort(function(a, b) { return b.count - a.count; });
       var top4 = entries.slice(0, 4);
@@ -412,12 +419,12 @@
   }
 
   function initAdminUI() {
-    var token = localStorage.getItem('amoranimal_token');
-    var expiry = parseInt(localStorage.getItem('amoranimal_session_expiry') || '0', 10);
+    var token = localStorage.getItem('freelas_token');
+    var expiry = parseInt(localStorage.getItem('freelas_session_expiry') || '0', 10);
     if (token && Date.now() > expiry) {
-      localStorage.removeItem('amoranimal_token');
-      localStorage.removeItem('amoranimal_usuario');
-      localStorage.removeItem('amoranimal_session_expiry');
+      localStorage.removeItem('freelas_token');
+      localStorage.removeItem('freelas_usuario');
+      localStorage.removeItem('freelas_session_expiry');
       token = null;
     }
     var loginLink = document.getElementById('admin-login-link');
@@ -430,9 +437,9 @@
   }
 
   window.adminLogout = function() {
-    localStorage.removeItem('amoranimal_token');
-    localStorage.removeItem('amoranimal_usuario');
-    localStorage.removeItem('amoranimal_session_expiry');
+    localStorage.removeItem('freelas_token');
+    localStorage.removeItem('freelas_usuario');
+    localStorage.removeItem('freelas_session_expiry');
     window.location.href = window.location.origin + '/index.html';
   };
 

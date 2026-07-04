@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portfólio — Projetos Dinâmicos</title>
+  <link rel="stylesheet" href="../static/css/default.css">
+  <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+  <style>
+    .portfolio-section { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+    .portfolio-header { text-align: center; margin-bottom: 40px; }
+    .portfolio-header h1 { font-size: 2.5rem; margin: 0 0 12px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .portfolio-header p { font-size: 1.1rem; color: var(--text-muted); max-width: 640px; margin: 0 auto; line-height: 1.7; }
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 40px; }
+    .filter-btn { padding: 8px 20px; border: 2px solid var(--border-color); border-radius: 24px; background: var(--container-bg); color: var(--text-color); font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; }
+    .filter-btn:hover { border-color: var(--brand-primary); color: var(--brand-primary); }
+    .filter-btn.active { border-color: var(--brand-primary); background: var(--brand-primary); color: #fff; }
+    .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+    .startup-card { background: var(--container-bg); border-radius: 16px; overflow: hidden; box-shadow: var(--container-shadow); border: 1px solid var(--container-border); transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .startup-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(99,102,241,0.15); }
+    .startup-card-header { height: 100px; display: flex; align-items: center; justify-content: center; position: relative; }
+    .startup-card-header .icon-wrap { width: 56px; height: 56px; border-radius: 16px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; color: #fff; backdrop-filter: blur(4px); }
+    .startup-card-category { position: absolute; top: 12px; left: 12px; padding: 4px 12px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(255,255,255,0.25); color: #fff; backdrop-filter: blur(4px); }
+    .startup-card-body { padding: 20px; }
+    .startup-card-body h3 { margin: 0 0 8px; font-size: 1.15rem; color: var(--heading-color); }
+    .startup-card-body p { margin: 0 0 16px; font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; }
+    .startup-card-footer { display: flex; justify-content: space-between; align-items: center; padding: 0 20px 20px; }
+    .status-badge { padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+    .status-incubada { background: #dbeafe; color: #1d4ed8; }
+    .status-graduada { background: #d1fae5; color: #047857; }
+    .status-investida { background: #fef3c7; color: #b45309; }
+    .startup-card-link { font-size: 0.85rem; font-weight: 600; color: var(--brand-primary); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; transition: gap 0.2s; }
+    .startup-card-link:hover { gap: 8px; text-decoration: none; color: var(--brand-primary-dark); }
+    .portfolio-cta { text-align: center; margin-top: 60px; padding: 60px 24px; background: linear-gradient(135deg, var(--bg-alt), var(--container-bg)); border-radius: 24px; border: 1px solid var(--container-border); }
+    .portfolio-cta h2 { font-size: 2rem; margin: 0 0 12px; }
+    .portfolio-cta p { font-size: 1.05rem; color: var(--text-muted); margin: 0 0 24px; }
+    .portfolio-cta .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark)); color: #fff; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; text-decoration: none; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 20px rgba(99,102,241,0.3); }
+    .portfolio-cta .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(99,102,241,0.4); text-decoration: none; color: #fff; }
+    .portfolio-cta .btn i { font-size: 1.2rem; }
+    @media (max-width: 600px) { .portfolio-grid { grid-template-columns: 1fr; } .portfolio-header h1 { font-size: 1.8rem; } }
+  </style>
+</head>
+<body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
+
+  <main class="main-content">
+    <section class="portfolio-section">
+      <div class="portfolio-header">
+        <h1>Startups Incubadas</h1>
+        <p>Conheça as startups que fazem parte do ecossistema da Projetos Dinâmicos. Inovação, tecnologia e impacto transformando o mercado.</p>
+      </div>
+
+      <div class="filter-bar" id="filterBar">
+        <button class="filter-btn active" onclick="filtrar('todas')">Todas</button>
+        <button class="filter-btn" onclick="filtrar('tech')">Tech</button>
+        <button class="filter-btn" onclick="filtrar('greentech')">GreenTech</button>
+        <button class="filter-btn" onclick="filtrar('fintech')">FinTech</button>
+        <button class="filter-btn" onclick="filtrar('healthtech')">HealthTech</button>
+        <button class="filter-btn" onclick="filtrar('edtech')">EdTech</button>
+        <button class="filter-btn" onclick="filtrar('agritech')">AgriTech</button>
+      </div>
+
+      <div class="portfolio-grid" id="portfolioGrid">
+        <div class="startup-card" data-category="tech">
+          <div class="startup-card-header" style="background: linear-gradient(135deg, #6366f1, #818cf8);">
+            <span class="startup-card-category">Tech</span>
+            <div class="icon-wrap"><i class="bi bi-cloud-arrow-up"></i></div>
+          </div>
+          <div class="startup-card-body">
+            <h3>NimbusCloud</h3>
+            <p>Plataforma de orquestração de infraestrutura cloud com foco em startups que precisam escalar sem complicação.</p>
+          </div>
+          <div class="startup-card-footer">
+            <span class="status-badge status-incubada">Incubada</span>
+            <a href="#" class="startup-card-link">Ver mais <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="startup-card" data-category="greentech">
+          <div class="startup-card-header" style="background: linear-gradient(135deg, #10b981, #34d399);">
+            <span class="startup-card-category">GreenTech</span>
+            <div class="icon-wrap"><i class="bi bi-recycle"></i></div>
+          </div>
+          <div class="startup-card-body">
+            <h3>EcoCycle</h3>
+            <p>Solução inteligente de logística reversa que conecta geradores de resíduos a cooperativas de reciclagem.</p>
+          </div>
+          <div class="startup-card-footer">
+            <span class="status-badge status-graduada">Graduada</span>
+            <a href="#" class="startup-card-link">Ver mais <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="startup-card" data-category="fintech">
+          <div class="startup-card-header" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">
+            <span class="startup-card-category">FinTech</span>
+            <div class="icon-wrap"><i class="bi bi-wallet2"></i></div>
+          </div>
+          <div class="startup-card-body">
+            <h3>PagueFácil</h3>
+            <p>Plataforma de pagamentos recorrentes e gestão financeira para pequenas e médias empresas brasileiras.</p>
+          </div>
+          <div class="startup-card-footer">
+            <span class="status-badge status-investida">Investida</span>
+            <a href="#" class="startup-card-link">Ver mais <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="startup-card" data-category="healthtech">
+          <div class="startup-card-header" style="background: linear-gradient(135deg, #ec4899, #f472b6);">
+            <span class="startup-card-category">HealthTech</span>
+            <div class="icon-wrap"><i class="bi bi-heart-pulse"></i></div>
+          </div>
+          <div class="startup-card-body">
+            <h3>Vitalis</h3>
+            <p>Assistente virtual baseado em IA para triagem de sintomas e agendamento de consultas médicas.</p>
+          </div>
+          <div class="startup-card-footer">
+            <span class="status-badge status-incubada">Incubada</span>
+            <a href="#" class="startup-card-link">Ver mais <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="startup-card" data-category="edtech">
+          <div class="startup-card-header" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);">
+            <span class="startup-card-category">EdTech</span>
+            <div class="icon-wrap"><i class="bi bi-book"></i></div>
+          </div>
+          <div class="startup-card-body">
+            <h3>LearnUp</h3>
+            <p>Plataforma adaptativa de microlearning que personaliza trilhas de conhecimento para equipes corporativas.</p>
+          </div>
+          <div class="startup-card-footer">
+            <span class="status-badge status-incubada">Incubada</span>
+            <a href="#" class="startup-card-link">Ver mais <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="startup-card" data-category="agritech">
+          <div class="startup-card-header" style="background: linear-gradient(135deg, #059669, #6ee7b7);">
+            <span class="startup-card-category">AgriTech</span>
+            <div class="icon-wrap"><i class="bi bi-tree"></i></div>
+          </div>
+          <div class="startup-card-body">
+            <h3>AgriSense</h3>
+            <p>Sistema de monitoramento de solo e irrigação com sensores IoT e análise preditiva de safras.</p>
+          </div>
+          <div class="startup-card-footer">
+            <span class="status-badge status-graduada">Graduada</span>
+            <a href="#" class="startup-card-link">Ver mais <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="startup-card" data-category="tech">
+          <div class="startup-card-header" style="background: linear-gradient(135deg, #3b82f6, #60a5fa);">
+            <span class="startup-card-category">Tech</span>
+            <div class="icon-wrap"><i class="bi bi-shield-lock"></i></div>
+          </div>
+          <div class="startup-card-body">
+            <h3>SafeData</h3>
+            <p>Plataforma de segurança cibernética que protege dados sensíveis com criptografia de ponta a ponta.</p>
+          </div>
+          <div class="startup-card-footer">
+            <span class="status-badge status-incubada">Incubada</span>
+            <a href="#" class="startup-card-link">Ver mais <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="startup-card" data-category="fintech">
+          <div class="startup-card-header" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
+            <span class="startup-card-category">FinTech</span>
+            <div class="icon-wrap"><i class="bi bi-graph-up-arrow"></i></div>
+          </div>
+          <div class="startup-card-body">
+            <h3>CrediDigital</h3>
+            <p>Marketplace de crédito que conecta pequenos negócios a linhas de financiamento com taxas justas.</p>
+          </div>
+          <div class="startup-card-footer">
+            <span class="status-badge status-investida">Investida</span>
+            <a href="#" class="startup-card-link">Ver mais <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="startup-card" data-category="healthtech">
+          <div class="startup-card-header" style="background: linear-gradient(135deg, #dc2626, #f87171);">
+            <span class="startup-card-category">HealthTech</span>
+            <div class="icon-wrap"><i class="bi bi-activity"></i></div>
+          </div>
+          <div class="startup-card-body">
+            <h3>MedConnect</h3>
+            <p>Rede de telemedicina que integra médicos, pacientes e laboratórios em uma plataforma única.</p>
+          </div>
+          <div class="startup-card-footer">
+            <span class="status-badge status-incubada">Incubada</span>
+            <a href="#" class="startup-card-link">Ver mais <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+
+        <div class="startup-card" data-category="edtech">
+          <div class="startup-card-header" style="background: linear-gradient(135deg, #7c3aed, #a78bfa);">
+            <span class="startup-card-category">EdTech</span>
+            <div class="icon-wrap"><i class="bi bi-mortarboard"></i></div>
+          </div>
+          <div class="startup-card-body">
+            <h3>CodeJr</h3>
+            <p>Plataforma gamificada de ensino de programação para crianças e adolescentes de 8 a 17 anos.</p>
+          </div>
+          <div class="startup-card-footer">
+            <span class="status-badge status-graduada">Graduada</span>
+            <a href="#" class="startup-card-link">Ver mais <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="portfolio-cta">
+        <h2>Sua startup pode estar aqui</h2>
+        <p>Você tem uma ideia inovadora? Inscreva-se no nosso programa de incubação e transforme seu projeto em negócio.</p>
+        <a href="apply.html" class="btn"><i class="bi bi-rocket-takeoff"></i> Quero participar</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="../components/footer.js"></script>
+
+  <script>
+    function filtrar(categoria) {
+      var btns = document.querySelectorAll('#filterBar .filter-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.remove('active');
+        if (btns[i].textContent.trim().toLowerCase() === categoria || (categoria === 'todas' && btns[i].textContent.trim().toLowerCase() === 'todas')) {
+          btns[i].classList.add('active');
+        }
+      }
+      var cards = document.querySelectorAll('#portfolioGrid .startup-card');
+      for (var j = 0; j < cards.length; j++) {
+        if (categoria === 'todas') {
+          cards[j].style.display = 'block';
+        } else {
+          cards[j].style.display = cards[j].getAttribute('data-category') === categoria ? 'block' : 'none';
+        }
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projetos — Projetos Dinâmicos Freelas</title>
+  <meta name="description" content="Encontre projetos de TI e desenvolvimento para freelancer. Vagas para devs, designers, devops e mais.">
+  <link rel="stylesheet" href="../static/css/default.css">
+  <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../static/css/home.css">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+  <style>
+    .page-hero { background: linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#3730a3 70%,#4338ca 100%); padding: 60px 1.5rem; text-align: center; }
+    .page-hero h1 { font-size: 2.5rem; color: #fff; margin: 0 0 0.5rem; font-weight: 800; }
+    .page-hero p { color: #c7d2fe; font-size: 1.05rem; max-width: 600px; margin: 0 auto; }
+    .filters-bar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 2rem; }
+    .filters-bar select, .filters-bar input { padding: 10px 14px; border: 2px solid var(--border-color); border-radius: 10px; font-size: 0.9rem; background: var(--container-bg); color: var(--text-color); }
+    .filters-bar select:focus, .filters-bar input:focus { border-color: var(--brand-primary); outline: none; }
+    .projeto-card { background: var(--container-bg); border-radius: 16px; border: 1px solid var(--container-border); box-shadow: var(--container-shadow); overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; }
+    .projeto-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(99,102,241,0.15); }
+    .projeto-body { padding: 1.5rem; }
+    .projeto-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 0.8rem 0; }
+    .projeto-tag { padding: 3px 10px; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+    .projeto-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    .vazio-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+    .vazio-state i { font-size: 3rem; margin-bottom: 1rem; color: var(--brand-primary-light); }
+    .badge-aberto { background: #d1fae5; color: #065f46; }
+    .badge-andamento { background: #dbeafe; color: #1e40af; }
+    .badge-fechado { background: #fee2e2; color: #991b1b; }
+    @media (max-width: 768px) { .page-hero h1 { font-size: 1.8rem; } }
+  </style>
+</head>
+<body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
+  <main class="main-content">
+    <section class="page-hero">
+      <h1><i class="bi bi-briefcase" style="margin-right:8px;"></i>Projetos Disponíveis</h1>
+      <p>Encontre o projeto ideal para suas habilidades. Filtre por categoria, tecnologia e valor.</p>
+    </section>
+    <section class="landing-section">
+      <div class="landing-container">
+        <div class="filters-bar">
+          <select id="filtro-categoria" onchange="filtrar()">
+            <option value="">Todas as Categorias</option>
+            <option value="desenvolvimento">Desenvolvimento Web</option>
+            <option value="mobile">Mobile</option>
+            <option value="design">Design/UI</option>
+            <option value="devops">DevOps</option>
+            <option value="dados">Dados/IA</option>
+            <option value="suporte">Suporte Técnico</option>
+            <option value="outro">Outro</option>
+          </select>
+          <select id="filtro-status" onchange="filtrar()">
+            <option value="">Todos os Status</option>
+            <option value="aberto">Abertos</option>
+            <option value="andamento">Em Andamento</option>
+            <option value="fechado">Fechados</option>
+          </select>
+          <input type="text" id="filtro-busca" placeholder="Buscar projetos..." oninput="filtrar()" style="flex:1;min-width:200px;">
+        </div>
+        <div id="projetos-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.5rem;">
+          <div class="vazio-state" id="loading-state">
+            <i class="bi bi-arrow-repeat"></i>
+            <p>Carregando projetos...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+  var todosProjetos = [];
+  function esc(s) { if (!s) return ''; var d=document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+  function filtrar() {
+    var cat = document.getElementById('filtro-categoria').value;
+    var st = document.getElementById('filtro-status').value;
+    var busca = document.getElementById('filtro-busca').value.toLowerCase();
+    var filtrados = todosProjetos.filter(function(p) {
+      if (cat && p.categoria !== cat) return false;
+      if (st && p.status !== st) return false;
+      if (busca) {
+        var txt = (p.titulo + ' ' + (p.descricao||'') + ' ' + (p.habilidades||'')).toLowerCase();
+        if (txt.indexOf(busca) === -1) return false;
+      }
+      return true;
+    });
+    render(filtrados);
+  }
+  function render(lista) {
+    var el = document.getElementById('projetos-lista');
+    if (lista.length === 0) {
+      el.innerHTML = '<div class="vazio-state"><i class="bi bi-search"></i><p>Nenhum projeto encontrado</p></div>';
+      return;
+    }
+    var h = '';
+    lista.forEach(function(p) {
+      var statusClass = p.status === 'aberto' ? 'badge-aberto' : p.status === 'andamento' ? 'badge-andamento' : 'badge-fechado';
+      var skills = (p.habilidades||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      h += '<div class="projeto-card">' +
+        '<div class="projeto-body">' +
+          '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">' +
+            '<h3 style="margin:0;font-size:1.15rem;">' + esc(p.titulo) + '</h3>' +
+            '<span class="projeto-tag ' + statusClass + '">' + esc(p.status) + '</span>' +
+          '</div>' +
+          '<p style="font-size:0.88rem;color:var(--text-muted);margin:0.5rem 0;line-height:1.5;">' + esc((p.descricao||'').substring(0,200)) + '</p>' +
+          '<div class="projeto-tags">' +
+            (p.categoria ? '<span class="projeto-tag" style="background:#eef2ff;color:#4f46e5;">' + esc(p.categoria) + '</span>' : '') +
+            (p.valor ? '<span class="projeto-tag" style="background:#fef3c7;color:#92400e;"><i class="bi bi-currency-dollar"></i> ' + esc(p.valor) + '</span>' : '') +
+            (p.prazo ? '<span class="projeto-tag" style="background:#f3e8ff;color:#6b21a8;"><i class="bi bi-calendar3"></i> ' + esc(p.prazo) + '</span>' : '') +
+            skills.slice(0,3).map(function(s){ return '<span class="projeto-tag" style="background:#ecfdf5;color:#065f46;">' + esc(s) + '</span>'; }).join('') +
+          '</div>' +
+        '</div>' +
+        '<div class="projeto-footer">' +
+          '<span style="font-size:0.85rem;color:var(--text-muted);"><i class="bi bi-person"></i> ' + (p.remoto === 'sim' ? 'Remoto' : esc(p.localizacao||'Presencial')) + '</span>' +
+          '<a href="cadastro_freela.html?projeto=' + p.id + '" class="btn btn-primary btn-sm" style="padding:8px 18px;font-size:0.85rem;"><i class="bi bi-send"></i> Candidatar</a>' +
+        '</div>' +
+      '</div>';
+    });
+    el.innerHTML = h;
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    apiFetch('/projetos')
+      .then(function(r) { if (!r.ok) throw new Error('Erro'); return r.json(); })
+      .then(function(data) {
+        todosProjetos = Array.isArray(data) ? data : [];
+        if (todosProjetos.length === 0) {
+          document.getElementById('projetos-lista').innerHTML = '<div class="vazio-state"><i class="bi bi-inbox"></i><p>Nenhum projeto cadastrado ainda.</p><p style="font-size:0.9rem;">Seja o primeiro a anunciar!</p><a href="cadastro_cliente.html" class="btn btn-primary" style="margin-top:1rem;"><i class="bi bi-plus-circle"></i> Anunciar Projeto</a></div>';
+        } else {
+          render(todosProjetos);
+        }
+      })
+      .catch(function() {
+        document.getElementById('projetos-lista').innerHTML = '<div class="vazio-state"><i class="bi bi-wifi-off"></i><p>Offline — Mostrando projetos de exemplo</p></div>' +
+          '<div class="projeto-card"><div class="projeto-body"><h3 style="margin:0;">App de Delivery</h3><p style="font-size:0.88rem;color:var(--text-muted);">Desenvolvimento de aplicativo mobile para delivery com React Native e Node.js.</p><div class="projeto-tags"><span class="projeto-tag" style="background:#eef2ff;color:#4f46e5;">Mobile</span><span class="projeto-tag" style="background:#fef3c7;color:#92400e;">R$ 5.000-8.000</span><span class="projeto-tag" style="background:#ecfdf5;color:#065f46;">React Native</span></div></div><div class="projeto-footer"><span style="font-size:0.85rem;color:var(--text-muted);"><i class="bi bi-person"></i> Remoto</span><a href="cadastro_freela.html" class="btn btn-primary btn-sm" style="padding:8px 18px;font-size:0.85rem;"><i class="bi bi-send"></i> Candidatar</a></div></div>' +
+          '<div class="projeto-card"><div class="projeto-body"><h3 style="margin:0;">Dashboard Analytics</h3><p style="font-size:0.88rem;color:var(--text-muted);">Criar dashboard interativo com gráficos para análise de dados de vendas.</p><div class="projeto-tags"><span class="projeto-tag" style="background:#eef2ff;color:#4f46e5;">Dados</span><span class="projeto-tag" style="background:#fef3c7;color:#92400e;">R$ 3.000-5.000</span><span class="projeto-tag" style="background:#ecfdf5;color:#065f46;">Python</span></div></div><div class="projeto-footer"><span style="font-size:0.85rem;color:var(--text-muted);"><i class="bi bi-person"></i> Remoto</span><a href="cadastro_freela.html" class="btn btn-primary btn-sm" style="padding:8px 18px;font-size:0.85rem;"><i class="bi bi-send"></i> Candidatar</a></div></div>';
+      });
+  });
+  </script>
+  <script src="../components/footer.js"></script>
+</body>
+</html>

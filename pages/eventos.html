@@ -3,75 +3,438 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Eventos - ONG Amor Animal Marília</title>
+  <title>Eventos — Projetos Dinâmicos Freelas</title>
   <link rel="stylesheet" href="../static/css/default.css">
   <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
-  <link rel="icon" type="image/png" href="../static/css/favicon/ong.ico">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+  <style>
+    .events-hero {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #3730a3 70%, #4338ca 100%);
+      padding: 80px 1.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .events-hero h1 {
+      font-size: 2.8rem;
+      color: #fff;
+      margin: 0 0 1rem;
+      font-weight: 800;
+    }
+    .events-hero p {
+      color: #c7d2fe;
+      font-size: 1.1rem;
+      max-width: 650px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+    .events-section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+    .events-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .events-header h2 {
+      font-size: 2rem;
+      margin: 0 0 12px;
+    }
+    .events-header p {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .featured-event {
+      margin-bottom: 48px;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 40%, #06b6d4 100%);
+      padding: 48px;
+      color: #fff;
+      box-shadow: 0 8px 30px rgba(99,102,241,0.25);
+    }
+    .featured-event .feat-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.2);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+    .featured-event .feat-date {
+      font-size: 0.9rem;
+      opacity: 0.85;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .featured-event h3 {
+      font-size: 2rem;
+      color: #fff;
+      margin: 0 0 12px;
+      font-weight: 700;
+    }
+    .featured-event p {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.9);
+      max-width: 600px;
+      line-height: 1.7;
+      margin: 0 0 24px;
+    }
+    .featured-event .feat-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: #fff;
+      color: #4f46e5;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    .featured-event .feat-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      text-decoration: none;
+      color: #3730a3;
+    }
+    .events-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 24px;
+    }
+    .event-card {
+      background: var(--container-bg);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--container-shadow);
+      border: 1px solid var(--container-border);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .event-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(99,102,241,0.15);
+    }
+    .event-card-gradient {
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .event-card-gradient .icon-wrap {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      color: #fff;
+      backdrop-filter: blur(4px);
+    }
+    .event-card-body {
+      padding: 20px;
+    }
+    .event-card-body .event-date {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin: 0 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .event-card-body h3 {
+      margin: 0 0 8px;
+      font-size: 1.15rem;
+      color: var(--heading-color);
+    }
+    .event-card-body p {
+      margin: 0 0 12px;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .event-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px 20px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .type-badge {
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .type-workshop { background: #dbeafe; color: #1d4ed8; }
+    .type-hackathon { background: #fef3c7; color: #b45309; }
+    .type-networking { background: #d1fae5; color: #047857; }
+    .type-palestra { background: #ede9fe; color: #6d28d9; }
+    .event-location {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .event-card-link {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--brand-primary);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: gap 0.2s;
+    }
+    .event-card-link:hover { gap: 8px; text-decoration: none; color: var(--brand-primary-dark); }
+    .events-cta {
+      text-align: center;
+      margin-top: 60px;
+      padding: 60px 24px;
+      background: linear-gradient(135deg, var(--bg-alt), var(--container-bg));
+      border-radius: 24px;
+      border: 1px solid var(--container-border);
+    }
+    .events-cta h2 {
+      font-size: 2rem;
+      margin: 0 0 12px;
+    }
+    .events-cta p {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      margin: 0 0 24px;
+    }
+    .events-cta .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark));
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.3);
+    }
+    .events-cta .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(99,102,241,0.4);
+      text-decoration: none;
+      color: #fff;
+    }
+    .events-cta .btn i { font-size: 1.2rem; }
+    @media (max-width: 600px) {
+      .events-hero h1 { font-size: 1.8rem; }
+      .events-hero { padding: 50px 1rem; }
+      .events-grid { grid-template-columns: 1fr; }
+      .featured-event { padding: 28px; }
+      .featured-event h3 { font-size: 1.4rem; }
+      .events-header h2 { font-size: 1.5rem; }
+    }
+  </style>
 </head>
 <body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
+  <main class="main-content">
+    <section class="events-hero">
+      <h1>Eventos da Comunidade</h1>
+      <p>Workshops, hackathons, meetups e palestras para freelancers de TI. Aprenda, faça networking e encontre novas oportunidades.</p>
+    </section>
 
-<script>var ROOT='..';</script>
-<script src="../components/header.js"></script>
+    <section class="events-section">
+      <div class="featured-event">
+        <div class="feat-badge"><i class="bi bi-star-fill"></i> Destaque</div>
+        <div class="feat-date"><i class="bi bi-calendar-event"></i> 20 de Agosto de 2026</div>
+        <h3>Hackathon Freelas 2026</h3>
+        <p>Maratona de 48 horas para freelancers de TI criarem soluções reais para empresas parceiras. Prêmios em dinheiro, oportunidades de contratação e muito networking. Monte sua equipe e participe!</p>
+        <a href="#" class="feat-btn"><i class="bi bi-box-arrow-up-right"></i> Inscreva-se</a>
+      </div>
 
-<main class="main-content">
-  <div class="container py-5">
-    <h2>Eventos</h2>
-    <div class="row" id="eventos-container"></div>
+      <div class="events-header">
+        <h2>Próximos Eventos</h2>
+        <p>Confira a programação completa e garanta sua participação</p>
+      </div>
 
-    <a href="../index.html" class="button btn-secondary mt-3">Voltar</a>
-  </div>
-</main>
+      <div class="events-grid" id="eventos-container">
+        <div class="incubator-card event-card">
+          <div class="event-card-gradient" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">
+            <div class="icon-wrap"><i class="bi bi-laptop"></i></div>
+          </div>
+          <div class="event-card-body">
+            <div class="event-date"><i class="bi bi-calendar3"></i> 05 Jul 2026</div>
+            <h3>Workshop: React na Prática</h3>
+            <p>Aprenda a construir uma aplicação React completa com hooks, context API e consumo de APIs REST em um dia.</p>
+          </div>
+          <div class="event-card-footer">
+            <span class="type-badge type-workshop"><i class="bi bi-tools"></i> Workshop</span>
+            <span class="event-location"><i class="bi bi-globe2"></i> Online</span>
+            <a href="#" class="event-card-link">Saiba mais <i class="bi bi-chevron-right"></i></a>
+          </div>
+        </div>
 
-<script src="../components/footer.js"></script>
-<script src="../static/js/api.js"></script>
-<script>
-var API_BASE = window.API_BASE;
+        <div class="incubator-card event-card">
+          <div class="event-card-gradient" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+            <div class="icon-wrap"><i class="bi bi-people-fill"></i></div>
+          </div>
+          <div class="event-card-body">
+            <div class="event-date"><i class="bi bi-calendar3"></i> 12 Jul 2026</div>
+            <h3>Meetup: Freelas Presencial</h3>
+            <p>Encontro mensal de freelancers de TI para trocar experiências, dicas de carreira e projetos. Traga seu laptop e seu networking!</p>
+          </div>
+          <div class="event-card-footer">
+            <span class="type-badge type-networking"><i class="bi bi-chat-dots"></i> Networking</span>
+            <span class="event-location"><i class="bi bi-geo-alt"></i> Presencial</span>
+            <a href="#" class="event-card-link">Saiba mais <i class="bi bi-chevron-right"></i></a>
+          </div>
+        </div>
 
-function imgEventoUrl(f) {
-  if (!f) return '';
-  if (f.indexOf('://') !== -1 || f.indexOf('data:') === 0) return f;
-  return API_BASE + '/uploads/eventos/' + f;
-}
+        <div class="incubator-card event-card">
+          <div class="event-card-gradient" style="background:linear-gradient(135deg,#06b6d4,#0891b2)">
+            <div class="icon-wrap"><i class="bi bi-megaphone-fill"></i></div>
+          </div>
+          <div class="event-card-body">
+            <div class="event-date"><i class="bi bi-calendar3"></i> 19 Jul 2026</div>
+            <h3>Palestra: Precificação de Projetos</h3>
+            <p>Como calcular o valor do seu trabalho freelancer, precificar projetos, negociar com clientes e evitar prejuízos.</p>
+          </div>
+          <div class="event-card-footer">
+            <span class="type-badge type-palestra"><i class="bi bi-mic"></i> Palestra</span>
+            <span class="event-location"><i class="bi bi-globe2"></i> Online</span>
+            <a href="#" class="event-card-link">Saiba mais <i class="bi bi-chevron-right"></i></a>
+          </div>
+        </div>
 
-function fmtData(d) {
-  if (!d) return '';
-  var partes = d.split('T')[0].split('-');
-  if (partes.length === 3 && partes[0].length === 4) return partes[2] + '/' + partes[1] + '/' + partes[0];
-  var dt = new Date(d);
-  if (!isNaN(dt.getTime())) {
-    return String(dt.getUTCDate()).padStart(2,'0') + '/' + String(dt.getUTCMonth()+1).padStart(2,'0') + '/' + dt.getUTCFullYear();
-  }
-  return d;
-}
+        <div class="incubator-card event-card">
+          <div class="event-card-gradient" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed)">
+            <div class="icon-wrap"><i class="bi bi-code-slash"></i></div>
+          </div>
+          <div class="event-card-body">
+            <div class="event-date"><i class="bi bi-calendar3"></i> 02 Ago 2026</div>
+            <h3>Hackathon: Devs for Good</h3>
+            <p>Desenvolva soluções tecnológicas para ONGs e projetos sociais. Impacto real, portfólio e prêmios para as melhores equipes.</p>
+          </div>
+          <div class="event-card-footer">
+            <span class="type-badge type-hackathon"><i class="bi bi-lightning"></i> Hackathon</span>
+            <span class="event-location"><i class="bi bi-globe2"></i> Online</span>
+            <a href="#" class="event-card-link">Saiba mais <i class="bi bi-chevron-right"></i></a>
+          </div>
+        </div>
 
-apiFetch('/eventos')
-  .then(function(r) { return r.json(); })
-  .then(function(eventos) {
-    var container = document.getElementById('eventos-container');
-    if (!eventos || !eventos.length) {
-      container.innerHTML = '<div class="col-12 text-center text-muted py-5">Nenhum evento cadastrado.</div>';
-      return;
+        <div class="incubator-card event-card">
+          <div class="event-card-gradient" style="background:linear-gradient(135deg,#10b981,#059669)">
+            <div class="icon-wrap"><i class="bi bi-graph-up-arrow"></i></div>
+          </div>
+          <div class="event-card-body">
+            <div class="event-date"><i class="bi bi-calendar3"></i> 16 Ago 2026</div>
+            <h3>Workshop: Portfólio que Vende</h3>
+            <p>Como criar um portfólio de freelancer que atrai clientes: cases, apresentação, storytelling e diferenciais competitivos.</p>
+          </div>
+          <div class="event-card-footer">
+            <span class="type-badge type-workshop"><i class="bi bi-tools"></i> Workshop</span>
+            <span class="event-location"><i class="bi bi-globe2"></i> Online</span>
+            <a href="#" class="event-card-link">Saiba mais <i class="bi bi-chevron-right"></i></a>
+          </div>
+        </div>
+
+        <div class="incubator-card event-card">
+          <div class="event-card-gradient" style="background:linear-gradient(135deg,#ec4899,#db2777)">
+            <div class="icon-wrap"><i class="bi bi-bullseye"></i></div>
+          </div>
+          <div class="event-card-body">
+            <div class="event-date"><i class="bi bi-calendar3"></i> 30 Ago 2026</div>
+            <h3>Networking: Demo Night</h3>
+            <p>Freelancers apresentam seus melhores projetos, cases de sucesso e portfolios para contratantes e empresas parceiras.</p>
+          </div>
+          <div class="event-card-footer">
+            <span class="type-badge type-networking"><i class="bi bi-chat-dots"></i> Networking</span>
+            <span class="event-location"><i class="bi bi-geo-alt"></i> Presencial</span>
+            <a href="#" class="event-card-link">Saiba mais <i class="bi bi-chevron-right"></i></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="events-cta">
+        <h2>Quer organizar um evento?</h2>
+        <p>Tem uma ideia de workshop, hackathon ou meetup para a comunidade de freelancers de TI? Entre em contato e vamos realizar juntos!</p>
+        <a href="../pages/contato.html" class="btn"><i class="bi bi-envelope"></i> Fale Conosco</a>
+      </div>
+    </section>
+  </main>
+  <script src="../static/js/api.js"></script>
+  <script src="../components/footer.js"></script>
+  <script>
+    var eventosStatic = document.getElementById('eventos-container');
+    if (typeof apiFetch === 'function') {
+      apiFetch('/eventos')
+        .then(function(r) { return r.json(); })
+        .then(function(eventos) {
+          if (!eventos || !eventos.length) return;
+          var container = document.getElementById('eventos-container');
+          var html = '';
+          eventos.forEach(function(ev) {
+            var tipo = (ev.tipo || 'workshop').toLowerCase();
+            var tipoClass = tipo;
+            var tipoIcon = 'bi bi-tools';
+            if (tipo === 'hackathon') { tipoClass = 'hackathon'; tipoIcon = 'bi bi-lightning'; }
+            else if (tipo === 'networking') { tipoClass = 'networking'; tipoIcon = 'bi bi-chat-dots'; }
+            else if (tipo === 'palestra') { tipoClass = 'palestra'; tipoIcon = 'bi bi-mic'; }
+            var data = ev.data_evento || ev.data || '';
+            var dataFmt = data;
+            if (data) {
+              var d = new Date(data);
+              if (!isNaN(d.getTime())) {
+                dataFmt = d.toLocaleDateString('pt-BR');
+              }
+            }
+            var local = ev.local || ev.localizacao || (ev.online ? 'Online' : 'Presencial');
+            var localIcon = local.toLowerCase() === 'online' ? 'bi bi-globe2' : 'bi bi-geo-alt';
+            var gradColors = ['#6366f1,#4f46e5','#f59e0b,#d97706','#06b6d4,#0891b2','#8b5cf6,#7c3aed','#10b981,#059669','#ec4899,#db2777'];
+            var gi = Math.floor(Math.random() * gradColors.length);
+            html +=
+              '<div class="incubator-card event-card">' +
+                '<div class="event-card-gradient" style="background:linear-gradient(135deg,' + gradColors[gi] + ')">' +
+                  '<div class="icon-wrap"><i class="' + (ev.icone || 'bi bi-calendar-event') + '"></i></div>' +
+                '</div>' +
+                '<div class="event-card-body">' +
+                  '<div class="event-date"><i class="bi bi-calendar3"></i> ' + dataFmt + '</div>' +
+                  '<h3>' + (ev.titulo || 'Evento') + '</h3>' +
+                  '<p>' + (ev.descricao || '') + '</p>' +
+                '</div>' +
+                '<div class="event-card-footer">' +
+                  '<span class="type-badge type-' + tipoClass + '"><i class="' + tipoIcon + '"></i> ' + (tipo.charAt(0).toUpperCase() + tipo.slice(1)) + '</span>' +
+                  '<span class="event-location"><i class="' + localIcon + '"></i> ' + local + '</span>' +
+                  (ev.id ? '<a href="#" class="event-card-link" onclick="event.preventDefault();alert(\'Inscrição em breve\')">Inscreva-se <i class="bi bi-chevron-right"></i></a>' : '') +
+                '</div>' +
+              '</div>';
+          });
+          if (html) container.innerHTML = html;
+        })
+        .catch(function() {});
     }
-    eventos.forEach(function(ev) {
-      var col = document.createElement('div');
-      col.className = 'col-md-4 mb-4';
-      col.innerHTML =
-        '<div class="card h-100">' +
-          (ev.fotos || ev.arquivo ? '<img src="' + imgEventoUrl(ev.fotos || ev.arquivo) + '" class="card-img-top" alt="' + (ev.titulo || '') + '">' : '') +
-          '<div class="card-body">' +
-            '<h5 class="card-title">' + (ev.titulo || '') + '</h5>' +
-            '<p class="card-subtitle text-muted">' + fmtData(ev.data_evento) + '</p>' +
-            '<p class="card-text">' + (ev.descricao || '') + '</p>' +
-          '</div>' +
-          (ev.status ? '<div class="card-footer d-flex justify-content-between"><span class="badge" style="background: var(--brand-teal); color: white;">' + ev.status + '</span></div>' : '') +
-        '</div>';
-      container.appendChild(col);
-    });
-  })
-  .catch(function() {
-    document.getElementById('eventos-container').innerHTML = '<div class="col-12 text-center text-muted py-5">Erro ao carregar eventos.</div>';
-  });
-</script>
-
+  </script>
 </body>
 </html>

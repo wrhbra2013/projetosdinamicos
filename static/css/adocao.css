@@ -1,8 +1,0 @@
-.adocao-card-img {
-    height: 250px;
-    object-fit: cover;
-}
-.adocao-card .card-title a.stretched-link-hover:hover {
-    color: var(--bs-primary) !important;
-    text-decoration: underline !important;
-}

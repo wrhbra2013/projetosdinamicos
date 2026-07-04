@@ -3,57 +3,57 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login — ONG Amor Animal Marília</title>
+  <title>Login — Projetos Dinâmicos Freelas</title>
   <link rel="stylesheet" href="../static/css/default.css">
   <link rel="stylesheet" href="../static/css/login.css">
   <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
-  <link rel="shortcut icon" href="../static/css/imagem/ong.jpg" type="image/jpeg">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
 </head>
 <body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
 
-<div class="container">
-    <a href="../index.html" class="btn btn-primary"><i class="bi bi-arrow-left"></i> Voltar para a página inicial</a>
-</div>
-
-<div class="container">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="text-center" style="margin:0;">Acesso ao Sistema</h3>
+  <div class="login-section">
+    <div class="login-card">
+      <div class="login-card-header">
+        <div class="login-logo">
+          <i class="bi bi-code-slash"></i>
         </div>
-        <div class="card-body login-body">
-            <form id="loginForm" autocomplete="off" novalidate>
-                <div class="mb-3">
-                    <label for="usuario" class="form-label">Usuário:</label>
-                    <input type="text" id="usuario" name="usuario" class="form-control" required>
-                </div>
-
-                <div class="mb-3">
-                    <label for="senha" class="form-label">Senha:</label>
-                    <div style="position: relative;">
-                        <input type="password" id="senha" name="senha" class="form-control" required style="padding-right: 40px;">
-                        <span onclick="toggleSenha()" class="password-toggle"
-                              style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; z-index: 2;">&#x1F441;</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                        <input type="checkbox" id="mostrarSenha"
-                            onchange="document.getElementById('senha').type = this.checked ? 'text' : 'password'"
-                            style="width: 18px; height: 18px; accent-color: var(--brand-teal); cursor: pointer;">
-                        <label for="mostrarSenha" style="cursor: pointer; user-select: none; color: var(--text-color); font-size: 0.95em;">Mostrar Senha</label>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary" style="width:100%;">Login</button>
-            </form>
-            <div id="messageContainer" style="margin-top:15px;"></div>
-        </div>
-        <div class="card-footer text-center">
-            <p class="mb-0"></p>
-        </div>
+        <h3>Acesso à Plataforma</h3>
+        <p>Projetos Dinâmicos Freelas</p>
+      </div>
+      <div class="login-card-body">
+        <form id="loginForm" autocomplete="off" novalidate>
+          <div class="mb-3">
+            <label for="usuario" class="form-label">Usuário ou Email:</label>
+            <input type="text" id="usuario" name="usuario" class="form-control" required placeholder="seu@email.com">
+          </div>
+          <div class="mb-3">
+            <label for="senha" class="form-label">Senha:</label>
+            <div style="position: relative;">
+              <input type="password" id="senha" name="senha" class="form-control" required style="padding-right: 40px;" placeholder="Sua senha">
+              <span onclick="toggleSenha()" class="password-toggle"
+                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; z-index: 2;">&#x1F441;</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+              <input type="checkbox" id="mostrarSenha"
+                  onchange="document.getElementById('senha').type = this.checked ? 'text' : 'password'"
+                  style="width: 18px; height: 18px; accent-color: var(--brand-primary); cursor: pointer;">
+              <label for="mostrarSenha" style="cursor: pointer; user-select: none; color: var(--text-color); font-size: 0.95em;">Mostrar Senha</label>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">Entrar</button>
+        </form>
+        <div id="messageContainer" style="margin-top:15px;"></div>
+      </div>
+      <div class="login-card-footer">
+        <p><a href="../index.html"><i class="bi bi-arrow-left"></i> Voltar para página inicial</a></p>
+      </div>
     </div>
-</div>
+  </div>
 
-<script src="../static/js/api.js"></script>
-<script src="../static/js/login.js"></script>
-
+  <script src="../static/js/api.js"></script>
+  <script src="../static/js/login.js"></script>
+  <script src="../components/footer.js"></script>
 </body>
 </html>

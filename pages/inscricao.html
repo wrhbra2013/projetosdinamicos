@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscreva-se — Projetos Dinâmicos</title>
+  <link rel="stylesheet" href="../static/css/default.css">
+  <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+  <style>
+    .inc-form-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 2rem;
+      align-items: start;
+    }
+    .inc-form-card {
+      background: var(--container-bg);
+      border-radius: 16px;
+      padding: 2rem 2.5rem;
+      box-shadow: var(--container-shadow);
+      border: 1px solid var(--container-border);
+    }
+    .inc-sidebar-card {
+      background: var(--container-bg);
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: var(--container-shadow);
+      border: 1px solid var(--container-border);
+    }
+    .inc-sidebar-card.highlight {
+      background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-dark));
+      color: #fff;
+      border-color: transparent;
+    }
+    .inc-sidebar-card.highlight h3,
+    .inc-sidebar-card.highlight p,
+    .inc-sidebar-card.highlight li {
+      color: #fff;
+    }
+    .inc-step {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .inc-step:last-child {
+      margin-bottom: 0;
+    }
+    .inc-step-num {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      background: var(--bg-alt);
+      color: var(--brand-primary);
+      border: 2px solid color-mix(in srgb, var(--brand-primary) 20%, transparent);
+    }
+    .inc-step-content h4 {
+      margin: 0 0 0.25rem;
+      font-size: 1rem;
+    }
+    .inc-step-content p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .inc-testimonial {
+      text-align: center;
+      padding: 0.5rem 0;
+    }
+    .inc-testimonial-avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand-primary-light), var(--brand-secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 0.75rem;
+      font-size: 1.5rem;
+      color: #fff;
+      font-weight: 700;
+    }
+    .inc-testimonial blockquote {
+      margin: 0 0 0.5rem;
+      font-size: 0.9rem;
+      font-style: italic;
+      color: var(--text-color);
+      line-height: 1.5;
+    }
+    .inc-testimonial cite {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-style: normal;
+    }
+    .inc-contact-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+    .inc-contact-item:last-child {
+      margin-bottom: 0;
+    }
+    .inc-contact-item i {
+      width: 20px;
+      color: var(--brand-primary);
+      font-size: 1.1rem;
+    }
+    .inc-form-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .inc-form-header h1 {
+      font-size: 2rem;
+      margin: 0 0 0.5rem;
+      color: var(--heading-color);
+    }
+    .inc-form-header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .inc-required-star {
+      color: var(--danger, #ef4444);
+    }
+    .inc-divider {
+      height: 1px;
+      background: var(--border-color);
+      margin: 1.5rem 0;
+    }
+    .inc-sidebar-title {
+      font-size: 1.15rem;
+      margin: 0 0 1.25rem;
+      color: var(--heading-color);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .inc-sidebar-title i {
+      color: var(--brand-primary);
+    }
+    .highlight .inc-sidebar-title i {
+      color: #fff;
+    }
+    .highlight .inc-step-num {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      border-color: rgba(255,255,255,0.3);
+    }
+    .highlight .inc-step-content p {
+      color: rgba(255,255,255,0.85);
+    }
+    .highlight .inc-contact-item i {
+      color: #fff;
+    }
+    @media (max-width: 900px) {
+      .inc-form-wrapper {
+        grid-template-columns: 1fr;
+      }
+      .inc-form-card {
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
+
+  <main class="main-content" style="padding: 3rem 1.5rem; max-width: 1200px; margin: 0 auto;">
+
+    <div class="inc-form-header">
+      <h1><i class="bi bi-rocket-takeoff" style="color: var(--brand-primary);"></i> Inscreva sua Startup</h1>
+      <p>Preencha o formulário abaixo para participar do processo seletivo da Projetos Dinâmicos. Sua jornada de inovação começa aqui.</p>
+    </div>
+
+    <div class="inc-form-wrapper">
+
+      <!-- LEFT: FORM -->
+      <div class="inc-form-card">
+        <form id="form-inscricao" novalidate>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="startup-name">Nome da Startup <span class="inc-required-star">*</span></label>
+              <input type="text" id="startup-name" name="startup_name" placeholder="Ex: TechSolve" required>
+            </div>
+            <div class="form-group">
+              <label for="founder-name">Nome do Fundador(a) <span class="inc-required-star">*</span></label>
+              <input type="text" id="founder-name" name="founder_name" placeholder="Seu nome completo" required>
+            </div>
+            <div class="form-group">
+              <label for="email">E-mail <span class="inc-required-star">*</span></label>
+              <input type="email" id="email" name="email" placeholder="seu@email.com" required>
+            </div>
+            <div class="form-group">
+              <label for="phone">Telefone / WhatsApp</label>
+              <input type="tel" id="phone" name="phone" class="phone-input" placeholder="(99) 99999-9999">
+            </div>
+            <div class="form-group">
+              <label for="stage">Estágio da Startup <span class="inc-required-star">*</span></label>
+              <select id="stage" name="stage" required>
+                <option value="">Selecione...</option>
+                <option value="ideacao">Ideação</option>
+                <option value="validacao">Validação</option>
+                <option value="mvp">MVP</option>
+                <option value="early-stage">Early-stage</option>
+                <option value="growth">Growth</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="program">Programa de Interesse <span class="inc-required-star">*</span></label>
+              <select id="program" name="program" required>
+                <option value="">Selecione...</option>
+                <option value="seed">Seed</option>
+                <option value="accelerate">Accelerate</option>
+                <option value="scale">Scale</option>
+                <option value="launch">Launch</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="city">Cidade / Estado</label>
+              <input type="text" id="city" name="city" placeholder="Ex: São Paulo, SP">
+            </div>
+            <div class="form-group">
+              <label for="website">Site / LinkedIn</label>
+              <input type="url" id="website" name="website" placeholder="https://">
+            </div>
+          </div>
+
+          <div class="inc-divider"></div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="problem">Qual problema sua startup resolve? <span class="inc-required-star">*</span></label>
+            <textarea id="problem" name="problem" rows="3" placeholder="Descreva o problema que sua startup se propõe a resolver..." required></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="solution">Como sua startup resolve esse problema? <span class="inc-required-star">*</span></label>
+            <textarea id="solution" name="solution" rows="3" placeholder="Explique sua solução e o diferencial competitivo..." required></textarea>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="referral">Como nos conheceu?</label>
+            <input type="text" id="referral" name="referral" placeholder="Ex: Instagram, indicação, evento...">
+          </div>
+
+          <div style="text-align: center;">
+            <button type="submit" class="btn btn-primary btn-lg">
+              <i class="bi bi-send"></i> Enviar Inscrição
+            </button>
+          </div>
+
+          <p style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+            <span class="inc-required-star">*</span> Campos obrigatórios
+          </p>
+        </form>
+
+        <div id="form-success" style="display:none; text-align:center; padding: 2rem 1rem;">
+          <i class="bi bi-check-circle-fill" style="font-size: 4rem; color: var(--brand-success);"></i>
+          <h3 style="margin: 1rem 0 0.5rem; color: var(--heading-color);">Inscrição Enviada com Sucesso!</h3>
+          <p style="color: var(--text-muted);">Recebemos sua inscrição e entraremos em contato em breve. Fique de olho no seu e-mail!</p>
+        </div>
+      </div>
+
+      <!-- RIGHT: SIDEBAR -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+        <!-- Steps -->
+        <div class="inc-sidebar-card">
+          <h3 class="inc-sidebar-title"><i class="bi bi-diagram-3"></i> O que acontece após a inscrição</h3>
+          <div class="inc-step">
+            <div class="inc-step-num">1</div>
+            <div class="inc-step-content">
+              <h4>Análise</h4>
+              <p>Nossa equipe avalia o perfil, o problema e a solução da sua startup para verificar o alinhamento com nossos programas.</p>
+            </div>
+          </div>
+          <div class="inc-step">
+            <div class="inc-step-num">2</div>
+            <div class="inc-step-content">
+              <h4>Entrevista</h4>
+              <p>Se pré-selecionada, você será convidado para uma conversa com nosso time para conhecer melhor o projeto.</p>
+            </div>
+          </div>
+          <div class="inc-step">
+            <div class="inc-step-num">3</div>
+            <div class="inc-step-content">
+              <h4>Decisão</h4>
+              <p>Comunicamos o resultado e, se aprovada, sua startup inicia o programa com todo o suporte da incubadora.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonial -->
+        <div class="inc-sidebar-card">
+          <div class="inc-testimonial">
+            <div class="inc-testimonial-avatar">LM</div>
+            <blockquote>
+              <i class="bi bi-quote" style="color: var(--brand-primary-light);"></i>
+              A Projetos Dinâmicos foi essencial para estruturarmos nosso negócio. Saímos do MVP para o mercado em apenas 6 meses!
+            </blockquote>
+            <cite>— Luísa Mendes, fundadora da <strong>TechSolve</strong></cite>
+          </div>
+        </div>
+
+        <!-- Contact -->
+        <div class="inc-sidebar-card highlight">
+          <h3 class="inc-sidebar-title"><i class="bi bi-envelope"></i> Contato</h3>
+          <div class="inc-contact-item">
+            <i class="bi bi-envelope-fill"></i>
+            <span>incubadora@projetosdinamicos.com.br</span>
+          </div>
+          <div class="inc-contact-item">
+            <i class="bi bi-telephone-fill"></i>
+            <span>(14) 99815-1723</span>
+          </div>
+          <div class="inc-contact-item">
+            <i class="bi bi-geo-alt-fill"></i>
+            <span>Marília, SP</span>
+          </div>
+          <div class="inc-contact-item" style="margin-top: 0.75rem;">
+            <i class="bi bi-clock"></i>
+            <span>Atendimento: seg–sex, 9h–18h</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script src="../static/js/api.js"></script>
+  <script src="../components/footer.js"></script>
+
+  <script>
+    (function() {
+      var form = document.getElementById('form-inscricao');
+      if (form) {
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          var required = form.querySelectorAll('[required]');
+          var valid = true;
+          for (var i = 0; i < required.length; i++) {
+            if (!required[i].value.trim()) {
+              valid = false;
+              required[i].style.borderColor = 'var(--danger, #ef4444)';
+            } else {
+              required[i].style.borderColor = '';
+            }
+          }
+          if (!valid) {
+            alert('Preencha todos os campos obrigatórios.');
+            return;
+          }
+          var btn = form.querySelector('button[type="submit"]');
+          btn.disabled = true;
+          btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="margin-right:5px"></span> Enviando...';
+          apiFetch('/incricao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              startup_name: document.getElementById('startup-name').value.trim(),
+              founder_name: document.getElementById('founder-name').value.trim(),
+              email: document.getElementById('email').value.trim(),
+              phone: document.getElementById('phone').value.trim() || null,
+              stage: document.getElementById('stage').value,
+              program: document.getElementById('program').value,
+              city: document.getElementById('city').value.trim() || null,
+              website: document.getElementById('website').value.trim() || null,
+              problem: document.getElementById('problem').value.trim(),
+              solution: document.getElementById('solution').value.trim(),
+              referral: document.getElementById('referral').value.trim() || null
+            })
+          })
+          .then(function(r) {
+            if (!r.ok) throw new Error('Erro ao enviar inscrição');
+            return r.json();
+          })
+          .then(function() {
+            form.style.display = 'none';
+            document.getElementById('form-success').style.display = 'block';
+          })
+          .catch(function(err) {
+            alert('Erro ao enviar: ' + err.message + '\n\nTente novamente mais tarde.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send"></i> Enviar Inscrição';
+          });
+        });
+      }
+
+      var phoneInput = document.getElementById('phone');
+      if (phoneInput) {
+        phoneInput.addEventListener('input', function() {
+          var v = this.value.replace(/\D/g, '');
+          if (v.length > 11) v = v.slice(0, 11);
+          if (v.length > 6) v = '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
+          else if (v.length > 2) v = '(' + v.slice(0, 2) + ') ' + v.slice(2);
+          this.value = v;
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

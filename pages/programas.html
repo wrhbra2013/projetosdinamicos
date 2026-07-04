@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Programas — Projetos Dinâmicos</title>
+  <link rel="stylesheet" href="../static/css/default.css">
+  <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../static/css/home.css">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+  <style>
+    .program-hero {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #3730a3 70%, #4338ca 100%);
+      padding: 80px 1.5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .program-hero h1 {
+      font-size: 2.8rem;
+      color: #fff;
+      margin: 0 0 1rem;
+      font-weight: 800;
+    }
+    .program-hero p {
+      color: #c7d2fe;
+      font-size: 1.1rem;
+      max-width: 650px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+    .program-card-body {
+      padding: 2rem;
+    }
+    .program-card-body h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.3rem;
+    }
+    .program-card-body p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .program-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+    .program-card-footer {
+      padding: 0 2rem 2rem;
+    }
+    .comparison-section {
+      overflow-x: auto;
+    }
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--container-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--container-shadow);
+    }
+    .comparison-table th,
+    .comparison-table td {
+      padding: 1rem 1.2rem;
+      text-align: center;
+      border: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+    .comparison-table th {
+      background: var(--table-header-bg);
+      font-weight: 700;
+      color: var(--heading-color);
+      font-size: 0.95rem;
+    }
+    .comparison-table th:first-child {
+      text-align: left;
+    }
+    .comparison-table td:first-child {
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+    .comparison-table .check {
+      color: var(--brand-success);
+      font-size: 1.2rem;
+    }
+    .comparison-table .partial {
+      color: var(--brand-accent);
+      font-size: 1rem;
+    }
+    .comparison-table .cross {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+    .comparison-table tbody tr:hover {
+      background: var(--hover-bg);
+    }
+    .faq-section {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .faq-item {
+      background: var(--container-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+      transition: box-shadow 0.2s;
+    }
+    .faq-item:hover {
+      box-shadow: 0 2px 12px rgba(99,102,241,0.08);
+    }
+    .faq-item label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.2rem 1.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--heading-color);
+      margin: 0;
+    }
+    .faq-item label::after {
+      content: '+';
+      font-size: 1.4rem;
+      color: var(--brand-primary);
+      transition: transform 0.3s;
+      line-height: 1;
+    }
+    .faq-item .accordion-checkbox:checked ~ label::after {
+      content: '−';
+      transform: rotate(180deg);
+    }
+    .faq-item .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+    .faq-item .accordion-checkbox:checked ~ .accordion-content {
+      max-height: 500px;
+      padding: 0 1.5rem 1.5rem;
+    }
+    .faq-item .accordion-content p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.7;
+    }
+    @media (max-width: 768px) {
+      .program-hero { padding: 60px 1rem; }
+      .program-hero h1 { font-size: 2rem; }
+      .comparison-table th,
+      .comparison-table td { padding: 0.7rem 0.5rem; font-size: 0.8rem; }
+    }
+    @media (max-width: 480px) {
+      .program-hero h1 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<script>var ROOT='..';</script>
+<script src="../components/header.js"></script>
+
+<main class="main-content">
+
+  <!-- ==================== HERO ==================== -->
+  <section class="program-hero">
+    <h1>Nossos Programas de Incubação</h1>
+    <p>Do pré-seed ao growth, oferecemos programas estruturados para cada estágio da sua startup. Mentoria especializada, rede de investidores e infraestrutura completa para acelerar seu negócio.</p>
+  </section>
+
+  <!-- ==================== PROGRAMAS ==================== -->
+  <section class="landing-section">
+    <div class="landing-container">
+      <div class="section-header-flex">
+        <div>
+          <h2>Escolha o programa ideal</h2>
+          <p class="text-muted">Cada programa é desenhado para atender as necessidades específicas do estágio da sua startup.</p>
+        </div>
+      </div>
+      <div class="landing-grid">
+        <!-- Seed -->
+        <div class="incubator-card program-card">
+          <div class="program-card-body">
+            <div class="program-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);"><i class="bi bi-seedling"></i></div>
+            <h3>Seed</h3>
+            <p>Programa de pré-incubação para startups em estágio inicial com ideia validada. Oferecemos mentoria intensiva, workshops de validação de produto e conexão com os primeiros clientes.</p>
+            <div class="program-badges">
+              <span class="badge" style="background:#eef2ff;color:#4f46e5;">Pré-seed</span>
+              <span class="badge" style="background:#eef2ff;color:#4f46e5;">3 meses</span>
+            </div>
+          </div>
+          <div class="program-card-footer">
+            <a href="inscricao.html" class="btn btn-primary" style="width:100%;"><i class="bi bi-send-plus"></i> Inscreva-se</a>
+          </div>
+        </div>
+
+        <!-- Accelerate -->
+        <div class="incubator-card program-card">
+          <div class="program-card-body">
+            <div class="program-icon" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);"><i class="bi bi-rocket-takeoff"></i></div>
+            <h3>Accelerate</h3>
+            <p>Aceleração de 6 meses para startups com MVP no mercado. Foco em tração, definição de métricas-chave, preparação para investimento e expansão da base de clientes.</p>
+            <div class="program-badges">
+              <span class="badge" style="background:#ecfeff;color:#0891b2;">Early-stage</span>
+              <span class="badge" style="background:#ecfeff;color:#0891b2;">6 meses</span>
+            </div>
+          </div>
+          <div class="program-card-footer">
+            <a href="inscricao.html" class="btn btn-primary" style="width:100%;"><i class="bi bi-send-plus"></i> Inscreva-se</a>
+          </div>
+        </div>
+
+        <!-- Scale -->
+        <div class="incubator-card program-card">
+          <div class="program-card-body">
+            <div class="program-icon" style="background:linear-gradient(135deg,#10b981,#34d399);"><i class="bi bi-graph-up-arrow"></i></div>
+            <h3>Scale</h3>
+            <p>Para startups em crescimento acelerado que buscam escalar operações, acessar novos mercados e captar rodadas de investimento. Mentoria sênior, conexão com VCs e suporte em expansão.</p>
+            <div class="program-badges">
+              <span class="badge" style="background:#ecfdf5;color:#059669;">Growth</span>
+              <span class="badge" style="background:#ecfdf5;color:#059669;">12 meses</span>
+            </div>
+          </div>
+          <div class="program-card-footer">
+            <a href="inscricao.html" class="btn btn-primary" style="width:100%;"><i class="bi bi-send-plus"></i> Inscreva-se</a>
+          </div>
+        </div>
+
+        <!-- Launch -->
+        <div class="incubator-card program-card">
+          <div class="program-card-body">
+            <div class="program-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);"><i class="bi bi-send"></i></div>
+            <h3>Launch</h3>
+            <p>Programa intensivo de 8 semanas para founders que querem tirar uma ideia do papel. Ideal para quem tem uma ideia inovadora e precisa de estrutura, mentoria e metodologia para lançar.</p>
+            <div class="program-badges">
+              <span class="badge" style="background:#fffbeb;color:#d97706;">Ideação</span>
+              <span class="badge" style="background:#fffbeb;color:#d97706;">8 semanas</span>
+            </div>
+          </div>
+          <div class="program-card-footer">
+            <a href="inscricao.html" class="btn btn-primary" style="width:100%;"><i class="bi bi-send-plus"></i> Inscreva-se</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== COMPARISON TABLE ==================== -->
+  <section class="landing-section landing-section-alt">
+    <div class="landing-container">
+      <h2 class="text-center mb-4">Comparação entre os Programas</h2>
+      <p class="text-center text-muted" style="max-width:600px;margin:-1rem auto 3rem;">Confira os recursos inclusos em cada programa de incubação.</p>
+      <div class="comparison-section">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Recursos</th>
+              <th>Seed</th>
+              <th>Accelerate</th>
+              <th>Scale</th>
+              <th>Launch</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Mentoria Individual</td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+            </tr>
+            <tr>
+              <td>Workshops Semanais</td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="partial"><i class="bi bi-check-circle"></i></span></td>
+            </tr>
+            <tr>
+              <td>Networking com Investidores</td>
+              <td><span class="partial"><i class="bi bi-check-circle"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="cross"><i class="bi bi-x-circle"></i></span></td>
+            </tr>
+            <tr>
+              <td>Espaço de Coworking</td>
+              <td><span class="partial"><i class="bi bi-check-circle"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+            </tr>
+            <tr>
+              <td>Acesso a Investimento</td>
+              <td><span class="cross"><i class="bi bi-x-circle"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="cross"><i class="bi bi-x-circle"></i></span></td>
+            </tr>
+            <tr>
+              <td>Apoio Jurídico e Contábil</td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="partial"><i class="bi bi-check-circle"></i></span></td>
+            </tr>
+            <tr>
+              <td>Acesso a Laboratórios</td>
+              <td><span class="cross"><i class="bi bi-x-circle"></i></span></td>
+              <td><span class="partial"><i class="bi bi-check-circle"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="cross"><i class="bi bi-x-circle"></i></span></td>
+            </tr>
+            <tr>
+              <td>Mentoria Sênior</td>
+              <td><span class="cross"><i class="bi bi-x-circle"></i></span></td>
+              <td><span class="partial"><i class="bi bi-check-circle"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="cross"><i class="bi bi-x-circle"></i></span></td>
+            </tr>
+            <tr>
+              <td>Eventos e Hackathons</td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+            </tr>
+            <tr>
+              <td>Suporte Pós-Programa</td>
+              <td><span class="partial"><i class="bi bi-check-circle"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="check"><i class="bi bi-check-circle-fill"></i></span></td>
+              <td><span class="cross"><i class="bi bi-x-circle"></i></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FAQ ==================== -->
+  <section class="landing-section">
+    <div class="landing-container">
+      <h2 class="text-center mb-4">Perguntas Frequentes</h2>
+      <p class="text-center text-muted" style="max-width:600px;margin:-1rem auto 3rem;">Tire suas dúvidas sobre nossos programas de incubação.</p>
+      <div class="faq-section">
+
+        <div class="faq-item">
+          <input type="checkbox" class="accordion-checkbox" id="faq1">
+          <label for="faq1">Quem pode se inscrever nos programas?</label>
+          <div class="accordion-content">
+            <p>Qualquer empreendedor ou equipe com uma ideia inovadora pode se inscrever. Não exigimos CNPJ constituído para os programas Seed e Launch. Para os programas Accelerate e Scale, é necessário ter um MVP no mercado ou operação em andamento. A análise é feita caso a caso pela nossa equipe de seleção.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <input type="checkbox" class="accordion-checkbox" id="faq2">
+          <label for="faq2">Os programas são presenciais ou remotos?</label>
+          <div class="accordion-content">
+            <p>Oferecemos um modelo híbrido. As mentorias individuais e workshops podem ser acompanhados remotamente, mas recomendamos a participação presencial no nosso espaço de coworking para aproveitar ao máximo as oportunidades de networking e colaboração com outras startups.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <input type="checkbox" class="accordion-checkbox" id="faq3">
+          <label for="faq3">A incubadora cobra participação ou equity?</label>
+          <div class="accordion-content">
+            <p>Não cobramos taxa de participação nem exigimos equity dos founders. Nosso modelo é baseado em parcerias com patrocinadores e investidores. Em contrapartida, pedimos o compromisso de participação ativa em todas as etapas do programa e a disposição para contribuir com a comunidade da incubadora.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <input type="checkbox" class="accordion-checkbox" id="faq4">
+          <label for="faq4">Como funciona o processo de seleção?</label>
+          <div class="accordion-content">
+            <p>O processo seletivo ocorre em três etapas: (1) inscrição online com pitch da startup; (2) entrevista com a equipe de seleção; (3) banca final com apresentação para mentores e investidores parceiros. As inscrições são contínuas, com turmas trimestrais para cada programa.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CTA ==================== -->
+  <section class="landing-section landing-section-alt">
+    <div class="landing-container">
+      <div class="cta-box">
+        <div class="cta-content">
+          <h2>Pronto para acelerar sua startup?</h2>
+          <p>Inscreva-se agora em um de nossos programas e transforme sua ideia em um negócio de sucesso com o apoio da Projetos Dinâmicos.</p>
+          <div class="hero-actions" style="justify-content:center;">
+            <a href="inscricao.html" class="btn btn-primary btn-lg"><i class="bi bi-send-plus"></i> Inscrever Startup</a>
+            <a href="contato.html" class="btn btn-outline btn-lg">Falar com Equipe</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="../components/footer.js"></script>
+</body>
+</html>

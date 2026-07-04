@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anunciar Projeto — Projetos Dinâmicos Freelas</title>
+  <meta name="description" content="Anuncie seu projeto de TI gratuitamente e encontre o freelancer ideal.">
+  <link rel="stylesheet" href="../static/css/default.css">
+  <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+  <style>
+    .page-header { text-align:center; padding:3rem 1.5rem 2rem; background:linear-gradient(135deg, var(--bg-alt), var(--container-bg)); border-bottom:1px solid var(--border-color); }
+    .page-header h1 { font-size:2.2rem; margin:0 0 0.5rem; }
+    .page-header p { font-size:1.05rem; color:var(--text-muted); max-width:600px; margin:0 auto; }
+    .form-section { max-width:720px; margin:0 auto; padding:3rem 1.5rem; }
+    .form-card { background:var(--container-bg); border-radius:16px; padding:2.5rem; border:1px solid var(--container-border); box-shadow:var(--container-shadow); }
+    .form-card h2 { margin:0 0 1.5rem; font-size:1.2rem; color:var(--heading-color); }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .form-group { margin-bottom:1.2rem; }
+    .form-group label { display:block; margin-bottom:0.3rem; font-size:0.85rem; font-weight:600; color:var(--heading-color); }
+    .form-group input,.form-group select,.form-group textarea { width:100%; padding:0.65rem 0.85rem; border:1px solid var(--input-border); border-radius:8px; font-size:0.95rem; box-sizing:border-box; background:var(--input-bg); color:var(--input-text); transition:border-color 0.2s; }
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus { outline:none; border-color:var(--brand-primary); box-shadow:0 0 0 0.2rem rgba(99,102,241,0.15); }
+    .form-group textarea { resize:vertical; min-height:120px; }
+    .full-width { grid-column:1/-1; }
+    .benefits { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin-bottom:2rem; }
+    .benefit-card { background:var(--bg-alt); border-radius:12px; padding:1.2rem; text-align:center; border:1px solid var(--border-color); }
+    .benefit-card i { font-size:1.8rem; color:var(--brand-primary); margin-bottom:0.5rem; }
+    .benefit-card h4 { margin:0 0 4px; font-size:0.95rem; }
+    .benefit-card p { margin:0; font-size:0.82rem; color:var(--text-muted); }
+    @media (max-width:600px) { .form-grid { grid-template-columns:1fr; } .form-card { padding:1.5rem; } }
+  </style>
+</head>
+<body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
+  <main class="main-content">
+    <div class="page-header">
+      <h1><i class="bi bi-building" style="margin-right:8px;color:var(--brand-primary);"></i>Anunciar Projeto</h1>
+      <p>Publique seu projeto gratuitamente e receba candidaturas de profissionais de TI qualificados.</p>
+    </div>
+    <div class="form-section">
+      <div class="benefits">
+        <div class="benefit-card">
+          <i class="bi bi-people-fill"></i>
+          <h4>Acesso a Talentos</h4>
+          <p>Mais de 50 profissionais de TI cadastrados</p>
+        </div>
+        <div class="benefit-card">
+          <i class="bi bi-lightning-charge-fill"></i>
+          <h4>Matching Inteligente</h4>
+          <p>Sistema de compatibilidade por habilidades</p>
+        </div>
+        <div class="benefit-card">
+          <i class="bi bi-currency-dollar"></i>
+          <h4>Grátis para Anunciar</h4>
+          <p>Anúncio básico sem custo. Planos destacados opcionais</p>
+        </div>
+      </div>
+      <div class="form-card">
+        <h2><i class="bi bi-pencil-square" style="color:var(--brand-primary);margin-right:6px;"></i>Dados do Projeto</h2>
+        <form id="formProjeto" novalidate>
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="titulo">Título do Projeto *</label>
+              <input type="text" id="titulo" name="titulo" required placeholder="Ex: Desenvolvimento de Aplicativo Mobile">
+            </div>
+            <div class="form-group full-width">
+              <label for="descricao">Descrição Detalhada *</label>
+              <textarea id="descricao" name="descricao" required placeholder="Descreva o escopo do projeto, tecnologias desejadas, entregáveis esperados..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="categoria_projeto">Categoria *</label>
+              <select id="categoria_projeto" name="categoria" required>
+                <option value="">Selecione</option>
+                <option value="desenvolvimento">Desenvolvimento Web</option>
+                <option value="mobile">Mobile</option>
+                <option value="design">Design/UI</option>
+                <option value="devops">DevOps</option>
+                <option value="dados">Dados/IA</option>
+                <option value="suporte">Suporte Técnico</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="habilidades_projeto">Habilidades Requeridas *</label>
+              <input type="text" id="habilidades_projeto" name="habilidades" required placeholder="Ex: React, Node.js, PostgreSQL">
+            </div>
+            <div class="form-group">
+              <label for="experiencia_minima">Experiência Mínima</label>
+              <select id="experiencia_minima" name="experiencia_minima">
+                <option value="1">1 ano</option>
+                <option value="2">2 anos</option>
+                <option value="3">3 anos</option>
+                <option value="5">5 anos</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="prazo">Prazo Estimado</label>
+              <input type="text" id="prazo" name="prazo" placeholder="Ex: 30 dias, 2 meses">
+            </div>
+            <div class="form-group">
+              <label for="valor">Valor Estimado</label>
+              <input type="text" id="valor" name="valor" placeholder="Ex: R$ 5.000-8.000">
+            </div>
+            <div class="form-group">
+              <label for="remoto">Trabalho Remoto?</label>
+              <select id="remoto" name="remoto">
+                <option value="sim">Sim, remoto</option>
+                <option value="parcial">Parcialmente</option>
+                <option value="nao">Presencial</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="localizacao_projeto">Localização (se presencial)</label>
+              <input type="text" id="localizacao_projeto" name="localizacao" placeholder="Cidade/Estado">
+            </div>
+            <div class="form-group">
+              <label for="nome_contato">Seu Nome *</label>
+              <input type="text" id="nome_contato" name="nome_contato" required placeholder="Seu nome">
+            </div>
+            <div class="form-group">
+              <label for="email_contato">Seu E-mail *</label>
+              <input type="email" id="email_contato" name="email_contato" required placeholder="seu@email.com">
+            </div>
+          </div>
+          <div id="msgProjeto" style="margin:1rem 0;"></div>
+          <button type="submit" class="btn btn-primary btn-lg" style="width:100%;"><i class="bi bi-send"></i> Publicar Projeto</button>
+        </form>
+      </div>
+    </div>
+  </main>
+  <script src="../static/js/api.js"></script>
+  <script src="../static/js/main.js"></script>
+  <script>
+  document.getElementById('formProjeto').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = this.querySelector('button[type="submit"]');
+    var msg = document.getElementById('msgProjeto');
+    btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Publicando...';
+    var data = {
+      titulo: document.getElementById('titulo').value,
+      descricao: document.getElementById('descricao').value,
+      categoria: document.getElementById('categoria_projeto').value,
+      habilidades: document.getElementById('habilidades_projeto').value,
+      experiencia_minima: document.getElementById('experiencia_minima').value,
+      prazo: document.getElementById('prazo').value,
+      valor: document.getElementById('valor').value,
+      remoto: document.getElementById('remoto').value,
+      localizacao: document.getElementById('localizacao_projeto').value,
+      status: 'aberto',
+      cliente_nome: document.getElementById('nome_contato').value,
+      cliente_email: document.getElementById('email_contato').value
+    };
+    apiFetch('/projetos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Erro');
+      msg.innerHTML = '<div class="alert alert-success">Projeto publicado com sucesso! Redirecionando...</div>';
+      setTimeout(function() { window.location.href = 'projetos.html'; }, 2000);
+    })
+    .catch(function() {
+      msg.innerHTML = '<div class="alert alert-danger">Erro ao publicar. Tente novamente.</div>';
+      btn.disabled = false; btn.innerHTML = '<i class="bi bi-send"></i> Publicar Projeto';
+    });
+  });
+  </script>
+  <script src="../components/footer.js"></script>
+</body>
+</html>

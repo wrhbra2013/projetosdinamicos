@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freelancers — Projetos Dinâmicos Freelas</title>
+  <meta name="description" content="Profissionais de tecnologia disponíveis para projetos freelancer. Encontre o dev perfeito para seu projeto.">
+  <link rel="stylesheet" href="../static/css/default.css">
+  <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../static/css/home.css">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+  <style>
+    .page-hero { background: linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#3730a3 70%,#4338ca 100%); padding: 60px 1.5rem; text-align: center; }
+    .page-hero h1 { font-size: 2.5rem; color: #fff; margin: 0 0 0.5rem; font-weight: 800; }
+    .page-hero p { color: #c7d2fe; font-size: 1.05rem; max-width: 600px; margin: 0 auto; }
+    .freela-card { background: var(--container-bg); border-radius: 16px; border: 1px solid var(--container-border); box-shadow: var(--container-shadow); padding: 1.5rem; transition: transform 0.3s, box-shadow 0.3s; }
+    .freela-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(99,102,241,0.15); }
+    .freela-avatar { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .freela-top { display: flex; gap: 16px; align-items: flex-start; }
+    .vazio-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+    .vazio-state i { font-size: 3rem; margin-bottom: 1rem; color: var(--brand-primary-light); }
+    .destaque-badge { background: linear-gradient(135deg,#f59e0b,#fbbf24); color: #fff; padding: 2px 10px; border-radius: 100px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
+    @media (max-width: 768px) { .page-hero h1 { font-size: 1.8rem; } }
+  </style>
+</head>
+<body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
+  <main class="main-content">
+    <section class="page-hero">
+      <h1><i class="bi bi-people" style="margin-right:8px;"></i>Freelancers de Tecnologia</h1>
+      <p>Profissionais qualificados prontos para seu projeto. Filtre por especialidade e experiência.</p>
+    </section>
+    <section class="landing-section">
+      <div class="landing-container">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:2rem;">
+          <input type="text" id="filtro-busca" placeholder="Buscar por nome, skill, categoria..." oninput="filtrar()" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid var(--border-color);border-radius:10px;font-size:0.9rem;background:var(--container-bg);color:var(--text-color);">
+          <select id="filtro-categoria" onchange="filtrar()" style="padding:10px 14px;border:2px solid var(--border-color);border-radius:10px;font-size:0.9rem;background:var(--container-bg);color:var(--text-color);">
+            <option value="">Todas as Categorias</option>
+            <option value="desenvolvimento">Desenvolvimento Web</option>
+            <option value="mobile">Mobile</option>
+            <option value="design">Design/UI</option>
+            <option value="devops">DevOps</option>
+            <option value="dados">Dados/IA</option>
+            <option value="suporte">Suporte Técnico</option>
+          </select>
+        </div>
+        <div id="freelas-lista" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.5rem;">
+          <div class="vazio-state" id="loading-state">
+            <i class="bi bi-arrow-repeat"></i>
+            <p>Carregando freelancers...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+  var todosFreelas = [];
+  function esc(s) { if (!s) return ''; var d=document.createElement('div'); d.appendChild(document.createTextNode(s)); return d.innerHTML; }
+  function filtrar() {
+    var busca = document.getElementById('filtro-busca').value.toLowerCase();
+    var cat = document.getElementById('filtro-categoria').value;
+    var filtrados = todosFreelas.filter(function(f) {
+      if (cat && f.categoria !== cat) return false;
+      if (busca) {
+        var txt = (f.nome + ' ' + (f.habilidades||'') + ' ' + (f.bio||'') + ' ' + (f.categoria||'')).toLowerCase();
+        if (txt.indexOf(busca) === -1) return false;
+      }
+      return true;
+    });
+    render(filtrados);
+  }
+  function render(lista) {
+    var el = document.getElementById('freelas-lista');
+    if (lista.length === 0) {
+      el.innerHTML = '<div class="vazio-state"><i class="bi bi-search"></i><p>Nenhum freelancer encontrado</p></div>';
+      return;
+    }
+    var h = '';
+    lista.forEach(function(f) {
+      var initials = (f.nome||'FC').split(' ').map(function(n){return n[0];}).join('').substring(0,2).toUpperCase();
+      var colors = ['#6366f1','#06b6d4','#10b981','#f59e0b','#ec4899','#8b5cf6','#0ea5e9'];
+      var color = colors[f.id % colors.length] || '#6366f1';
+      var skills = (f.habilidades||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+      h += '<div class="freela-card">' +
+        '<div class="freela-top">' +
+          '<div class="freela-avatar" style="background:' + color + ';">' + initials + '</div>' +
+          '<div style="flex:1;">' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+              '<h3 style="margin:0;font-size:1.05rem;">' + esc(f.nome) + '</h3>' +
+              (f.destaque === 'true' || f.destaque === true ? '<span class="destaque-badge"><i class="bi bi-star-fill"></i> Destaque</span>' : '') +
+            '</div>' +
+            (f.categoria ? '<div style="font-size:0.85rem;color:var(--brand-primary);font-weight:600;margin:2px 0 4px;">' + esc(f.categoria) + '</div>' : '') +
+            (f.preco_hora ? '<div style="font-size:0.85rem;color:var(--text-muted);"><i class="bi bi-currency-dollar"></i> ' + esc(f.preco_hora) + '/hora</div>' : '') +
+          '</div>' +
+        '</div>' +
+        (f.bio ? '<p style="font-size:0.88rem;color:var(--text-muted);margin:0.8rem 0;line-height:1.5;">' + esc(f.bio.substring(0,200)) + '</p>' : '') +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0.5rem 0;">' +
+          skills.slice(0,5).map(function(s){ return '<span style="padding:2px 10px;border-radius:100px;font-size:0.75rem;font-weight:600;background:#eef2ff;color:#4f46e5;">' + esc(s) + '</span>'; }).join('') +
+        '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:0.8rem;">' +
+          (f.github ? '<a href="' + esc(f.github) + '" target="_blank" style="color:var(--text-muted);font-size:1.2rem;"><i class="bi bi-github"></i></a>' : '') +
+          (f.linkedin ? '<a href="' + esc(f.linkedin) + '" target="_blank" style="color:var(--text-muted);font-size:1.2rem;"><i class="bi bi-linkedin"></i></a>' : '') +
+          (f.portfolio ? '<a href="' + esc(f.portfolio) + '" target="_blank" style="color:var(--text-muted);font-size:0.85rem;"><i class="bi bi-box-arrow-up-right"></i> Portfolio</a>' : '') +
+        '</div>' +
+      '</div>';
+    });
+    el.innerHTML = h;
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    apiFetch('/freelancers')
+      .then(function(r) { if (!r.ok) throw new Error('Erro'); return r.json(); })
+      .then(function(data) {
+        todosFreelas = Array.isArray(data) ? data : [];
+        if (todosFreelas.length === 0) {
+          document.getElementById('freelas-lista').innerHTML = '<div class="vazio-state"><i class="bi bi-inbox"></i><p>Nenhum freelancer cadastrado ainda.</p><p style="font-size:0.9rem;">Seja o primeiro a se cadastrar!</p><a href="cadastro_freela.html" class="btn btn-primary" style="margin-top:1rem;"><i class="bi bi-person-plus"></i> Cadastre-se Grátis</a></div>';
+        } else {
+          render(todosFreelas);
+        }
+      })
+      .catch(function() {
+        document.getElementById('freelas-lista').innerHTML = '<div class="vazio-state"><i class="bi bi-wifi-off"></i><p>Offline — Faça o cadastro para aparecer aqui</p></div>';
+      });
+  });
+  </script>
+  <script src="../components/footer.js"></script>
+</body>
+</html>

@@ -1,13 +1,13 @@
-window.API_BASE = 'https://api.projetosdinamicos.com.br/amoranimal';
+window.API_BASE = 'https://api.projetosdinamicos.com.br/freelas';
 
 window.getApiToken = function() {
   if (window.API_TOKEN) return window.API_TOKEN;
-  var token = localStorage.getItem('amoranimal_token');
-  var expiry = parseInt(localStorage.getItem('amoranimal_session_expiry') || '0', 10);
+  var token = localStorage.getItem('freelas_token');
+  var expiry = parseInt(localStorage.getItem('freelas_session_expiry') || '0', 10);
   if (token && Date.now() > expiry) {
-    localStorage.removeItem('amoranimal_token');
-    localStorage.removeItem('amoranimal_usuario');
-    localStorage.removeItem('amoranimal_session_expiry');
+    localStorage.removeItem('freelas_token');
+    localStorage.removeItem('freelas_usuario');
+    localStorage.removeItem('freelas_session_expiry');
     return null;
   }
   return token || null;
