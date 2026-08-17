@@ -3,75 +3,95 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Projetos Dinâmicos — Plataforma de Freelancers TI/Dev</title>
-  <meta name="description" content="Plataforma gratuita de freelancers de tecnologia. Conectamos profissionais de TI a projetos inovadores. Cadastre-se grátis.">
+  <title>Podcast Search & Player — Extensao Chrome para Podcasts</title>
+  <meta name="description" content="Busque e ouca podcasts de multiplas fontes em um so lugar. YouTube, Spotify, RSS, Archive.org e Podcast Index. Extensao gratuita para Chrome.">
   <link rel="stylesheet" href="static/css/default.css">
   <link rel="stylesheet" href="static/css/icons/bootstrap-icons.min.css">
   <link rel="stylesheet" href="static/css/home.css">
   <link rel="icon" type="image/png" href="static/css/favicon/favicon-32x32.png">
-  <script src="static/js/api.js"></script>
   <style>
-    .stat-card { background: var(--container-bg) !important; border-top: 3px solid var(--brand-primary); }
+    .hero-gradient { background: linear-gradient(135deg, #0f0a2e 0%, #1a1145 30%, #2d1b69 60%, #4c1d95 100%); }
+    .hero-gradient h1 .highlight-gradient { background: linear-gradient(135deg, #a78bfa, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .hero-stats-mini strong { font-size: 1.5rem; color: #fff; display: block; margin-bottom: 2px; }
+    .hero-stats-mini span { color: #c4b5fd; font-size: 0.85rem; }
+    .hero-stats-mini { display: flex; gap: 2.5rem; justify-content: center; flex-wrap: wrap; margin-top: 2.5rem; }
+    .feature-icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; margin-bottom: 1rem; }
+    .screenshot-frame { background: linear-gradient(135deg, #1e1b4b, #312e81); border-radius: 16px; padding: 3px; max-width: 800px; margin: 2rem auto 0; }
+    .screenshot-inner { background: #111; border-radius: 14px; padding: 2rem; text-align: center; min-height: 300px; display: flex; align-items: center; justify-content: center; }
+    .screenshot-inner i { font-size: 5rem; color: #4f46e5; opacity: 0.5; }
     .testimonial-card { background: var(--container-bg); border-radius: 16px; padding: 2rem; box-shadow: var(--container-shadow); border: 1px solid var(--container-border); position: relative; }
     .testimonial-card::before { content: '"'; position: absolute; top: -10px; left: 20px; font-size: 4rem; color: var(--brand-primary-light); font-family: serif; line-height: 1; opacity: 0.3; }
     .testimonial-card p { font-style: italic; color: var(--text-color); line-height: 1.7; }
     .testimonial-author { display: flex; align-items: center; gap: 12px; margin-top: 1rem; }
     .testimonial-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--brand-primary-light); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; }
-    .feature-icon { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff; margin-bottom: 1rem; }
-    body.admin-mode #admin-section { display: block !important; }
-    #admin-section { display: none; }
-    .hero-freelas h1 .highlight-gradient { background: linear-gradient(135deg, #818cf8, #22d3ee); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .hero-freelas .hero-stats-mini strong { font-size: 1.5rem; color: #fff; display: block; margin-bottom: 2px; }
-    .hero-freelas .hero-stats-mini span { color: #a5b4fc; font-size: 0.85rem; }
-    .hero-freelas .hero-stats-mini { display: flex; gap: 2.5rem; justify-content: center; flex-wrap: wrap; margin-top: 2.5rem; }
+    .plan-highlight { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border: none; }
+    .plan-highlight:hover { background: linear-gradient(135deg, #4338ca, #6d28d9); }
+    .source-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 100px; font-size: 0.82rem; font-weight: 600; margin: 4px; }
+    .source-yt { background: #fee2e2; color: #dc2626; }
+    .source-spotify { background: #dcfce7; color: #16a34a; }
+    .source-rss { background: #fff7ed; color: #ea580c; }
+    .source-archive { background: #e0e7ff; color: #4f46e5; }
+    .source-pi { background: #fdf2f8; color: #db2777; }
   </style>
 </head>
 <body>
   <script>var ROOT='.';</script>
   <script src="components/header.js"></script>
   <main class="main-content">
-    <section class="hero-incubadora hero-freelas">
+
+    <section class="hero-incubadora hero-gradient">
       <div class="hero-bg-particles"></div>
       <div class="hero-content">
-        <span class="hero-badge"><i class="bi bi-code-slash"></i> Plataforma Gratuita — Conectamos TI a Projetos</span>
-        <h1>Encontre os melhores <span class="highlight-gradient">profissionais de TI</span> para seu projeto</h1>
-        <p>Plataforma gratuita para freelancers de tecnologia. Publique projetos, encontre talentos, receba propostas. Sem comissão sobre serviços — apenas anúncios opcionais.</p>
+        <span class="hero-badge"><i class="bi bi-headphones"></i> Chrome Extension — Gratuito</span>
+        <h1>Busque e ouca <span class="highlight-gradient">podcasts</span> de todas as fontes</h1>
+        <p>Uma extensao para Chrome que agrega YouTube, Spotify, RSS, Archive.org e Podcast Index em um unico player. Busca unificada, playlist automatica e save para o SidPositivo.</p>
         <div class="hero-actions">
-          <a href="pages/cadastro_freela.html" class="btn btn-primary btn-lg"><i class="bi bi-person-plus"></i> Sou Freelancer</a>
-          <a href="pages/cadastro_cliente.html" class="btn btn-outline btn-lg"><i class="bi bi-building"></i> Quero Contratar</a>
+          <a href="https://chrome.google.com/webstore" target="_blank" class="btn btn-primary btn-lg"><i class="bi bi-download"></i> Instalar no Chrome</a>
+          <a href="#features" class="btn btn-outline btn-lg"><i class="bi bi-play-circle"></i> Ver Funcionalidades</a>
         </div>
         <div class="hero-stats-mini">
-          <span><strong>50+</strong> Profissionais</span>
-          <span><strong>30+</strong> Projetos Realizados</span>
-          <span><strong>Grátis</strong> Para Freelancers</span>
-          <span><strong>Matching</strong> Inteligente</span>
+          <span><strong>5</strong> Fontes</span>
+          <span><strong>100%</strong> Gratuito</span>
+          <span><strong>Offline</strong> Player</span>
+          <span><strong>SidPositivo</strong> Integrado</span>
         </div>
       </div>
     </section>
 
-    <section class="landing-section landing-section-alt">
+    <section class="landing-section landing-section-alt" id="features">
       <div class="landing-container">
-        <h2 class="text-center mb-4">Números da Plataforma</h2>
-        <div class="stats-grid">
-          <div class="stat-card" data-endpoint="freelancers" data-page="pages/freelancers.html">
-            <div class="stat-card-icon" style="color: var(--brand-primary);"><i class="bi bi-people"></i></div>
-            <div class="stat-card-number" id="stat-count-freelancers">50+</div>
-            <div class="stat-card-label">Freelancers Cadastrados</div>
+        <h2 class="text-center mb-4">Funcionalidades</h2>
+        <p class="text-center text-muted" style="max-width:600px;margin:-1rem auto 3rem;">Tudo que voce precisa para ouvir podcasts em um so lugar</p>
+        <div class="landing-grid landing-grid-3">
+          <div class="incubator-card" style="padding:2rem;">
+            <div class="feature-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);"><i class="bi bi-search"></i></div>
+            <h3>Busca Unificada</h3>
+            <p>Pesquise por nome, episodio ou palavra-chave em 5 fontes simultaneamente. Resultados organizados e filtraveis.</p>
           </div>
-          <div class="stat-card" data-endpoint="projetos" data-page="pages/projetos.html">
-            <div class="stat-card-icon" style="color: var(--brand-success);"><i class="bi bi-briefcase"></i></div>
-            <div class="stat-card-number" id="stat-count-projetos">30+</div>
-            <div class="stat-card-label">Projetos Publicados</div>
+          <div class="incubator-card" style="padding:2rem;">
+            <div class="feature-icon" style="background:linear-gradient(135deg,#10b981,#34d399);"><i class="bi bi-play-btn-fill"></i></div>
+            <h3>Player Integrado</h3>
+            <p>Ouca direto na extensao com play/pause, anterior/proximo, volume, barra de progresso e modo repetir.</p>
           </div>
-          <div class="stat-card" data-endpoint="clientes" data-page="pages/cadastro_cliente.html">
-            <div class="stat-card-icon" style="color: var(--brand-accent);"><i class="bi bi-building"></i></div>
-            <div class="stat-card-number" id="stat-count-clientes">20+</div>
-            <div class="stat-card-label">Clientes</div>
+          <div class="incubator-card" style="padding:2rem;">
+            <div class="feature-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);"><i class="bi bi-collection-play-fill"></i></div>
+            <h3>Playlist Automatica</h3>
+            <p>Adicione episodios a fila de reproducao. A playlist continua tocando mesmo apos fechar o popup.</p>
           </div>
-          <div class="stat-card">
-            <div class="stat-card-icon" style="color: var(--brand-secondary);"><i class="bi bi-graph-up-arrow"></i></div>
-            <div class="stat-card-number">95%</div>
-            <div class="stat-card-label">Satisfação</div>
+          <div class="incubator-card" style="padding:2rem;">
+            <div class="feature-icon" style="background:linear-gradient(135deg,#ec4899,#f472b6);"><i class="bi bi-bookmark-heart-fill"></i></div>
+            <h3>Save SidPositivo</h3>
+            <p>Salve seus episodios favoritos diretamente no SidPositivo com um clique. Acompanhe sua escuta.</p>
+          </div>
+          <div class="incubator-card" style="padding:2rem;">
+            <div class="feature-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);"><i class="bi bi-layout-sidebar"></i></div>
+            <h3>Side Panel</h3>
+            <p>Player e busca disponiveis no side panel do Chrome. Funciona em desktop e mobile sem obstruir a navegacao.</p>
+          </div>
+          <div class="incubator-card" style="padding:2rem;">
+            <div class="feature-icon" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);"><i class="bi bi-globe2"></i></div>
+            <h3>Multi-Fonte</h3>
+            <p>YouTube, Spotify, Archive.org, Podcast Index e RSS direto. Encontre qualquer podcast em qualquer plataforma.</p>
           </div>
         </div>
       </div>
@@ -79,28 +99,18 @@
 
     <section class="landing-section">
       <div class="landing-container">
-        <h2 class="text-center mb-4">Como Funciona</h2>
-        <p class="text-center text-muted" style="max-width:600px;margin:-1rem auto 3rem;">Simples, rápido e gratuito para freelancers de TI</p>
-        <div class="landing-grid landing-grid-4">
-          <div class="incubator-card program-card" style="padding:2rem;text-align:center;">
-            <div class="feature-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);margin:0 auto 1rem;"><i class="bi bi-person-plus"></i></div>
-            <h3>1. Cadastre-se</h3>
-            <p>Crie seu perfil gratuito como freelancer ou cadastre seu projeto como contratante.</p>
-          </div>
-          <div class="incubator-card program-card" style="padding:2rem;text-align:center;">
-            <div class="feature-icon" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);margin:0 auto 1rem;"><i class="bi bi-search"></i></div>
-            <h3>2. Encontre</h3>
-            <p>Nosso sistema de matching encontra os profissionais ou projetos ideais para você.</p>
-          </div>
-          <div class="incubator-card program-card" style="padding:2rem;text-align:center;">
-            <div class="feature-icon" style="background:linear-gradient(135deg,#10b981,#34d399);margin:0 auto 1rem;"><i class="bi bi-chat-dots"></i></div>
-            <h3>3. Conecte-se</h3>
-            <p>Troque mensagens, combine prazos e valores. Pagamento combinado entre as partes via PIX.</p>
-          </div>
-          <div class="incubator-card program-card" style="padding:2rem;text-align:center;">
-            <div class="feature-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);margin:0 auto 1rem;"><i class="bi bi-check2-circle"></i></div>
-            <h3>4. Realize</h3>
-            <p>Entregue o projeto com qualidade. Sistema de garantia para tarefas concluídas no prazo.</p>
+        <h2 class="text-center mb-4">Fontes Suportadas</h2>
+        <p class="text-center text-muted" style="max-width:600px;margin:-1rem auto 2rem;">Busque em 5 plataformas diferentes ao mesmo tempo</p>
+        <div class="text-center">
+          <span class="source-badge source-yt"><i class="bi bi-youtube"></i> YouTube</span>
+          <span class="source-badge source-spotify"><i class="bi bi-spotify"></i> Spotify</span>
+          <span class="source-badge source-rss"><i class="bi bi-rss"></i> RSS</span>
+          <span class="source-badge source-archive"><i class="bi bi-archive"></i> Archive.org</span>
+          <span class="source-badge source-pi"><i class="bi bi-podcast"></i> Podcast Index</span>
+        </div>
+        <div class="screenshot-frame">
+          <div class="screenshot-inner">
+            <i class="bi bi-headphones"></i>
           </div>
         </div>
       </div>
@@ -110,40 +120,25 @@
       <div class="landing-container">
         <div class="section-header-flex">
           <div>
-            <h2>Por que escolher a Projetos Dinâmicos?</h2>
-            <p class="text-muted">Diferenciais que fazem a diferença para freelancers e contratantes.</p>
+            <h2>Como Funciona</h2>
+            <p class="text-muted">Simples, rapido e gratuito. Em 3 passos comecar a ouvir.</p>
           </div>
         </div>
         <div class="landing-grid landing-grid-3">
-          <div class="incubator-card" style="padding:2rem;">
-            <div class="feature-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);"><i class="bi bi-currency-dollar"></i></div>
-            <h3>Grátis para Freelancers</h3>
-            <p>Sem mensalidade, sem comissão sobre serviços. Apenas planos opcionais de destaque.</p>
+          <div class="incubator-card" style="padding:2rem;text-align:center;">
+            <div class="feature-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);margin:0 auto 1rem;"><i class="bi bi-download"></i></div>
+            <h3>1. Instale</h3>
+            <p>Adicione a extensao ao Chrome gratuitamente pela Chrome Web Store. Leva 10 segundos.</p>
           </div>
-          <div class="incubator-card" style="padding:2rem;">
-            <div class="feature-icon" style="background:linear-gradient(135deg,#06b6d4,#22d3ee);"><i class="bi bi-diagram-3"></i></div>
-            <h3>Matching Inteligente</h3>
-            <p>Sistema de compatibilidade que匹配 freelancers aos requisitos técnicos dos projetos.</p>
+          <div class="incubator-card" style="padding:2rem;text-align:center;">
+            <div class="feature-icon" style="background:linear-gradient(135deg,#10b981,#34d399);margin:0 auto 1rem;"><i class="bi bi-search"></i></div>
+            <h3>2. Busque</h3>
+            <p>Pesquise por podcast, episodio ou tema. A busca varre todas as fontes automaticamente.</p>
           </div>
-          <div class="incubator-card" style="padding:2rem;">
-            <div class="feature-icon" style="background:linear-gradient(135deg,#10b981,#34d399);"><i class="bi bi-shield-check"></i></div>
-            <h3>Garantia de Tarefas</h3>
-            <p>Profissionais que não concluem no prazo podem ter comissão reversível. Segurança para ambos.</p>
-          </div>
-          <div class="incubator-card" style="padding:2rem;">
-            <div class="feature-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);"><i class="bi bi-phone"></i></div>
-            <h3>Pagamento via PIX</h3>
-            <p>Pagamento combinado entre as partes. PIX, transferência ou acordo mútuo. Sem taxas escondidas.</p>
-          </div>
-          <div class="incubator-card" style="padding:2rem;">
-            <div class="feature-icon" style="background:linear-gradient(135deg,#ec4899,#f472b6);"><i class="bi bi-funnel-fill"></i></div>
-            <h3>Filtro por Requisitos</h3>
-            <p>Candidatos filtrados por compatibilidade técnica, experiência e disponibilidade.</p>
-          </div>
-          <div class="incubator-card" style="padding:2rem;">
-            <div class="feature-icon" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);"><i class="bi bi-bar-chart-fill"></i></div>
-            <h3>Dashboard Completo</h3>
-            <p>Acompanhe projetos, candidaturas, anúncios e métricas em tempo real.</p>
+          <div class="incubator-card" style="padding:2rem;text-align:center;">
+            <div class="feature-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);margin:0 auto 1rem;"><i class="bi bi-play-fill"></i></div>
+            <h3>3. Ouca</h3>
+            <p>Clique em play e aproveite. Salve favoritos, crie playlists e configure seus feeds RSS.</p>
           </div>
         </div>
       </div>
@@ -151,39 +146,50 @@
 
     <section class="landing-section">
       <div class="landing-container">
-        <h2 class="text-center mb-4">Projetos em Destaque</h2>
-        <div class="events-grid" id="projetos-destaques">
-          <div class="incubator-card" style="flex:0 0 320px;">
-            <div style="height:160px;background:linear-gradient(135deg,#6366f1,#4f46e5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:3rem;"><i class="bi bi-phone"></i></div>
-            <div style="padding:1.5rem;">
-              <span class="badge" style="background:#eef2ff;color:#4f46e5;margin-bottom:8px;">Mobile</span>
-              <h4>App Delivery</h4>
-              <p style="font-size:0.85rem;color:var(--text-muted);">App mobile para delivery com React Native e Node.js.</p>
-            </div>
+        <h2 class="text-center mb-4">Planos</h2>
+        <p class="text-center text-muted" style="max-width:600px;margin:-1rem auto 2rem;">Comece gratis. Escolha premium quando quiser mais.</p>
+        <div class="landing-grid landing-grid-3">
+          <div class="plano-card">
+            <div class="plano-name">Gratuito</div>
+            <div class="plano-price">Gratis</div>
+            <div class="plano-desc">1 podcast por dia, busca em todas as fontes.</div>
+            <ul class="plano-features">
+              <li><i class="bi bi-check-circle-fill"></i> 1 episodio por dia</li>
+              <li><i class="bi bi-check-circle-fill"></i> Busca em 5 fontes</li>
+              <li><i class="bi bi-check-circle-fill"></i> Player integrado</li>
+              <li><i class="bi bi-check-circle-fill"></i> 3 feeds RSS salvos</li>
+              <li><i class="bi bi-check-circle-fill"></i> Save SidPositivo</li>
+            </ul>
+            <a href="https://chrome.google.com/webstore" target="_blank" class="btn btn-outline" style="width:100%;">Instalar Gratis</a>
           </div>
-          <div class="incubator-card" style="flex:0 0 320px;">
-            <div style="height:160px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:3rem;"><i class="bi bi-bar-chart"></i></div>
-            <div style="padding:1.5rem;">
-              <span class="badge" style="background:#ecfdf5;color:#059669;margin-bottom:8px;">Dados</span>
-              <h4>Dashboard Analytics</h4>
-              <p style="font-size:0.85rem;color:var(--text-muted);">Dashboard interativo com Python e gráficos dinâmicos.</p>
-            </div>
+          <div class="plano-card plano-destaque">
+            <div class="plano-destaque-badge">Mais Popular</div>
+            <div class="plano-name">Premium</div>
+            <div class="plano-price">R$ 9,90 <span>/mes</span></div>
+            <div class="plano-desc">Episodios ilimitados e lista atualizada automaticamente.</div>
+            <ul class="plano-features">
+              <li><i class="bi bi-check-circle-fill"></i> Episodios ilimitados</li>
+              <li><i class="bi bi-check-circle-fill"></i> Busca em 5 fontes</li>
+              <li><i class="bi bi-check-circle-fill"></i> Player integrado</li>
+              <li><i class="bi bi-check-circle-fill"></i> RSS ilimitados</li>
+              <li><i class="bi bi-check-circle-fill"></i> Lista atualizada auto</li>
+              <li><i class="bi bi-check-circle-fill"></i> Save SidPositivo</li>
+              <li><i class="bi bi-check-circle-fill"></i> Sem anuncios</li>
+            </ul>
+            <a href="pages/planos.html" class="btn btn-primary plan-highlight" style="width:100%;">Assinar Premium</a>
           </div>
-          <div class="incubator-card" style="flex:0 0 320px;">
-            <div style="height:160px;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;color:#fff;font-size:3rem;"><i class="bi bi-globe2"></i></div>
-            <div style="padding:1.5rem;">
-              <span class="badge" style="background:#fffbeb;color:#d97706;margin-bottom:8px;">Web</span>
-              <h4>Site Institucional</h4>
-              <p style="font-size:0.85rem;color:var(--text-muted);">Site responsivo para empresa de consultoria.</p>
-            </div>
-          </div>
-          <div class="incubator-card" style="flex:0 0 320px;">
-            <div style="height:160px;background:linear-gradient(135deg,#ec4899,#db2777);display:flex;align-items:center;justify-content:center;color:#fff;font-size:3rem;"><i class="bi bi-cloud"></i></div>
-            <div style="padding:1.5rem;">
-              <span class="badge" style="background:#fdf2f8;color:#db2777;margin-bottom:8px;">DevOps</span>
-              <h4>Infra AWS</h4>
-              <p style="font-size:0.85rem;color:var(--text-muted);">Infraestrutura cloud com Docker e Kubernetes.</p>
-            </div>
+          <div class="plano-card">
+            <div class="plano-name">Equipe</div>
+            <div class="plano-price">R$ 29,90 <span>/mes</span></div>
+            <div class="plano-desc">Para times que querem gerenciar podcasts em grupo.</div>
+            <ul class="plano-features">
+              <li><i class="bi bi-check-circle-fill"></i> Tudo do Premium</li>
+              <li><i class="bi bi-check-circle-fill"></i> 5 contas</li>
+              <li><i class="bi bi-check-circle-fill"></i> Lista compartilhada</li>
+              <li><i class="bi bi-check-circle-fill"></i> Painel admin</li>
+              <li><i class="bi bi-check-circle-fill"></i> Suporte prioritario</li>
+            </ul>
+            <a href="pages/planos.html" class="btn btn-outline" style="width:100%;">Ver Detalhes</a>
           </div>
         </div>
       </div>
@@ -194,32 +200,32 @@
         <h2 class="text-center mb-4">Depoimentos</h2>
         <div class="landing-grid landing-grid-3">
           <div class="testimonial-card">
-            <p>"Consegui meu primeiro projeto de freelancer em menos de uma semana. A plataforma é intuitiva e o matching funcionou perfeitamente para meu perfil."</p>
+            <p>"Instalei em 10 segundos e ja comecei a ouvir meus podcasts favoritos. A busca unificada e incrivel — encontro tudo em um lugar so."</p>
             <div class="testimonial-author">
-              <div class="testimonial-avatar">PL</div>
+              <div class="testimonial-avatar">RS</div>
               <div>
-                <strong>Pedro Lima</strong>
-                <span style="display:block;font-size:0.8rem;color:var(--text-muted);">Desenvolvedor Full Stack</span>
+                <strong>Renato Silva</strong>
+                <span style="display:block;font-size:0.8rem;color:var(--text-muted);">Desenvolvedor</span>
               </div>
             </div>
           </div>
           <div class="testimonial-card">
-            <p>"Precisava de um dev React com urgência e encontrei profissionais incríveis na plataforma. O filtro por habilidades economizou horas de triagem."</p>
+            <p>"A integracao com o SidPositivo e fantastica. Consigo salvar episodios e acompanhar meu progresso de escuta sem sair do navegador."</p>
             <div class="testimonial-author">
-              <div class="testimonial-avatar">CS</div>
+              <div class="testimonial-avatar">ML</div>
               <div>
-                <strong>Carla Silva</strong>
-                <span style="display:block;font-size:0.8rem;color:var(--text-muted);">CTO na TechSolutions</span>
+                <strong>Maria Lima</strong>
+                <span style="display:block;font-size:0.8rem;color:var(--text-muted);">Jornalista</span>
               </div>
             </div>
           </div>
           <div class="testimonial-card">
-            <p>"Como freelancer, ter um perfil destacado fez toda a diferença. Recebo propostas semanalmente e o pagamento via PIX é super prático."</p>
+            <p>"Uso no celular pelo side panel e funciona perfeitamente. A playlist automatica me permite ouvir episodios em sequencia sem interrupcao."</p>
             <div class="testimonial-author">
-              <div class="testimonial-avatar">AM</div>
+              <div class="testimonial-avatar">CF</div>
               <div>
-                <strong>Ana Moraes</strong>
-                <span style="display:block;font-size:0.8rem;color:var(--text-muted);">UI/UX Designer</span>
+                <strong>Carlos Ferreira</strong>
+                <span style="display:block;font-size:0.8rem;color:var(--text-muted);">Estudante</span>
               </div>
             </div>
           </div>
@@ -229,123 +235,20 @@
 
     <section class="landing-section">
       <div class="landing-container text-center">
-        <h2 class="mb-4">Anunciantes que Confiam</h2>
-        <p class="text-muted" style="max-width:600px;margin:-1rem auto 3rem;">Empresas que utilizam nossa plataforma para encontrar talentos.</p>
-        <div class="partners-grid">
-          <div class="partner-logo"><i class="bi bi-microsoft"></i> Microsoft</div>
-          <div class="partner-logo"><i class="bi bi-google"></i> Google</div>
-          <div class="partner-logo"><i class="bi bi-amazon"></i> AWS</div>
-          <div class="partner-logo"><i class="bi bi-github"></i> GitHub</div>
-          <div class="partner-logo"><i class="bi bi-linkedin"></i> LinkedIn</div>
-          <div class="partner-logo"><i class="bi bi-figma"></i> Figma</div>
-        </div>
-      </div>
-    </section>
-
-    <section class="landing-section landing-section-alt">
-      <div class="landing-container">
         <div class="cta-box">
           <div class="cta-content">
-            <h2>Pronto para começar?</h2>
-            <p>Junte-se à maior rede de freelancers de TI. Gratuito para profissionais. Publique seu projeto ou crie seu perfil agora.</p>
+            <h2>Pronto para ouvir?</h2>
+            <p>Instale a extensao gratuitamente e comece a buscar e ouvir podcasts de todas as fontes em um so lugar.</p>
             <div class="hero-actions" style="justify-content:center;">
-              <a href="pages/cadastro_freela.html" class="btn btn-primary btn-lg"><i class="bi bi-person-plus"></i> Cadastre-se Grátis</a>
-              <a href="pages/cadastro_cliente.html" class="btn btn-outline btn-lg">Anunciar Projeto</a>
+              <a href="https://chrome.google.com/webstore" target="_blank" class="btn btn-primary btn-lg"><i class="bi bi-download"></i> Instalar no Chrome</a>
+              <a href="pages/planos.html" class="btn btn-outline btn-lg">Ver Planos</a>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="admin-section" class="landing-section" style="background:var(--bg-alt);border-top:3px solid var(--brand-primary);">
-      <div class="landing-container">
-        <h2 class="text-center mb-4">
-          <i class="bi bi-shield-lock" style="color:var(--brand-primary);"></i> Administração
-        </h2>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.5rem;">
-          <a href="relatorio/index.html" class="btn btn-primary" style="padding:1.5rem;text-align:center;font-size:1.1rem;box-shadow:0 4px 15px rgba(99,102,241,0.3);">
-            <i class="bi bi-bar-chart" style="font-size:2.5rem;display:block;margin-bottom:8px;"></i>
-            Relatórios
-          </a>
-          <a href="relatorio/index.html?tabela=projetos" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
-            <i class="bi bi-briefcase" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-            Projetos
-          </a>
-          <a href="relatorio/index.html?tabela=freelancers" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
-            <i class="bi bi-people" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-            Freelancers
-          </a>
-          <a href="relatorio/index.html?tabela=clientes" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
-            <i class="bi bi-building" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-            Clientes
-          </a>
-          <a href="relatorio/index.html?tabela=propostas" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
-            <i class="bi bi-send" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-            Propostas
-          </a>
-          <a href="relatorio/index.html?tabela=anuncios" class="btn btn-outline" style="padding:1.5rem;text-align:center;">
-            <i class="bi bi-megaphone" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-            Anúncios
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <script>
-    (function() {
-      var adminSection = document.getElementById('admin-section');
-      if (adminSection && localStorage.getItem('freelas_token')) {
-        adminSection.style.display = '';
-      }
-    })();
-    </script>
-
   </main>
-  <script>
-  function esc(s) {
-    if (!s) return '';
-    var e = document.createElement('div');
-    e.appendChild(document.createTextNode(s));
-    return e.innerHTML;
-  }
-  function fmtDate(d) {
-    if (!d) return '';
-    if (d.match(/^\d{2}\/\d{2}\/\d{4}$/)) return d;
-    var partes = d.split('T')[0].split('-');
-    if (partes.length === 3 && partes[0].length === 4) return partes[2] + '/' + partes[1] + '/' + partes[0];
-    var dt = new Date(d);
-    if (!isNaN(dt.getTime())) {
-      return String(dt.getUTCDate()).padStart(2,'0') + '/' + String(dt.getUTCMonth()+1).padStart(2,'0') + '/' + dt.getUTCFullYear();
-    }
-    return d;
-  }
-  function imgUrl(f, pasta) {
-    if (!f) return '';
-    if (f.indexOf('://') !== -1 || f.indexOf('data:') === 0) return f;
-    return window.API_BASE + '/uploads/' + pasta + '/' + f;
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    apiFetch('/dashboard')
-      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function(data) {
-        if (data.freelancers) document.getElementById('stat-count-freelancers').textContent = data.freelancers + '+';
-        if (data.projetos) document.getElementById('stat-count-projetos').textContent = data.projetos + '+';
-        if (data.clientes) document.getElementById('stat-count-clientes').textContent = data.clientes + '+';
-      })
-      .catch(function() {});
-  });
-
-  (function() {
-    var cardContainers = document.querySelectorAll('.stat-card');
-    cardContainers.forEach(function(card) {
-      card.addEventListener('click', function() {
-        var page = this.getAttribute('data-page');
-        if (page) window.location.href = page;
-      });
-    });
-  })();
-  </script>
   <script src="components/footer.js"></script>
 </body>
 </html>

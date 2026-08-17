@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Politica de Privacidade — Podcast Search & Player</title>
+  <meta name="description" content="Politica de privacidade da extensao Podcast Search & Player para Chrome.">
+  <link rel="stylesheet" href="../static/css/default.css">
+  <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
+  <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
+</head>
+<body>
+  <script>var ROOT='..';</script>
+  <script src="../components/header.js"></script>
+
+  <div class="container mt-4 mb-4">
+    <a href="../index.html" class="btn btn-primary"><i class="bi bi-arrow-left"></i> Voltar</a>
+  </div>
+
+  <div class="container" style="max-width:800px;">
+    <h1 class="text-center mb-4">Politica de Privacidade</h1>
+    <p style="color:var(--text-muted);text-align:center;">Ultima atualizacao: <span id="policy-date"></span></p>
+
+    <h2>1. Sobre a Extensao</h2>
+    <p>O <strong>Podcast Search & Player</strong> e uma extensao gratuita para o navegador Google Chrome que permite buscar e reproduzir podcasts de multiplas fontes (YouTube, Spotify, Archive.org, Podcast Index e feeds RSS).</p>
+
+    <h2>2. Dados Coletados</h2>
+    <p>A extensao coleta os seguintes dados:</p>
+    <ul>
+      <li><strong>Dados de busca:</strong> Termos de busca inseridos pelo usuario sao processados localmente e enviados apenas as APIs das fontes selecionadas (YouTube Data API, Spotify Web API, etc.). Nao armazenamos seus termos de busca.</li>
+      <li><strong>Configuracoes locais:</strong> Preferencias do usuario (chaves de API, feeds RSS salvos, favoritos, volume) sao armazenadas localmente no navegador usando <code>chrome.storage.local</code>. Esses dados nunca sao enviados para servidores externos.</li>
+      <li><strong>Dados de uso:</strong> A extensao nao coleta metricas de uso, analytics ou dados de navegacao.</li>
+    </ul>
+
+    <h2>3. Uso de Dados</h2>
+    <p>Os dados coletados sao utilizados exclusivamente para:</p>
+    <ul>
+      <li>Executar buscas nas APIs de podcast selecionadas pelo usuario.</li>
+      <li>Armazenar configuracoes e preferencias do usuario localmente.</li>
+      <li>Permitir o save de episodios no SidPositivo (quando configurado pelo usuario).</li>
+    </ul>
+
+    <h2>4. Compartilhamento de Dados</h2>
+    <p>A extensao <strong>NAO</strong> compartilha dados pessoais com terceiros. As unicas comunicacoes externas sao:</p>
+    <ul>
+      <li>Requisicoes as APIs de podcast (YouTube, Spotify, etc.) feitas pelo usuario.</li>
+      <li>Requisicoes ao servico SidPositivo (quando o usuario configura ativamente).</li>
+    </ul>
+
+    <h2>5. Armazenamento de Dados</h2>
+    <p>Todas as configuracoes e dados do usuario sao armazenados localmente no navegador using <code>chrome.storage.local</code>. Esses dados:</p>
+    <ul>
+      <li>Ficam apenas no dispositivo do usuario.</li>
+      <li>Nao sao sincronizados com servidores externos.</li>
+      <li>Sao excluidos quando o usuario remove a extensao.</li>
+    </ul>
+
+    <h2>6. Seguranca</h2>
+    <p>A extensao nao utiliza cookies, tracking ou pixels de rastreamento. Nao ha coleta de dados pessoais identificaveis (PII).</p>
+
+    <h2>7. Menores de Idade</h2>
+    <p>A extensao nao e direcionada a menores de 13 anos e nao coleta dados de menores de intencionalmente.</p>
+
+    <h2>8. Alteracoes nesta Politica</h2>
+    <p>Esta politica pode ser atualizada periodicamente. As alteracoes serao publicadas nesta pagina com a data de atualizacao.</p>
+
+    <h2>9. Contato</h2>
+    <p>Em caso de duvidas sobre esta politica de privacidade, entre em contato:</p>
+    <ul>
+      <li><strong>Email:</strong> <a href="mailto:contato@projetosdinamicos.com.br">contato@projetosdinamicos.com.br</a></li>
+      <li><strong>Site:</strong> <a href="https://www.projetosdinamicos.com.br">www.projetosdinamicos.com.br</a></li>
+    </ul>
+
+    <h2>10. Conformidade</h2>
+    <p>Esta extensao esta em conformidade com:</p>
+    <ul>
+      <li>Termos de Servico da Chrome Web Store.</li>
+      <li>Politica de Privacidade do Google.</li>
+      <li>Lei Geral de Protecao de Dados (LGPD) do Brasil.</li>
+    </ul>
+
+    <p class="mt-4" style="text-align:center;"><a href="../index.html" class="btn btn-primary"><i class="bi bi-arrow-left"></i> Voltar ao Inicio</a></p>
+  </div>
+
+  <script>
+    (function() {
+      var data = new Date();
+      var meses = ['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+      var el = document.getElementById('policy-date');
+      if (el) el.textContent = data.getDate() + ' de ' + meses[data.getMonth()] + ' de ' + data.getFullYear();
+    })();
+  </script>
+
+  <script src="../components/footer.js"></script>
+</body>
+</html>

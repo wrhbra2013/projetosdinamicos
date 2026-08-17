@@ -1,4 +1,4 @@
-window.API_BASE = 'https://api.projetosdinamicos.com.br/freelas';
+window.API_BASE = window.API_BASE || 'https://api.projetosdinamicos.com.br/freelas';
 
 window.getApiToken = function() {
   if (window.API_TOKEN) return window.API_TOKEN;
@@ -14,6 +14,7 @@ window.getApiToken = function() {
 };
 
 window.apiFetch = function(url, options) {
+  if (!window.API_BASE) return Promise.resolve({ ok: false, json: function() { return {}; } });
   options = options || {};
   options.headers = options.headers || {};
   var token = window.getApiToken();

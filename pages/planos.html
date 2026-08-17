@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Planos — Projetos Dinâmicos Freelas</title>
-  <meta name="description" content="Planos para freelancers e contratantes. Grátis para profissionais de TI.">
+  <title>Planos — Podcast Search & Player</title>
+  <meta name="description" content="Planos do Podcast Search. Gratuito com 1 episodio por dia. Premium ilimitado com lista atualizada automaticamente.">
   <link rel="stylesheet" href="../static/css/default.css">
   <link rel="stylesheet" href="../static/css/icons/bootstrap-icons.min.css">
   <link rel="stylesheet" href="../static/css/home.css">
   <link rel="icon" type="image/png" href="../static/css/favicon/favicon-32x32.png">
   <style>
-    .page-hero { background: linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#3730a3 70%,#4338ca 100%); padding: 60px 1.5rem; text-align: center; }
+    .page-hero { background: linear-gradient(135deg,#0f0a2e 0%,#1a1145 40%,#2d1b69 70%,#4c1d95 100%); padding: 60px 1.5rem; text-align: center; }
     .page-hero h1 { font-size: 2.5rem; color: #fff; margin: 0 0 0.5rem; font-weight: 800; }
     .page-hero p { color: #c7d2fe; font-size: 1.05rem; max-width: 600px; margin: 0 auto; }
     .planos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; align-items: start; }
@@ -26,7 +26,17 @@
     .plano-features li { padding: 8px 0; font-size: 0.9rem; color: var(--text-color); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--bg-alt); }
     .plano-features li:last-child { border-bottom: none; }
     .plano-features li i { color: var(--brand-success); font-size: 1rem; width: 20px; }
+    .plano-features li.disabled { color: var(--text-muted); opacity: 0.5; }
+    .plano-features li.disabled i { color: var(--text-muted); }
     .section-label { text-align: center; font-size: 1.1rem; font-weight: 700; color: var(--heading-color); margin: 3rem 0 1.5rem; text-transform: uppercase; letter-spacing: 2px; }
+    .plan-highlight { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; border: none; }
+    .plan-highlight:hover { background: linear-gradient(135deg, #4338ca, #6d28d9); color: #fff; }
+    .faq-item { background: var(--container-bg); border-radius: 12px; border: 1px solid var(--container-border); margin-bottom: 1rem; overflow: hidden; }
+    .faq-item summary { padding: 1rem 1.5rem; cursor: pointer; font-weight: 600; color: var(--heading-color); list-style: none; display: flex; align-items: center; gap: 10px; }
+    .faq-item summary::before { content: '\bi bi-chevron-right'; font-family: 'bootstrap-icons'; transition: transform 0.2s; }
+    .faq-item[open] summary::before { transform: rotate(90deg); }
+    .faq-item .faq-answer { padding: 0 1.5rem 1rem; color: var(--text-color); line-height: 1.6; }
+    .faq-item summary::-webkit-details-marker { display: none; }
     @media (max-width: 768px) { .page-hero h1 { font-size: 1.8rem; } }
   </style>
 </head>
@@ -35,94 +45,184 @@
   <script src="../components/header.js"></script>
   <main class="main-content">
     <section class="page-hero">
-      <h1><i class="bi bi-card-list" style="margin-right:8px;"></i>Planos e Benefícios</h1>
-      <p>Escolha o plano ideal para seu perfil. Freelancers têm acesso gratuito à plataforma.</p>
+      <h1><i class="bi bi-card-list" style="margin-right:8px;"></i>Planos</h1>
+      <p>Escolha o plano ideal. Comece gratis e atualize quando quiser mais.</p>
     </section>
 
     <section class="landing-section">
       <div class="landing-container">
-        <div class="section-label"><i class="bi bi-person-fill"></i> Para Freelancers</div>
+
         <div class="planos-grid">
           <div class="plano-card">
-            <div class="plano-name">Gratuito</div>
-            <div class="plano-price">Grátis <span style="font-size:0.9rem;">/sempre</span></div>
-            <div class="plano-desc">Perfil básico e candidatura a projetos. Sem compromisso.</div>
+            <div class="plano-name"><i class="bi bi-gift" style="margin-right:6px;color:var(--brand-success);"></i>Gratuito</div>
+            <div class="plano-price">Gratis</div>
+            <div class="plano-desc">1 podcast por dia. Busca em todas as fontes. Player completo.</div>
             <ul class="plano-features">
-              <li><i class="bi bi-check-lg"></i> Perfil público com portfólio</li>
-              <li><i class="bi bi-check-lg"></i> Candidatura a projetos</li>
-              <li><i class="bi bi-check-lg"></i> Acesso ao dashboard</li>
-              <li><i class="bi bi-check-lg"></i> Notificações de projetos</li>
+              <li><i class="bi bi-check-circle-fill"></i> 1 episodio por dia</li>
+              <li><i class="bi bi-check-circle-fill"></i> Busca em 5 fontes</li>
+              <li><i class="bi bi-check-circle-fill"></i> Player integrado</li>
+              <li><i class="bi bi-check-circle-fill"></i> 3 feeds RSS salvos</li>
+              <li><i class="bi bi-check-circle-fill"></i> Save SidPositivo</li>
+              <li><i class="bi bi-check-circle-fill"></i> Side Panel</li>
+              <li class="disabled"><i class="bi bi-x-circle"></i> Lista atualizada auto</li>
+              <li class="disabled"><i class="bi bi-x-circle"></i> Sem anuncios</li>
             </ul>
-            <a href="cadastro_freela.html" class="btn btn-primary" style="width:100%;">Cadastre-se Grátis</a>
+            <a href="https://chrome.google.com/webstore" target="_blank" class="btn btn-outline" style="width:100%;">Instalar Gratis</a>
           </div>
+
           <div class="plano-card plano-destaque">
-            <div class="plano-destaque-badge">Popular</div>
-            <div class="plano-name">Profissional</div>
-            <div class="plano-price">R$ 29,90 <span>/mês</span></div>
-            <div class="plano-desc">Perfil destacado e matching prioritário para conseguir mais projetos.</div>
+            <div class="plano-destaque-badge">Mais Popular</div>
+            <div class="plano-name"><i class="bi bi-star-fill" style="margin-right:6px;color:#f59e0b;"></i>Premium</div>
+            <div class="plano-price">R$ 9,90 <span>/mes</span></div>
+            <div class="plano-desc">Episodios ilimitados. Lista de podcasts atualizada automaticamente todos os dias.</div>
             <ul class="plano-features">
-              <li><i class="bi bi-check-lg"></i> Tudo do Gratuito</li>
-              <li><i class="bi bi-check-lg"></i> Perfil destacado nos resultados</li>
-              <li><i class="bi bi-check-lg"></i> Matching inteligente prioritário</li>
-              <li><i class="bi bi-check-lg"></i> Suporte prioritário</li>
-              <li><i class="bi bi-check-lg"></i> Relatórios de desempenho</li>
+              <li><i class="bi bi-check-circle-fill"></i> Episodios ilimitados</li>
+              <li><i class="bi bi-check-circle-fill"></i> Busca em 5 fontes</li>
+              <li><i class="bi bi-check-circle-fill"></i> Player integrado</li>
+              <li><i class="bi bi-check-circle-fill"></i> RSS ilimitados</li>
+              <li><i class="bi bi-check-circle-fill"></i> Lista atualizada auto</li>
+              <li><i class="bi bi-check-circle-fill"></i> Save SidPositivo</li>
+              <li><i class="bi bi-check-circle-fill"></i> Side Panel</li>
+              <li><i class="bi bi-check-circle-fill"></i> Sem anuncios</li>
             </ul>
-            <a href="cadastro_freela.html" class="btn btn-primary" style="width:100%;">Assinar Agora</a>
+            <a href="#" class="btn btn-primary plan-highlight" style="width:100%;" onclick="alert('Em breve! Assinatura disponivel via Chrome Web Store.'); return false;">Assinar Premium</a>
           </div>
+
           <div class="plano-card">
-            <div class="plano-name">Premium</div>
-            <div class="plano-price">R$ 59,90 <span>/mês</span></div>
-            <div class="plano-desc">Máxima visibilidade e benefícios exclusivos para profissionais top.</div>
+            <div class="plano-name"><i class="bi bi-people-fill" style="margin-right:6px;color:#8b5cf6;"></i>Equipe</div>
+            <div class="plano-price">R$ 29,90 <span>/mes</span></div>
+            <div class="plano-desc">Para times. Lista compartilhada e painel de gerenciamento.</div>
             <ul class="plano-features">
-              <li><i class="bi bi-check-lg"></i> Tudo do Profissional</li>
-              <li><i class="bi bi-check-lg"></i> Selo Premium de verificação</li>
-              <li><i class="bi bi-check-lg"></i> Matching exclusivo com clientes</li>
-              <li><i class="bi bi-check-lg"></i> Garantia de tarefas concluídas</li>
-              <li><i class="bi bi-check-lg"></i> Suporte 24/7</li>
+              <li><i class="bi bi-check-circle-fill"></i> Tudo do Premium</li>
+              <li><i class="bi bi-check-circle-fill"></i> 5 contas incluidas</li>
+              <li><i class="bi bi-check-circle-fill"></i> Lista compartilhada</li>
+              <li><i class="bi bi-check-circle-fill"></i> Painel admin</li>
+              <li><i class="bi bi-check-circle-fill"></i> Suporte prioritario</li>
+              <li><i class="bi bi-check-circle-fill"></i> Atualizacoes antecipadas</li>
             </ul>
-            <a href="cadastro_freela.html" class="btn btn-primary" style="width:100%;">Assinar Agora</a>
+            <a href="#" class="btn btn-outline" style="width:100%;" onclick="alert('Em breve! Entre em contato para planos de equipe.'); return false;">Falar Conosco</a>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="section-label" style="margin-top:4rem;"><i class="bi bi-building"></i> Para Contratantes</div>
-        <div class="planos-grid">
-          <div class="plano-card">
-            <div class="plano-name">Anúncio Básico</div>
-            <div class="plano-price">Grátis</div>
-            <div class="plano-desc">Publique seu projeto e receba candidaturas de freelancers.</div>
-            <ul class="plano-features">
-              <li><i class="bi bi-check-lg"></i> Projeto listado na plataforma</li>
-              <li><i class="bi bi-check-lg"></i> Candidatura de freelancers</li>
-              <li><i class="bi bi-check-lg"></i> Visualização de perfis</li>
-              <li><i class="bi bi-check-lg"></i> Pagamento combinado entre as partes</li>
-            </ul>
-            <a href="cadastro_cliente.html" class="btn btn-primary" style="width:100%;">Anunciar Grátis</a>
-          </div>
-          <div class="plano-card plano-destaque">
-            <div class="plano-destaque-badge">Recomendado</div>
-            <div class="plano-name">Anúncio Destacado</div>
-            <div class="plano-price">R$ 49,90</div>
-            <div class="plano-desc">Projeto em destaque no topo das buscas com matching inteligente.</div>
-            <ul class="plano-features">
-              <li><i class="bi bi-check-lg"></i> Tudo do Básico</li>
-              <li><i class="bi bi-check-lg"></i> Projeto destacado no topo</li>
-              <li><i class="bi bi-check-lg"></i> Matching automático com freelancers</li>
-              <li><i class="bi bi-check-lg"></i> Relatório de candidatos</li>
-              <li><i class="bi bi-check-lg"></i> Suporte dedicado</li>
-            </ul>
-            <a href="cadastro_cliente.html" class="btn btn-primary" style="width:100%;">Anunciar Agora</a>
-          </div>
-          <div class="plano-card">
-            <div class="plano-name">Anúncios</div>
-            <div class="plano-price">Sob Consulta</div>
-            <div class="plano-desc">Espaços publicitários na plataforma para sua empresa ou serviço.</div>
-            <ul class="plano-features">
-              <li><i class="bi bi-check-lg"></i> Banner no topo da plataforma</li>
-              <li><i class="bi bi-check-lg"></i> Anúncio na sidebar</li>
-              <li><i class="bi bi-check-lg"></i> Destaque em newsletters</li>
-              <li><i class="bi bi-check-lg"></i> Relatório de impressões</li>
-            </ul>
-            <a href="contato.html" class="btn btn-primary" style="width:100%;">Falar Conosco</a>
+    <section class="landing-section landing-section-alt">
+      <div class="landing-container">
+        <h2 class="text-center mb-4">Comparacao dos Planos</h2>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;min-width:600px;">
+            <thead>
+              <tr style="border-bottom:2px solid var(--container-border);">
+                <th style="text-align:left;padding:12px 16px;color:var(--heading-color);">Recurso</th>
+                <th style="text-align:center;padding:12px 16px;color:var(--heading-color);">Gratuito</th>
+                <th style="text-align:center;padding:12px 16px;color:var(--brand-primary);">Premium</th>
+                <th style="text-align:center;padding:12px 16px;color:var(--heading-color);">Equipe</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--bg-alt);">
+                <td style="padding:12px 16px;">Episodios por dia</td>
+                <td style="text-align:center;padding:12px 16px;">1</td>
+                <td style="text-align:center;padding:12px 16px;font-weight:700;color:var(--brand-primary);">Ilimitado</td>
+                <td style="text-align:center;padding:12px 16px;">Ilimitado</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--bg-alt);">
+                <td style="padding:12px 16px;">Fontes de busca</td>
+                <td style="text-align:center;padding:12px 16px;">5</td>
+                <td style="text-align:center;padding:12px 16px;">5</td>
+                <td style="text-align:center;padding:12px 16px;">5</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--bg-alt);">
+                <td style="padding:12px 16px;">Feeds RSS salvos</td>
+                <td style="text-align:center;padding:12px 16px;">3</td>
+                <td style="text-align:center;padding:12px 16px;font-weight:700;color:var(--brand-primary);">Ilimitado</td>
+                <td style="text-align:center;padding:12px 16px;">Ilimitado</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--bg-alt);">
+                <td style="padding:12px 16px;">Lista atualizada auto</td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-x-lg" style="color:var(--text-muted);"></i></td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--bg-alt);">
+                <td style="padding:12px 16px;">Player integrado</td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--bg-alt);">
+                <td style="padding:12px 16px;">Side Panel</td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--bg-alt);">
+                <td style="padding:12px 16px;">Save SidPositivo</td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--bg-alt);">
+                <td style="padding:12px 16px;">Sem anuncios</td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-x-lg" style="color:var(--text-muted);"></i></td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+                <td style="text-align:center;padding:12px 16px;"><i class="bi bi-check-lg" style="color:var(--brand-success);"></i></td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--bg-alt);">
+                <td style="padding:12px 16px;">Contas</td>
+                <td style="text-align:center;padding:12px 16px;">1</td>
+                <td style="text-align:center;padding:12px 16px;">1</td>
+                <td style="text-align:center;padding:12px 16px;font-weight:700;color:var(--brand-primary);">5</td>
+              </tr>
+              <tr>
+                <td style="padding:12px 16px;"><strong>Preco</strong></td>
+                <td style="text-align:center;padding:12px 16px;"><strong>Gratis</strong></td>
+                <td style="text-align:center;padding:12px 16px;"><strong style="color:var(--brand-primary);">R$ 9,90/mes</strong></td>
+                <td style="text-align:center;padding:12px 16px;"><strong>R$ 29,90/mes</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-section">
+      <div class="landing-container">
+        <h2 class="text-center mb-4">Perguntas Frequentes</h2>
+        <div style="max-width:700px;margin:0 auto;">
+          <details class="faq-item">
+            <summary>Como funciona o limite de 1 episodio por dia no plano gratuito?</summary>
+            <div class="faq-answer">No plano gratuito, voce pode ouvir 1 episodio completo por dia. Apos isso, precisara esperar o proximo dia para ouvir outro. O plano Premium remove esse limite.</div>
+          </details>
+          <details class="faq-item">
+            <summary>O que e a "lista atualizada automaticamente"?</summary>
+            <div class="faq-answer">No plano Premium, a extensao baixa automaticamente novos episodios dos seus podcasts favoritos todos os dias. Voce sempre tem conteudo fresco sem precisar buscar manualmente.</div>
+          </details>
+          <details class="faq-item">
+            <summary>Posso cancelar a assinatura a qualquer momento?</summary>
+            <div class="faq-answer">Sim. A assinatura e mensal e voce pode cancelar a qualquer momento. Apos o cancelamento, voce volta automaticamente para o plano gratuito.</div>
+          </details>
+          <details class="faq-item">
+            <summary>Como funciona o save no SidPositivo?</summary>
+            <div class="faq-answer">Clique no icone de coracao ao lado de qualquer episodio para salva-lo diretamente no seu perfil do SidPositivo. Seus favoritos ficam sincronizados entre dispositivos.</div>
+          </details>
+          <details class="faq-item">
+            <summary>O plano Equipe funciona como?</summary>
+            <div class="faq-answer">O plano Equipe inclui 5 contas com lista de podcasts compartilhada. Ideal para times que ouvem podcasts juntos ou querem manter um catalogo em comum.</div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-section landing-section-alt">
+      <div class="landing-container text-center">
+        <div class="cta-box">
+          <div class="cta-content">
+            <h2>Comecar agora e gratis</h2>
+            <p>Instale a extensao e comece a ouvir 1 episodio por dia sem nenhum custo.</p>
+            <div class="hero-actions" style="justify-content:center;">
+              <a href="https://chrome.google.com/webstore" target="_blank" class="btn btn-primary btn-lg"><i class="bi bi-download"></i> Instalar no Chrome</a>
+            </div>
           </div>
         </div>
       </div>
