@@ -559,6 +559,9 @@ body.high-contrast .help-content hr {
   --brand-success: #10b981;        /* verde — sucesso / growth */
   --brand-purple: #8b5cf6;         /* roxo — inovação */
   --brand-pink: #ec4899;           /* pink — destaques */
+  --brand-teal: #0d9488;          /* teal — botões primários */
+  --brand-teal-dark: #0f766e;     /* teal — hover */
+  --brand-coral: #f97316;         /* coral — help button */
   
   /* Semantic aliases */
   --primary: var(--brand-primary);
