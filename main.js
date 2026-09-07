@@ -388,8 +388,8 @@ function setTab(which) {
   const want3d = which === '3d';
   $('view2d').style.display = want3d ? 'none' : '';
   $('view3d').style.display = want3d ? '' : 'none';
-  $('tab2d').classList.toggle('active', !want3d);
-  $('tab3d').classList.toggle('active', want3d);
+  document.querySelector('.menu-item[data-tab="2d"]').classList.toggle('active', !want3d);
+  document.querySelector('.menu-item[data-tab="3d"]').classList.toggle('active', want3d);
   $('btnBack3d').style.display = want3d ? '' : 'none';
   if (want3d) { init3d(); startAnimation(); }
 }
