@@ -14,9 +14,9 @@ const WALL_H = 2.6;   // pé-direito (m)
 const WALL_T = 0.15;  // espessura da parede (m)
 const SNAP = 0.1;
 const MPAGO_LINKS = {
-  avulso:    'SUA_URL_MPAGO_AVULSO',
-  essencial: 'SUA_URL_MPAGO_ESSENCIAL',
-  pro:       'SUA_URL_MPAGO_PRO',
+  avulso:    'https://mpago.la/18BKYTi',
+  essencial: 'https://mpago.la/19miWAs',
+  pro:       'https://mpago.la/1osFKmb',
 }; // Links de pagamento do Mercado Pago (ex.: https://mpago.la/XXXXXXXX)
 
 const FURNITURE_DEFS = {
