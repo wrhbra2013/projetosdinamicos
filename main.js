@@ -1301,9 +1301,9 @@ function wireUI() {
     const link = MPAGO_LINKS[k];
     if (!link || link.indexOf('SUA_URL') === 0) {
       toast('Configure a URL do Mercado Pago no código (MPAGO_LINKS.' + k + ').');
-      return;
+      return false;
     }
-    window.open(link, '_blank', 'noopener');
+    return true;
   }
   $('btnBuyAvulso').onclick = () => buyPlan('avulso');
   $('btnBuyEssencial').onclick = () => buyPlan('essencial');
