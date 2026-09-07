@@ -13,15 +13,19 @@
   html,body{height:100%;}
   body{background:var(--bg); color:var(--text); font:14px/1.4 system-ui,Segoe UI,sans-serif;
        display:flex; flex-direction:column; overflow:hidden; }
+  .app-shell{display:flex; flex-direction:column; height:100%;}
   header{background:var(--panel); border-bottom:1px solid var(--line);
-         padding:8px 14px; display:flex; align-items:center; gap:12px; flex:0 0 auto;}
-  header h1{font-size:16px; font-weight:700; letter-spacing:.3px;}
-  header h1 span{color:var(--acc);}
-  .tabs{display:flex; gap:2px; background:var(--panel2); border-radius:8px; padding:3px; margin-left:auto;}
-  .tab{padding:7px 16px; border:0; border-radius:6px; background:transparent; color:var(--muted);
-       font-weight:600; cursor:pointer;}
-  .tab.active{background:var(--accent,2058); background:#2b9bd8; color:#06121c;}
+         padding:8px 14px; display:flex; align-items:center; gap:14px; flex:0 0 auto;}
+  .brand{font-size:16px; font-weight:700; letter-spacing:.3px; white-space:nowrap;}
+  .brand span{color:var(--acc);}
+  .menu{display:flex; gap:2px; background:var(--panel2); border-radius:8px; padding:3px; margin-left:auto;}
+  .menu-item{padding:7px 16px; border-radius:6px; color:var(--muted); text-decoration:none;
+        font-weight:600; font-size:13px; cursor:pointer; border:0; background:transparent;}
+  .menu-item.active,.menu-item:hover{background:#2b9bd8; color:#06121c;}
   #btnBack3d{display:none; margin-left:8px;}
+  footer{flex:0 0 auto; background:var(--panel); border-top:1px solid var(--line);
+         padding:7px 14px; display:flex; justify-content:space-between; gap:10px;
+         font-size:11.5px; color:var(--muted); flex-wrap:wrap;}
   main{flex:1 1 auto; display:flex; min-height:0;}
   aside{width:250px; background:var(--panel); border-right:1px solid var(--line);
         overflow-y:auto; padding:12px; flex:0 0 auto;}
@@ -93,11 +97,15 @@
 </head>
 <body>
 
+<div class="app-shell">
 <header>
-  <h1>KitNet <span>3D</span></h1>
+  <div class="brand">Projetos <span>Dinâmicos</span></div>
+  <nav class="menu">
+    <a href="#" data-tab="2d" class="active menu-item" onclick="setTab('2d'); return false;">Planta 2D</a>
+    <a href="#" data-tab="3d" class="menu-item" onclick="setTab('3d'); return false;">Vista 3D</a>
+    <a href="#" class="menu-item" onclick="openUpgrade(); return false;">Planos</a>
+  </nav>
   <span id="planBadge" class="badge">Grátis</span>
-  <button class="tab active" id="tab2d" onclick="setTab('2d')">Planta 2D</button>
-  <button class="tab" id="tab3d" onclick="setTab('3d')">Vista 3D</button>
   <button class="btn" id="btnBack3d" onclick="setTab('2d')">&larr; Editar planta</button>
 </header>
 
@@ -175,6 +183,12 @@
   </section>
 </main>
 
+<footer>
+  <span>© <span id="yearNow"></span> Projetos Dinâmicos</span>
+  <span id="footerTag">KitNet 3D — planta 2D &rarr; simulação 3D</span>
+</footer>
+</div>
+
 <div id="toast"></div>
 
 <div id="upgradeOverlay" class="overlay hidden">
@@ -196,9 +210,35 @@
         </ul>
         <button class="btn" id="btnStayFree">Continuar Grátis</button>
       </div>
+      <div class="pcard" id="pcardAvulso">
+        <h3>Avulso</h3>
+        <div class="price">R$ 9,90<span>/1 dia</span></div>
+        <ul>
+          <li>60 paredes</li>
+          <li>100 móveis</li>
+          <li>3 projetos salvo</li>
+          <li>Exportar JSON</li>
+          <li>Detecção automática</li>
+          <li>Sombras e teto</li>
+        </ul>
+        <button class="btn primary" id="btnBuyAvulso">Pagar R$ 9,90</button>
+      </div>
+      <div class="pcard" id="pcardEssencial">
+        <h3>Essencial</h3>
+        <div class="price">R$ 24,90<span>/mês</span></div>
+        <ul>
+          <li>200 paredes</li>
+          <li>300 móveis</li>
+          <li>10 projetos salvos</li>
+          <li>Exportar JSON</li>
+          <li class="no">Detecção automática</li>
+          <li>Sombras e teto</li>
+        </ul>
+        <button class="btn primary" id="btnBuyEssencial">Assinar Essencial</button>
+      </div>
       <div class="pcard pro" id="pcardPro">
         <h3>Pro</h3>
-        <div class="price">R$ 14,90<span>/mês</span></div>
+        <div class="price">R$ 79,90<span>/mês</span></div>
         <ul>
           <li>Paredes e móveis sem limite</li>
           <li>Exportar JSON</li>
@@ -210,7 +250,7 @@
         <button class="btn" id="btnDemo" style="margin-top:6px">Testar Pro · 7 dias</button>
       </div>
     </div>
-    <p class="note">Site estático de demonstração: o pagamento é <b>simulado</b> — em produção, conecte um provedor de billing como Stripe/Mercado Pago.</p>
+    <p class="note">Pagamento via <b>Mercado Pago</b>. Ao clicar em <b>Assinar</b> você será levado ao pagamento seguro. No link de pagamento, configure o redirecionamento de volta para este site com <code>?pagamento_aprovado=1&amp;plano=avulso|essencial|pro</code> para ativar o plano automaticamente.</p>
   </div>
 </div>
 

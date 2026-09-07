@@ -13,6 +13,11 @@ const round2 = (v) => Math.round(v * 1000) / 1000;
 const WALL_H = 2.6;   // pé-direito (m)
 const WALL_T = 0.15;  // espessura da parede (m)
 const SNAP = 0.1;
+const MPAGO_LINKS = {
+  avulso:    'SUA_URL_MPAGO_AVULSO',
+  essencial: 'SUA_URL_MPAGO_ESSENCIAL',
+  pro:       'SUA_URL_MPAGO_PRO',
+}; // Links de pagamento do Mercado Pago (ex.: https://mpago.la/XXXXXXXX)
 
 const FURNITURE_DEFS = {
   cama:     { label: 'Cama',         emoji: '🛏️', w: 2.0,  d: 1.6,  color: '#a8c8e0' },
@@ -57,25 +62,32 @@ let animRunning = false;
 
 /* ------------------------------- planos -------------------------------- */
 const PLANS = {
-  free: { name: 'Grátis', price: 0, maxWalls: 12, maxFurn: 20,
-          export: false, detect: false, shadows: false, teto: false },
-  pro:  { name: 'Pro', price: 14.9, maxWalls: 999, maxFurn: 999,
-          export: true, detect: true, shadows: true, teto: true },
+  free:      { name: 'Grátis',    price: 0,    dias: 0,  maxWalls: 12,   maxFurn: 20,   maxProjects: 1,
+               export: false, detect: false, shadows: false, teto: false },
+  avulso:    { name: 'Avulso',    price: 9.9,  dias: 1,  maxWalls: 60,   maxFurn: 100,  maxProjects: 3,
+               export: true, detect: true, shadows: true, teto: true },
+  essencial: { name: 'Essencial', price: 24.9, dias: 30, maxWalls: 200,  maxFurn: 300,  maxProjects: 10,
+               export: true, detect: false, shadows: true, teto: true },
+pro:       { name: 'Pro',       price: 79.9, dias: 30, maxWalls: 999, maxFurn: 999, maxProjects: 999,
+               export: true, detect: true, shadows: true, teto: true },
 };
+const PLAN_ORDER = ['free', 'avulso', 'essencial', 'pro'];
 let plan = 'free';
 let planExpires = null;
 
 function getPlan() { return PLANS[plan] || PLANS.free; }
 
+function planForKey(k) { return PLANS[k] ? k : 'free'; }
+
 function loadPlan() {
   try {
     const s = JSON.parse(localStorage.getItem('kitnet3d_plan') || 'null');
     if (!s) return;
-    plan = s.plan === 'pro' ? 'pro' : 'free';
+    plan = planForKey(s.plan);
     planExpires = s.expires ? new Date(s.expires) : null;
-    if (plan === 'pro' && planExpires && planExpires < new Date()) {
+    if (plan !== 'free' && planExpires && planExpires < new Date()) {
       plan = 'free'; planExpires = null; savePlan();
-      setTimeout(() => toast('Seu teste do Pro expirou. Plano Grátis reativado.'), 900);
+      setTimeout(() => toast('Seu plano pago expirou. Plano Grátis reativado.'), 900);
     }
   } catch (e) {}
   updatePlanUI();
@@ -88,18 +100,18 @@ function savePlan() {
   } catch (e) {}
 }
 function applyPlan(p, expires) {
-  plan = p; planExpires = expires || null;
+  plan = planForKey(p); planExpires = expires || null;
   savePlan(); updatePlanUI();
-  toast(plan === 'pro' ? 'Plano Pro ativado' : 'Plano Grátis');
+  toast(plan === 'free' ? 'Plano Grátis' : ('Plano ' + PLANS[plan].name + ' ativado'));
 }
 function openUpgrade(reason) {
   const reasons = {
     walls:   'Você atingiu o limite de paredes do plano Grátis (12).',
     furn:    'Você atingiu o limite de móveis do plano Grátis (20).',
-    export:  'Exportar o projeto em JSON é um recurso do Pro.',
-    detect:  'A detecção automática de paredes é um recurso do Pro.',
-    shadows: 'Sombras na vista 3D é um recurso do Pro.',
-    teto:    'O teto na vista 3D é um recurso do Pro.',
+    export:  'Exportar o projeto em JSON é um recurso dos planos pagos.',
+    detect:  'A detecção automática de paredes é um recurso do Avulso e Pro.',
+    shadows: 'Sombras na vista 3D é um recurso dos planos pagos.',
+    teto:    'O teto na vista 3D é um recurso dos planos pagos.',
   };
   $('upgradeReason').textContent = (reasons[reason] || '') + ' Faça upgrade para liberar os limites.';
   $('upgradeOverlay').classList.remove('hidden');
@@ -117,10 +129,10 @@ function updatePlanUI() {
   const p = getPlan();
   $('planName').textContent = p.name;
   $('planBadge').textContent = p.name;
-  $('planBadge').classList.toggle('pro', plan === 'pro');
+  $('planBadge').classList.toggle('pro', plan !== 'free');
   $('planNote').textContent = planExpires
     ? (' · expira ' + planExpires.toLocaleDateString('pt-BR'))
-    : (plan === 'pro' ? ' · ativo' : '');
+    : (plan !== 'free' ? ' · ativo' : '');
   $('maxWalls').textContent = p.maxWalls >= 900 ? '∞' : p.maxWalls;
   $('maxFurn').textContent = p.maxFurn >= 900 ? '∞' : p.maxFurn;
   $('useWalls').textContent = proj.walls.length;
@@ -1284,7 +1296,18 @@ function wireUI() {
   $('btnUpgrade').onclick = () => openUpgrade();
   $('planBadge').onclick = () => openUpgrade();
   $('btnStayFree').onclick = closeUpgrade;
-  $('btnSubscribe').onclick = () => { applyPlan('pro', null); closeUpgrade(); };
+  function buyPlan(k) {
+    closeUpgrade();
+    const link = MPAGO_LINKS[k];
+    if (!link || link.indexOf('SUA_URL') === 0) {
+      toast('Configure a URL do Mercado Pago no código (MPAGO_LINKS.' + k + ').');
+      return;
+    }
+    window.open(link, '_blank', 'noopener');
+  }
+  $('btnBuyAvulso').onclick = () => buyPlan('avulso');
+  $('btnBuyEssencial').onclick = () => buyPlan('essencial');
+  $('btnSubscribe').onclick = () => buyPlan('pro');
   $('btnDemo').onclick = () => {
     const d = new Date(); d.setDate(d.getDate() + 7);
     applyPlan('pro', d); closeUpgrade();
@@ -1301,4 +1324,13 @@ function wireUI() {
   updateStats();
   setTool('wall');
   if (!proj.walls.length && !proj.furniture.length) loadExample();
+  const q = new URLSearchParams(location.search);
+  if (q.get('pagamento_aprovado') === '1') {
+    const k = planForKey(q.get('plano'));
+    if (k !== 'free' && plan !== k) {
+      const d = new Date(); d.setDate(d.getDate() + (PLANS[k].dias || 30));
+      applyPlan(k, d);
+      history.replaceState(null, '', location.pathname);
+    }
+  }
 })();
