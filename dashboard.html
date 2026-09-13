@@ -83,6 +83,9 @@
   .clr{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--muted);}
   .clr input[type=color]{width:34px; height:24px; border:1px solid var(--line); border-radius:6px;
         background:var(--panel2); padding:2px; cursor:pointer;}
+  .mat{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--muted); margin-top:6px;}
+  .mat select{flex:1; min-width:0; background:var(--panel2); color:var(--text); border:1px solid var(--line);
+        border-radius:6px; padding:4px 6px; font-size:11.5px;}
   .plancard{background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:10px;}
   .prow{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:12px;}
   .prow.small{color:var(--muted); font-size:11.5px; margin:6px 0 2px;}
@@ -233,6 +236,14 @@
       <label class="clr" title="Cor das paredes no 3D">Paredes <input type="color" id="sideWallColor" value="#f4f1ea"></label>
       <label class="clr" title="Cor do piso no 3D">Piso <input type="color" id="sideFloorColor" value="#e9e3d5"></label>
     </div>
+    <label class="mat" title="Acabamento das paredes no 3D">Acabamento
+      <select id="sideWallMat">
+        <option value="massa">Massa acrílica</option>
+        <option value="gradiente">Gradiente</option>
+        <option value="tijolo">Tijolos</option>
+        <option value="azulejo">Azulejo</option>
+      </select>
+    </label>
 
     <h2>Plano</h2>
     <div class="plancard">
@@ -275,6 +286,12 @@
         <label class="chk"><input type="checkbox" id="mVwEtq" checked> Etiquetas</label>
         <label class="clr" title="Cor das paredes no 3D">🎨<input type="color" id="mVwWallColor" value="#f4f1ea"></label>
         <label class="clr" title="Cor do piso no 3D">🏠<input type="color" id="mVwFloorColor" value="#e9e3d5"></label>
+        <select id="mVwWallMat" title="Acabamento das paredes no 3D" style="background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:2px 4px;font-size:11px;">
+          <option value="massa">Massa</option>
+          <option value="gradiente">Gradiente</option>
+          <option value="tijolo">Tijolos</option>
+          <option value="azulejo">Azulejo</option>
+        </select>
       </div>
       <button class="btn" id="btnCloseView" title="Fechar (Esc)">✕</button>
     </div>

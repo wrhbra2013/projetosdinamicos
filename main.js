@@ -360,7 +360,7 @@ function pushUndo() {
   updateNav();
 }
 function stateJSON() {
-  return JSON.stringify({ walls: proj.walls, furniture: proj.furniture, bg: bgMeta(), colors: proj.colors, layers });
+  return JSON.stringify({ walls: proj.walls, furniture: proj.furniture, bg: bgMeta(), colors: proj.colors, layers, mats: proj.mats });
 }
 function bgMeta() {
   const b = proj.bg;
@@ -372,6 +372,7 @@ function undo() {
   redoStack.push(stateJSON());
   const d = JSON.parse(s);
   proj.walls = d.walls; proj.furniture = d.furniture; proj.bg = d.bg;
+  proj.mats = Object.assign({ wall: 'massa' }, d.mats || {});
   if (d.colors) proj.colors = Object.assign({ wall: '#f4f1ea', floor: '#e9e3d5' }, d.colors);
   if (d.layers) applyLayerState(d.layers);
   selId = null; selWall = -1; wallChain = [];
@@ -384,6 +385,7 @@ function redo() {
   undoStack.push(stateJSON());
   const d = JSON.parse(s);
   proj.walls = d.walls; proj.furniture = d.furniture; proj.bg = d.bg;
+  proj.mats = Object.assign({ wall: 'massa' }, d.mats || {});
   if (d.colors) proj.colors = Object.assign({ wall: '#f4f1ea', floor: '#e9e3d5' }, d.colors);
   if (d.layers) applyLayerState(d.layers);
   selId = null; selWall = -1; wallChain = [];
@@ -447,7 +449,7 @@ function toast(msg) {
   t._h = setTimeout(() => t.classList.remove('show'), 2000);
 }
 function projectDataObj() {
-  return { walls: proj.walls, furniture: proj.furniture, bg: bgMeta(), colors: proj.colors, layers, lastId };
+  return { walls: proj.walls, furniture: proj.furniture, bg: bgMeta(), colors: proj.colors, layers, mats: proj.mats, lastId };
 }
 function saveAuto() {
   const data = projectDataObj();
@@ -969,7 +971,7 @@ function rebuild3d() {
   grid.position.set(cx, 0.005, cz);
   scene3d.add(grid);
 
-  const wallMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(proj.colors.wall) });
+  const wallMat = wallMat3D(proj.mats.wall, proj.colors.wall);
   if (layers.walls) {
     for (const w of wallsM) {
       const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
@@ -1259,10 +1261,100 @@ function ensureCCW(pts) {
   if (a < 0) pts.reverse();
 }
 
-function drawFbBox(ctx, base, h, color) {
+/* ------------------------- acabamento das paredes ----------------------- */
+const WALL_MATS = ['massa', 'gradiente', 'tijolo', 'azulejo'];
+
+function lightHex(hex, f) {
+  const v = parseInt(hex.slice(1), 16);
+  const r = Math.round(((v >> 16) & 255) + (255 - ((v >> 16) & 255)) * f);
+  const g = Math.round(((v >> 8) & 255) + (255 - ((v >> 8) & 255)) * f);
+  const b = Math.round((v & 255) + (255 - (v & 255)) * f);
+  return '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('');
+}
+
+function wallMat3D(kind, color) {
+  if (kind === 'massa' || !THREE) return new THREE.MeshLambertMaterial({ color: new THREE.Color(color) });
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 256;
+  const g = cv.getContext('2d');
+  const base = new THREE.Color(color).getStyle();
+  if (kind === 'gradiente') {
+    const gr = g.createLinearGradient(0, 0, 0, 256);
+    gr.addColorStop(0, lightHex(base, 0.22));
+    gr.addColorStop(0.5, base);
+    gr.addColorStop(1, fadeColor(base, 0.6));
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+  } else if (kind === 'tijolo') {
+    g.fillStyle = fadeColor(base, 0.5); g.fillRect(0, 0, 256, 256);
+    g.lineWidth = 5; g.strokeStyle = fadeColor(base, 0.42);
+    const rows = 4, bh = 256 / rows, bw = 256 / 2;
+    for (let r = 0; r < rows; r++) {
+      const off = (r % 2) * (bw / 2);
+      for (let c = -1; c < 3; c++) {
+        const x = c * bw + off + 3, y = r * bh + 3, w = bw - 6, h = bh - 6;
+        g.fillStyle = r % 2 ? lightHex(base, 0.05) : base;
+        g.beginPath();
+        const rad = 6;
+        g.moveTo(x + rad, y); g.arcTo(x + w, y, x + w, y + h, rad); g.arcTo(x + w, y + h, x, y + h, rad);
+        g.arcTo(x, y + h, x, y, rad); g.arcTo(x, y, x + w, y, rad); g.closePath();
+        g.fill(); g.stroke();
+      }
+    }
+  } else { // azulejo
+    g.fillStyle = lightHex(base, 0.04); g.fillRect(0, 0, 256, 256);
+    g.lineWidth = 6; g.strokeStyle = lightHex(base, 0.5);
+    const n = 4, S = 256 / n;
+    for (let i = 0; i <= n; i++) {
+      g.beginPath(); g.moveTo(i * S + 0.5, 0); g.lineTo(i * S + 0.5, 256); g.stroke();
+      g.beginPath(); g.moveTo(0, i * S + 0.5); g.lineTo(256, i * S + 0.5); g.stroke();
+    }
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      const hg = g.createLinearGradient(c * S, r * S, c * S, (r + 1) * S);
+      hg.addColorStop(0, 'rgba(255,255,255,.22)'); hg.addColorStop(0.45, 'rgba(255,255,255,0)'); hg.addColorStop(1, 'rgba(0,0,0,.08)');
+      g.fillStyle = hg; g.fillRect(c * S + 1, r * S + 1, S - 2, S - 2);
+    }
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1, 1);
+  return new THREE.MeshLambertMaterial({ map: tex, color: new THREE.Color(0xffffff) });
+}
+
+function drawFbPattern(ctx, kind, color) {
+  if (kind === 'gradiente') {
+    const gr = ctx.createLinearGradient(0, 0, 0, 1);
+    gr.addColorStop(0, lightHex(color, 0.16));
+    gr.addColorStop(0.55, color);
+    gr.addColorStop(1, fadeColor(color, 0.55));
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, 1, 1);
+  } else if (kind === 'tijolo') {
+    ctx.fillStyle = fadeColor(color, 0.5); ctx.fillRect(0, 0, 1, 1);
+    ctx.lineWidth = 0.015; ctx.strokeStyle = fadeColor(color, 0.4);
+    const rows = 4, rh = 1 / rows, bw = 0.5;
+    for (let r = 0; r < rows; r++) {
+      const off = (r % 2) ? bw / 2 : 0;
+      for (let c = -1; c < 4; c++) {
+        ctx.fillStyle = r % 2 ? lightHex(color, 0.05) : color;
+        ctx.fillRect(c * bw + off + 0.008, r * rh + 0.008, bw - 0.016, rh - 0.016);
+        ctx.strokeRect(c * bw + off + 0.008, r * rh + 0.008, bw - 0.016, rh - 0.016);
+      }
+    }
+  } else if (kind === 'azulejo') {
+    ctx.fillStyle = lightHex(color, 0.03); ctx.fillRect(0, 0, 1, 1);
+    ctx.lineWidth = 0.018; ctx.strokeStyle = lightHex(color, 0.45);
+    const n = 4, S = 1 / n;
+    for (let i = 0; i <= n; i++) {
+      ctx.beginPath(); ctx.moveTo(i * S, 0); ctx.lineTo(i * S, 1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i * S); ctx.lineTo(1, i * S); ctx.stroke();
+    }
+  }
+}
+
+function drawFbBox(ctx, base, h, color, kind) {
   ensureCCW(base);
   const u = 1 / Math.max(1e-6, Math.hypot(Math.cos(fb.yaw), Math.sin(fb.yaw)));
   const viewX = Math.sin(fb.yaw) * u, viewZ = Math.cos(fb.yaw) * u;
+  const pat = kind && kind !== 'massa' ? kind : null;
   const faces = [];
   for (let i = 0; i < base.length; i++) {
     const a = base[i], b = base[(i + 1) % base.length];
@@ -1274,7 +1366,7 @@ function drawFbBox(ctx, base, h, color) {
       const shade = (n.x * viewZ - n.z * viewX) > 0 ? 0.92 : 0.72;
       const pa = fbx(a.x, a.z, 0), pb = fbx(b.x, b.z, 0);
       const pt1 = fbx(a.x, a.z, h), pt2 = fbx(b.x, b.z, h);
-      faces.push({ pts: [pa, pb, pt2, pt1], fill: fadeColor(color, shade) });
+      faces.push({ pts: [pa, pb, pt2, pt1], fill: fadeColor(color, shade), pa, pb, pt1 });
     }
   }
   for (const f of faces) {
@@ -1284,6 +1376,17 @@ function drawFbBox(ctx, base, h, color) {
     ctx.closePath();
     ctx.fillStyle = f.fill;
     ctx.fill();
+    if (pat) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(f.pts[0][0], f.pts[0][1]);
+      for (let j = 1; j < f.pts.length; j++) ctx.lineTo(f.pts[j][0], f.pts[j][1]);
+      ctx.closePath();
+      ctx.clip();
+      ctx.transform(f.pb[0] - f.pa[0], f.pb[1] - f.pa[1], f.pt1[0] - f.pa[0], f.pt1[1] - f.pa[1], f.pa[0], f.pa[1]);
+      drawFbPattern(ctx, pat, color);
+      ctx.restore();
+    }
     ctx.strokeStyle = 'rgba(30,40,55,.35)';
     ctx.lineWidth = 1;
     ctx.stroke();
@@ -1357,7 +1460,7 @@ function renderFallback3d() {
         { x: w.x2 - nx, z: w.y2 - nz },
         { x: w.x1 - nx, z: w.y1 - nz },
       ];
-      boxes.push({ base, h: WALL_H, color: proj.colors.wall, depth: ((w.x1 + w.x2) / 2) * s + ((w.y1 + w.y2) / 2) * c });
+      boxes.push({ base, h: WALL_H, color: proj.colors.wall, kind: proj.mats.wall, depth: ((w.x1 + w.x2) / 2) * s + ((w.y1 + w.y2) / 2) * c });
     }
   }
   if (layers.furn) {
@@ -1369,7 +1472,7 @@ function renderFallback3d() {
     }
   }
   boxes.sort((p, q) => q.depth - p.depth);
-  for (const box of boxes) drawFbBox(ctx, box.base, box.h, box.color);
+  for (const box of boxes) drawFbBox(ctx, box.base, box.h, box.color, box.kind);
 
   ctx.fillStyle = 'rgba(16,19,24,.55)';
   ctx.font = '11px system-ui';
@@ -1413,6 +1516,7 @@ function applyProjectData(d) {
   proj.furniture = (d && d.furniture) || [];
   proj.bg = (d && d.bg) || null;
   proj.colors = Object.assign({ wall: '#f4f1ea', floor: '#e9e3d5' }, (d && d.colors) || {});
+  proj.mats = Object.assign({ wall: 'massa' }, (d && d.mats) || {});
   const l = d && d.layers;
   layers.walls = !l || l.walls !== false;
   layers.furn = !l || l.furn !== false;
@@ -1569,6 +1673,7 @@ function syncColors() {
   const s = (id, v) => { const el = $(id); if (el) el.value = v; };
   s('sideWallColor', proj.colors.wall); s('sideFloorColor', proj.colors.floor);
   s('mVwWallColor', proj.colors.wall); s('mVwFloorColor', proj.colors.floor);
+  s('sideWallMat', proj.mats.wall); s('mVwWallMat', proj.mats.wall);
 }
 function set3DOption(kind, checked) {
   const mk = { Teto: 'Teto', Sombra: 'Sombra', Etiquetas: 'Etq' };
@@ -1586,6 +1691,11 @@ function set3DOption(kind, checked) {
   if (a) a.checked = checked;
   if (b) b.checked = checked;
   if (scene3d) rebuild3d();
+}
+function setWallMat(v) {
+  proj.mats.wall = WALL_MATS.includes(v) ? v : 'massa';
+  syncColors(); scheduleSave();
+  if (scene3d) rebuild3d(); else renderFallback3d();
 }
 function setWallColor(v) { proj.colors.wall = v; syncColors(); scheduleSave(); if (scene3d) rebuild3d(); }
 function setFloorColor(v) { proj.colors.floor = v; syncColors(); scheduleSave(); if (scene3d) rebuild3d(); }
@@ -1982,6 +2092,8 @@ function wireUI() {
   $('lyBg').onchange = () => { layers.bg = $('lyBg').checked; applyLayerChange(); };
   $('sideWallColor').oninput = (e) => setWallColor(e.target.value);
   $('sideFloorColor').oninput = (e) => setFloorColor(e.target.value);
+  $('sideWallMat').onchange = (e) => setWallMat(e.target.value);
+  $('mVwWallMat').onchange = (e) => setWallMat(e.target.value);
   $('mVwTeto').onchange = () => set3DOption('Teto', $('mVwTeto').checked);
   $('mVwSombra').onchange = () => set3DOption('Sombra', $('mVwSombra').checked);
   $('mVwEtq').onchange = () => set3DOption('Etiquetas', $('mVwEtq').checked);
