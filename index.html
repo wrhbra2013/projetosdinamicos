@@ -3,299 +3,250 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="KitNet 3D — transforme a planta baixa do seu espaço pequeno em simulação 3D no navegador. Grátis para testar, sem instalar nada.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<title>KitNet 3D — Planta 2D &rarr; Simulação 3D</title>
+<title>KitNet 3D — Da planta 2D à simulação 3D de espaços pequenos</title>
 <style>
   :root{
     --bg:#101318; --panel:#171c24; --panel2:#1e2530; --line:#2a3340;
-    --text:#e6eaf0; --muted:#8b96a5; --acc:#4cc2ff; --ok:#3ddc84;
+    --text:#e6eaf0; --muted:#8b96a5; --acc:#4cc2ff; --ok:#3ddc84; --warn:#ff9f43;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
-  html,body{height:100%;}
-  body{background:var(--bg); color:var(--text); font:14px/1.4 system-ui,Segoe UI,sans-serif;
-       display:flex; flex-direction:column; overflow:hidden; }
-  .app-shell{display:flex; flex-direction:column; height:100%;}
-  header{background:var(--panel); border-bottom:1px solid var(--line);
-         padding:8px 14px; display:flex; align-items:center; gap:14px; flex:0 0 auto;}
-  .brand{font-size:16px; font-weight:700; letter-spacing:.3px; white-space:nowrap;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg); color:var(--text); font:15px/1.55 system-ui,Segoe UI,sans-serif;}
+  a{color:inherit; text-decoration:none;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 22px;}
+
+  /* ------------------------------- header ------------------------------ */
+  header{position:sticky; top:0; z-index:50; background:rgba(16,19,24,.88);
+         backdrop-filter:blur(6px); border-bottom:1px solid var(--line);}
+  .nav{max-width:1080px; margin:0 auto; padding:10px 22px; display:flex; align-items:center; gap:14px;}
+  .brand{font-size:17px; font-weight:800; letter-spacing:.3px;}
+  .brand small{display:block; font-size:9.5px; font-weight:600; letter-spacing:1.4px; color:var(--muted); text-transform:uppercase;}
   .brand span{color:var(--acc);}
-  .menu{display:flex; gap:2px; background:var(--panel2); border-radius:8px; padding:3px; margin-left:auto;}
-  .menu-item{padding:7px 16px; border-radius:6px; color:var(--muted); text-decoration:none;
-        font-weight:600; font-size:13px; cursor:pointer; border:0; background:transparent;}
-  .menu-item.active,.menu-item:hover{background:#2b9bd8; color:#06121c;}
-  #btnView{transition:transform .15s, box-shadow .15s, border-color .15s;}
-  #btnView:hover{transform:translateY(-1px); box-shadow:0 5px 14px rgba(43,155,216,.5); border-color:#4cc2ff;}
-  footer{flex:0 0 auto; background:var(--panel); border-top:1px solid var(--line);
-         padding:7px 14px; display:flex; justify-content:space-between; gap:10px;
-         font-size:11.5px; color:var(--muted); flex-wrap:wrap;}
-  main{flex:1 1 auto; display:flex; min-height:0;}
-  aside{width:250px; background:var(--panel); border-right:1px solid var(--line);
-        overflow-y:auto; padding:12px; flex:0 0 auto;}
-  aside h2{font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted);
-           margin:14px 0 8px;}
-  aside h2:first-child{margin-top:0;}
-  .row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
-  .btn{background:var(--panel2); color:var(--text); border:1px solid var(--line);
-       padding:7px 10px; border-radius:7px; cursor:pointer; font-size:12.5px; font-weight:600;}
-  .btn:hover{border-color:var(--acc);}
-  .btn.on{background:#155e8a; border-color:var(--acc);}
-  .btn.danger:hover{border-color:#ff6b6b; background:#3a2026;}
-  .btn.primary{background:#2b9bd8; border-color:#2b9bd8; color:#06121c;}
-  .btn.disabled{opacity:.4; pointer-events:none; border-color:var(--line);}
-  .furn {width:100%; display:grid; grid-template-columns:1fr 1fr; gap:6px;}
-  .fbtn{display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left;
-        background:var(--panel2); border:1px solid var(--line); border-radius:8px;
-        padding:7px 9px; cursor:pointer;}
-  .fbtn:hover{border-color:var(--acc);}
-  .fbtn.on{border-color:var(--acc); box-shadow:0 0 0 1px var(--acc);}
-  .fbtn b{font-size:12px;}
-  .fbtn small{color:var(--muted); font-size:10.5px; letter-spacing:.3px;}
-  .fbtn .em{font-size:20px; line-height:1;}
-  .hint{background:var(--panel2); border:1px dashed var(--line); border-radius:8px;
-        padding:8px 10px; color:var(--muted); font-size:11.5px; line-height:1.5;}
-  .chk{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--muted); user-select:none;}
-  .chk input{accent-color:var(--acc);}
-  #view2d{flex:1 1 auto; position:relative; min-width:0;}
-  #c2d{position:absolute; inset:0; width:100%; height:100%; display:block; cursor:crosshair;}
-  #status{position:absolute; left:10px; bottom:8px; background:rgba(16,19,24,.85);
-          border:1px solid var(--line); border-radius:7px; padding:6px 10px;
-          font-size:11.5px; color:var(--muted); pointer-events:none; max-width:80%;}
-  #toast{position:absolute; left:50%; top:12px; transform:translateX(-50%);
-         background:#2b9bd8; color:#06121c; padding:8px 16px; border-radius:8px;
-         font-weight:600; font-size:13px; opacity:0; transition:opacity .25s; pointer-events:none;}
-  #toast.show{opacity:1;}
-  input[type=file], #fileJson{display:none;}
-  .swatch{width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:5px;}
-  .badge{background:#2a3340; border:1px solid var(--line); color:var(--muted); font-size:11px;
-         font-weight:700; letter-spacing:.5px; text-transform:uppercase; border-radius:999px;
-         padding:3px 10px; cursor:pointer;}
-  .badge.pro{background:linear-gradient(90deg,#2b9bd8,#4cc2ff); border-color:#4cc2ff; color:#06121c;}
-  .badge:hover{border-color:var(--acc);}
-  .plancard{background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:10px;}
-  .prow{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;}
-  .prow.small{color:var(--muted); font-size:11.5px; margin:6px 0 2px;}
-  .meter{height:6px; background:#0c0f14; border-radius:4px; overflow:hidden; margin:3px 0;}
-  .meter > div{height:100%; width:0%; background:linear-gradient(90deg,#2b9bd8,#4cc2ff); transition:width .25s;}
-  .meter.full > div{background:linear-gradient(90deg,#ff9d5c,#ff6b6b);}
-  .overlay{position:fixed; inset:0; background:rgba(8,11,16,.72); display:flex;
-           align-items:center; justify-content:center; z-index:50; padding:16px;}
-  .overlay.hidden{display:none;}
-  .modal{background:var(--panel); border:1px solid var(--line); border-radius:14px;
-         max-width:640px; width:100%; padding:20px; max-height:90vh; overflow-y:auto;}
-  .modal h2{margin-bottom:14px;}
-  .plans{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;}
-  .pcard{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:14px;}
-  .pcard.pro{border-color:var(--acc); box-shadow:0 0 0 1px var(--acc);}
-  .pcard h3{margin-bottom:2px;}
-  .pcard .price{font-size:22px; font-weight:800; margin:4px 0 10px;}
-  .pcard .price span{font-size:12px; font-weight:500; color:var(--muted);}
-  .pcard ul{list-style:none; margin-bottom:12px; font-size:12.5px; color:var(--text);}
-  .pcard li{padding:2px 0 2px 16px; position:relative;}
-  .pcard li::before{content:'✓'; position:absolute; left:0; color:var(--ok); font-weight:700;}
-  .pcard li.no{color:var(--muted);}
-  .pcard li.no::before{content:'✕'; color:#ff6b6b;}
-  .pcard .btn{width:100%;}
-  .note{color:var(--muted); font-size:11.5px; line-height:1.5;}
-  .css2d-label{background:rgba(16,19,24,.82); color:var(--text); border:1px solid var(--line);
-        border-radius:999px; padding:2px 9px; font-size:10.5px; white-space:nowrap;
-        transform:translate(-50%,-50%); pointer-events:none; user-select:none;
-        box-shadow:0 1px 4px rgba(0,0,0,.35);}
-  .modal-vw{max-width:980px; width:100%; display:flex; flex-direction:column; gap:10px;
-        overflow:hidden; padding:16px 18px 18px; max-height:92vh;}
-  .vw-head{display:flex; align-items:center; justify-content:space-between; gap:12px; flex:0 0 auto;}
-  .vw-head h2{margin-bottom:0; font-size:16px;}
-  .vw-head h2 .arrow{color:var(--acc);}
-  .view-stack{position:relative; width:100%; height:min(62vh,540px); border-radius:10px; overflow:hidden;
-        border:1px solid var(--line); background:#dfe9f2; flex:1 1 auto; min-height:260px;}
-  .view-stack > canvas{position:absolute; inset:0; width:100%; height:100%; display:block;}
-  #view3dLayer{position:absolute; inset:0; width:100%; height:100%;}
-  #view3dLayer > canvas{position:absolute; top:0; left:0; display:block;}
-  #view3dLayer > div{position:absolute; top:0; left:0;}
-  .fusion-bar{display:flex; align-items:center; gap:10px; padding:2px 4px 0; flex:0 0 auto;}
-  .fusion-bar b{font-size:12px; color:var(--muted); min-width:18px;}
-  #fusionRange{flex:1; accent-color:var(--acc); cursor:pointer;}
-  .vhint{font-size:11px; margin-left:auto;}
+  .nav .sp{flex:1;}
+  .btn{display:inline-block; border:1px solid var(--line); background:var(--panel2); color:var(--text);
+       padding:9px 16px; border-radius:8px; font-weight:600; cursor:pointer; transition:.15s;}
+  .btn:hover{border-color:var(--acc); transform:translateY(-1px);}
+  .btn.cta{background:linear-gradient(90deg,#2b9bd8,#4cc2ff); border-color:#4cc2ff; color:#06121c;
+           box-shadow:0 6px 18px rgba(43,155,216,.35);}
+  .btn.cta:hover{box-shadow:0 8px 24px rgba(43,155,216,.5);}
+  .btn.ghost{background:transparent;}
+
+  /* -------------------------------- hero ------------------------------- */
+  .hero{padding:76px 22px 60px; text-align:center;
+        background:radial-gradient(900px 420px at 50% -80px, rgba(76,194,255,.16), transparent 70%), var(--bg);}
+  .hero h1{font-size:44px; line-height:1.12; font-weight:800; letter-spacing:-.5px; margin:0 0 14px;}
+  .hero h1 span{color:var(--acc);}
+  .hero p{max-width:640px; margin:0 auto 30px; color:var(--muted); font-size:18px;}
+  .hero .badges{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-bottom:26px;}
+  .chips{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+  .chip{font-size:12.5px; border:1px solid var(--line); background:var(--panel); color:var(--muted);
+        padding:5px 12px; border-radius:999px;}
+  .chip b{color:var(--ok); font-weight:700;}
+  .stage{margin:46px auto 0; max-width:820px; border:1px solid var(--line); border-radius:12px; overflow:hidden;
+         background:var(--panel); box-shadow:0 30px 80px rgba(0,0,0,.45);}
+  .stage .bar{display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--panel2); border-bottom:1px solid var(--line);}
+  .stage .bar i{width:10px; height:10px; border-radius:50%; background:#2a3340;}
+  .stage .bar i:first-child{background:#ff5f57;} .stage .bar i:nth-child(2){background:#febc2e;}
+  .stage .bar i:nth-child(3){background:#28c840;}
+  .stage .bar em{font-style:normal; font-size:12px; color:var(--muted); margin-left:8px;}
+  .stage .viz{height:300px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px;
+              background:linear-gradient(180deg,#141a22,#101318);}
+  .row3d{display:flex; gap:16px; align-items:center; justify-content:center; flex-wrap:wrap;}
+  .cell{width:190px; height:150px; border:1px solid var(--line); border-radius:10px; background:var(--panel2);
+        position:relative; overflow:hidden;}
+  .cell .lab{position:absolute; bottom:6px; left:0; right:0; text-align:center; font-size:11px; color:var(--muted); letter-spacing:1px; text-transform:uppercase;}
+  .sk2d{position:absolute; inset:14px; background:
+        linear-gradient(#c9531f 0 0) 18px 70px/58px 6px no-repeat,
+        linear-gradient(#c9531f 0 0) 26px 96px/54px 6px no-repeat,
+        linear-gradient(#c9531f 0 0) 70px 26px/6px 64px no-repeat,
+        linear-gradient(#c9531f 0 0) 18px 26px/6px 64px no-repeat,
+        #232b36;}
+  .sk3d{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;}
+  .cube{width:84px; height:84px; background:linear-gradient(135deg,#4cc2ff,#1e7fb0); border:1px solid #7fd4ff;
+        transform:rotateX(38deg) rotateZ(45deg); box-shadow:0 24px 40px rgba(43,155,216,.35);}
+  .fade3d{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:.65;}
+  .fade3d::before,.fade3d::after{content:""; position:absolute; inset:22%;}
+  .fade3d::before{background:#232b36;}
+  .fade3d::after{border:2px dashed #8b96a5; clip-path:polygon(30% 0,100% 0,100% 100%,45% 100%);}
+  @keyframes fadePulse{0%,100%{opacity:.85}50%{opacity:.35}}
+  .stage .viz .vol{font-size:12px; color:var(--muted);}
+  .stage .viz .vol b{color:var(--acc);}
+
+  /* ------------------------------- sections ---------------------------- */
+  section{padding:64px 0;}
+  .k{font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--acc); margin-bottom:10px;}
+  h2{font-size:30px; font-weight:800; letter-spacing:-.3px; margin-bottom:12px;}
+  .sub{color:var(--muted); max-width:640px; margin-bottom:34px;}
+  .grid{display:grid; gap:16px;}
+  .g3{grid-template-columns:repeat(3,1fr);}
+  .g4{grid-template-columns:repeat(4,1fr);}
+  @media(max-width:840px){.g3,.g4{grid-template-columns:repeat(2,1fr);} .hero h1{font-size:32px;}}
+  @media(max-width:540px){.g3,.g4{grid-template-columns:1fr;}}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px;}
+  .card:hover{border-color:var(--acc);}
+  .card .ic{font-size:22px; margin-bottom:10px;}
+  .card h3{font-size:15.5px; font-weight:700; margin-bottom:6px;}
+  .card p{font-size:13.5px; color:var(--muted);}
+  .steps{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; counter-reset:st;}
+  @media(max-width:840px){.steps{grid-template-columns:1fr;}}
+  .step{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px; position:relative;}
+  .step::before{counter-increment:st; content:counter(st); position:absolute; top:-14px; left:16px;
+       width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+       background:linear-gradient(90deg,#2b9bd8,#4cc2ff); color:#06121c; font-weight:800; font-size:15px;}
+  .step h3{font-size:15px; font-weight:700; margin:6px 0;}
+  .step p{font-size:13px; color:var(--muted);}
+
+  /* ------------------------------- plans ------------------------------- */
+  .pcard{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px;
+         display:flex; flex-direction:column; gap:12px; position:relative;}
+  .pcard.featured{border-color:var(--acc); box-shadow:0 12px 40px rgba(76,194,255,.18);}
+  .pcard .tag{position:absolute; top:-11px; left:16px; background:linear-gradient(90deg,#2b9bd8,#4cc2ff);
+              color:#06121c; font-size:10.5px; font-weight:800; letter-spacing:1px; text-transform:uppercase;
+              padding:3px 10px; border-radius:999px;}
+  .pcard .nm{font-size:13px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted);}
+  .pcard .pr{font-size:30px; font-weight:800;}
+  .pcard .pr small{font-size:13px; color:var(--muted); font-weight:500;}
+  .pcard ul{list-style:none; font-size:13.5px; color:var(--muted); display:grid; gap:8px;}
+  .pcard ul li b{color:var(--text);}
+  .pcard .btn{margin-top:auto; text-align:center;}
+  .note{font-size:12.5px; color:var(--muted); text-align:center; margin-top:22px;}
+
+  footer{border-top:1px solid var(--line); background:var(--panel); padding:26px 22px; text-align:center; color:var(--muted); font-size:13px;}
+  footer .brand{margin-bottom:6px; color:var(--text);}
 </style>
 </head>
 <body>
 
-<div class="app-shell">
 <header>
-  <div class="brand">Projetos <span>Dinâmicos</span></div>
-  <button class="btn primary" id="btnView" title="Passe o mouse para sobrepor planta 2D e simulação 3D num único modal. No 3D: arrastar orbita, scroll amplia.">◱ Visualizar 2D / 3D</button>
-  <nav class="menu">
-    <a href="#" class="menu-item" onclick="openUpgrade(); return false;">Planos</a>
-  </nav>
-  <span id="planBadge" class="badge">Grátis</span>
+  <div class="nav">
+    <div class="brand">KitNet <span>3D</span><small>Planta 2D &rarr; Simulação 3D</small></div>
+    <div class="sp"></div>
+    <a class="btn ghost" href="#planos">Planos</a>
+    <a class="btn cta" href="dashboard.html">Testar grátis</a>
+  </div>
 </header>
 
-<main>
-  <aside id="panel">
-    <h2>Plano</h2>
-    <div class="plancard">
-      <div class="prow"><b id="planName">Grátis</b><span id="planNote"></span></div>
-      <div class="meter"><div id="meterWalls"></div></div>
-      <div class="prow small">Paredes: <b id="useWalls">0</b>/<span id="maxWalls">12</span></div>
-      <div class="meter"><div id="meterFurn"></div></div>
-      <div class="prow small">Móveis: <b id="useFurn">0</b>/<span id="maxFurn">20</span></div>
-      <button class="btn primary" id="btnUpgrade" style="width:100%; margin-top:8px;">⬒ Fazer upgrade</button>
+<section class="hero">
+  <div class="wrap">
+    <div class="badges">
+      <span class="chip">Roda no navegador, <b>sem instalar</b></span>
+      <span class="chip">Grátis para <b>testar</b></span>
+      <span class="chip">Exporta em <b>JSON</b></span>
+    </div>
+    <h1>Desenhe a planta do seu espaço pequeno<br>e veja em <span>3D</span> na hora.</h1>
+    <p>Para kitnets, conjugados, studios e micro-apartamentos: trace paredes, solte móveis, sobreponha a planta 2D com o ambiente 3D e ajuste o visual
+       (teto, sombras, etiquetas e cores) — tudo em um só editor, direto no navegador.</p>
+    <div class="chips">
+      <a class="btn cta" href="dashboard.html">Começar grátis</a>
+      <a class="btn ghost" href="#como">Como funciona</a>
     </div>
 
-    <h2>Ferramentas</h2>
-    <div class="row">
-      <button class="btn on" id="tWall" onclick="setTool('wall')">▰ Paredes</button>
-      <button class="btn" id="tFurn" onclick="setTool('furn')">🛋 Móveis</button>
-      <button class="btn" id="tErase" onclick="setTool('erase')">✕ Apagar</button>
-      <button class="btn" id="tPanT" onclick="setTool('pan')">✥ Mover tela</button>
+    <div class="stage">
+      <div class="bar"><i></i><i></i><i></i><em>espaco.design — vista sobreposta 2D + 3D</em></div>
+      <div class="viz">
+        <div class="row3d">
+          <div class="cell"><span class="sk2d"></span><span class="lab">Planta 2D</span></div>
+          <div class="cell"><span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--acc);">◄</span></div>
+          <div class="cell"><span class="sk3d"><span class="cube"></span></span><span class="lab">Simulação 3D</span></div>
+        </div>
+        <div class="vol"><b>2D</b> + <b>3D</b> com controle de fusão entre as duas vistas</div>
+      </div>
     </div>
+  </div>
+</section>
 
-    <h2>Móveis</h2>
-    <div class="furn" id="furnList"></div>
+<section id="recursos">
+  <div class="wrap">
+    <div class="k">Recursos</div>
+    <h2>Tudo o que você precisa para apresentar o projeto</h2>
+    <p class="sub">Do rascunho à apresentação da gerência de desenho, com camadas, múltiplos desenhos salvos e vista sobreposta.</p>
+    <div class="grid g4">
+      <div class="card"><div class="ic">📐</div><h3>Traçado livre</h3><p>Desenhe paredes na malha com snap, medidas em metros e área calculada em tempo real.</p></div>
+      <div class="card"><div class="ic">🛋️</div><h3>Móveis prontos</h3><p>Cama, sofá, cozinha, banheiro, eletrodomésticos — arraste, gire e reposicione.</p></div>
+      <div class="card"><div class="ic">🖼️</div><h3>Planta no fundo</h3><p>Carregue a foto/planta do projeto como fundo e trace as paredes por cima dela.</p></div>
+      <div class="card"><div class="ic">🧊</div><h3>Vista 3D</h3><p>Ambiente 3D orbitável com teto, sombras, etiquetas e cores ajustáveis.</p></div>
+      <div class="card"><div class="ic">🔄</div><h3>Sobreposição 2D ⇄ 3D</h3><p>Funda as duas vistas com um slider para conferir o resultado sem saltos.</p></div>
+      <div class="card"><div class="ic">🗂️</div><h3>Múltiplos desenhos</h3><p>Galeria para criar, abrir, duplicar, renomear e excluir projetos.</p></div>
+      <div class="card"><div class="ic">🎨</div><h3>Camadas e cores</h3><p>Controle paredes, móveis, fundo e categorias com um clique.</p></div>
+      <div class="card"><div class="ic">⬆️</div><h3>Importar / Exportar</h3><p>Salve o projeto em JSON para levar para qualquer lugar.</p></div>
+    </div>
+  </div>
+</section>
 
-    <h2>Ações</h2>
-    <div class="row">
-      <button class="btn primary" id="btnExample">✦ Exemplo</button>
-      <button class="btn" id="btnUndo">↶ Voltar</button>
-      <button class="btn" id="btnRedo">↷ Avançar</button>
-      <button class="btn danger" id="btnClear">✕ Limpar</button>
+<section id="como" style="padding-top:0;">
+  <div class="wrap">
+    <div class="k">Como funciona</div>
+    <h2>Três passos até a simulação</h2>
+    <div class="steps">
+      <div class="step"><h3>Abra o dashboard</h3><p>Clique em “Testar grátis” e comece um novo desenho — nenhum cadastro ou instalação.</p></div>
+      <div class="step"><h3>Trace e mobílie</h3><p>Desenhe as paredes na malha, carregue a planta de fundo se tiver e posicione os móveis.</p></div>
+      <div class="step"><h3>Veja em 3D</h3><p>Passe o mouse no botão 3D para pré-visualizar e clique para fixar a vista sobreposta.</p></div>
     </div>
-    <div class="row">
-      <button class="btn" id="btnExport">⇩ Exportar</button>
-      <button class="btn" id="btnImport">⇧ Importar</button>
-      <button class="btn" id="btnSaveImg">🖼 Fundo</button>
-      <input type="file" id="fileImg" accept="image/*">
-      <input type="file" id="fileJson" accept="application/json">
-    </div>
-    <div class="row">
-      <button class="btn" id="btnSolve">✦ Detectar paredes (exp.)</button>
-    </div>
-    <div class="row" style="justify-content:space-between">
-      <label class="chk"><input type="checkbox" id="chkGrid" checked> Grade</label>
-      <label class="chk"><input type="checkbox" id="chkSnap" checked> Snap 0,1m</label>
-    </div>
+  </div>
+</section>
 
-    <h2>Opções 3D</h2>
-    <div class="row" style="justify-content:space-between">
-      <label class="chk"><input type="checkbox" id="chkTeto"> Teto</label>
-      <label class="chk"><input type="checkbox" id="chkSombra"> Sombras</label>
-      <label class="chk"><input type="checkbox" id="chkEtq" checked> Etiquetas 2D</label>
+<section id="planos">
+  <div class="wrap">
+    <div class="k">Planos</div>
+    <h2>Comece grátis, evolua quando precisar</h2>
+    <p class="sub">O plano Grátis permite testar 1 parede, 1 móvel e toda a vista 3D. Sem cartão de crédito.</p>
+    <div class="grid g4">
+      <div class="pcard">
+        <div class="nm">Grátis</div>
+        <div class="pr">R$0<small>/testar</small></div>
+        <ul>
+          <li><b>1 desenho</b> salvo</li>
+          <li><b>1 parede</b> e <b>1 móvel</b></li>
+          <li>Vista 3D + sobreposição 2D⇄3D</li>
+          <li>Camadas e cores de parede/piso</li>
+        </ul>
+        <a class="btn cta" href="dashboard.html">Testar grátis</a>
+      </div>
+      <div class="pcard featured">
+        <span class="tag">+ usado</span>
+        <div class="nm">Avulso</div>
+        <div class="pr">R$9,90<small>/uso único</small></div>
+        <ul>
+          <li><b>3 desenhos</b> salvos</li>
+          <li><b>2 paredes</b> e <b>2 móveis</b></li>
+          <li>Exportar em JSON</li>
+          <li>Detecção automática de paredes</li>
+        </ul>
+        <a class="btn" href="#planos">Conhecer no dashboard</a>
+      </div>
+      <div class="pcard">
+        <div class="nm">Essencial</div>
+        <div class="pr">R$24,90<small>/mês</small></div>
+        <ul>
+          <li><b>10 desenhos</b> salvos</li>
+          <li><b>3 paredes</b> e <b>5 móveis</b></li>
+          <li>Exportar em JSON</li>
+          <li>Teto e sombras na vista 3D</li>
+        </ul>
+        <a class="btn" href="#planos">Conhecer no dashboard</a>
+      </div>
+      <div class="pcard">
+        <div class="nm">Pro</div>
+        <div class="pr">R$79,90<small>/mês</small></div>
+        <ul>
+          <li><b>Desenhos ilimitados</b></li>
+          <li>Paredes e móveis sem limite prático</li>
+          <li>Exportar + detecção de paredes</li>
+          <li>Teto, sombras e prioridade</li>
+        </ul>
+        <a class="btn" href="#planos">Conhecer no dashboard</a>
+      </div>
     </div>
-
-    <h2>Ajuda</h2>
-    <div class="hint" id="hintMsg"></div>
-
-    <h2>Projeto</h2>
-    <div class="hint">
-      Área ocupada: <b id="stArea">—</b> m² &nbsp;|&nbsp;
-      Paredes: <b id="stWalls">0</b> &nbsp;|&nbsp;
-      Móveis: <b id="stFurn">0</b>
-    </div>
-  </aside>
-
-  <section id="view2d">
-    <canvas id="c2d"></canvas>
-    <div id="status"></div>
-  </section>
-</main>
+    <p class="note">Os pagos são ativados pelo Mercado Pago dentro do próprio dashboard.</p>
+  </div>
+</section>
 
 <footer>
-  <span>© <span id="yearNow"></span> Projetos Dinâmicos</span>
-  <span id="footerTag">KitNet 3D — planta 2D &rarr; simulação 3D</span>
+  <div class="brand">KitNet <span>3D</span> — Planta 2D &rarr; Simulação 3D</div>
+  <div>Feito para desenhar, apresentar e gerir projetos de espaços pequenos no navegador. <a href="dashboard.html" style="color:var(--acc);font-weight:600;">Abrir dashboard</a></div>
 </footer>
-</div>
 
-<div id="toast"></div>
-
-<div id="viewModal" class="overlay hidden">
-  <div class="modal modal-vw" id="viewModalBox">
-    <div class="vw-head">
-      <h2>Visualização <span class="arrow">2D ⇄ 3D</span> sobreposta</h2>
-      <button class="btn" id="btnCloseView">✕ Fechar</button>
-    </div>
-    <div class="view-stack" id="viewStack">
-      <canvas id="c2dmod"></canvas>
-      <div id="view3dLayer"></div>
-    </div>
-    <div class="fusion-bar">
-      <b>2D</b>
-      <input type="range" id="fusionRange" min="0" max="100" value="50">
-      <b>3D</b>
-      <span class="note vhint">Deslize para sobrepor · arraste no 3D para orbitar · role para zoom</span>
-    </div>
-  </div>
-</div>
-
-<div id="upgradeOverlay" class="overlay hidden">
-  <div class="modal">
-    <div id="upgradeReason" class="note" style="margin-bottom:10px;"></div>
-    <h2>Escolha seu plano</h2>
-    <div class="plans">
-      <div class="pcard" id="pcardFree">
-        <h3>Grátis</h3>
-        <div class="price">R$ 0</div>
-        <ul>
-          <li>12 paredes</li>
-          <li>20 móveis</li>
-          <li>Vista 3D ilimitada</li>
-          <li>1 projeto salvo</li>
-          <li class="no">Exportar JSON</li>
-          <li class="no">Detecção automática</li>
-          <li class="no">Sombras e teto</li>
-        </ul>
-        <button class="btn" id="btnStayFree">Continuar Grátis</button>
-      </div>
-      <div class="pcard" id="pcardAvulso">
-        <h3>Avulso</h3>
-        <div class="price">R$ 9,90<span>/1 dia</span></div>
-        <ul>
-          <li>60 paredes</li>
-          <li>100 móveis</li>
-          <li>3 projetos salvo</li>
-          <li>Exportar JSON</li>
-          <li>Detecção automática</li>
-          <li>Sombras e teto</li>
-        </ul>
-        <a class="btn primary" id="btnBuyAvulso" href="https://mpago.la/25zi72B" target="_blank" rel="noopener noreferrer">Pagar R$ 9,90</a>
-      </div>
-      <div class="pcard" id="pcardEssencial">
-        <h3>Essencial</h3>
-        <div class="price">R$ 24,90<span>/mês</span></div>
-        <ul>
-          <li>200 paredes</li>
-          <li>300 móveis</li>
-          <li>10 projetos salvos</li>
-          <li>Exportar JSON</li>
-          <li class="no">Detecção automática</li>
-          <li>Sombras e teto</li>
-        </ul>
-        <a class="btn primary" id="btnBuyEssencial" href="https://mpago.la/1AF3asn" target="_blank" rel="noopener noreferrer">Assinar Essencial</a>
-      </div>
-      <div class="pcard pro" id="pcardPro">
-        <h3>Pro</h3>
-        <div class="price">R$ 79,90<span>/mês</span></div>
-        <ul>
-          <li>Paredes e móveis sem limite</li>
-          <li>Exportar JSON</li>
-          <li>Detecção automática de paredes</li>
-          <li>Sombras e teto no 3D</li>
-          <li>Sem marca d'água</li>
-        </ul>
-        <a class="btn primary" id="btnSubscribe" href="https://mpago.la/2eL1BXa" target="_blank" rel="noopener noreferrer">Assinar Pro</a>
-        <button class="btn" id="btnDemo" style="margin-top:6px">Testar Pro · 7 dias</button>
-      </div>
-    </div>
-    <p class="note">Pagamento via <b>Mercado Pago</b>. Ao clicar em <b>Assinar</b> você será levado ao pagamento seguro. No link de pagamento, configure o redirecionamento de volta para este site com <code>?pagamento_aprovado=1&amp;plano=avulso|essencial|pro</code> para ativar o plano automaticamente.</p>
-  </div>
-</div>
-
-<script type="importmap">
-{
-  "imports": {
-    "three": "./vendor/three.module.js",
-    "three/addons/": "./vendor/"
-  }
-}
-</script>
-<script type="module" src="main.js"></script>
 </body>
 </html>

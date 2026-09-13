@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<title>KitNet 3D — Planta 2D &rarr; Simulação 3D de espaços pequenos</title>
+<style>
+  :root{
+    --bg:#101318; --panel:#171c24; --panel2:#1e2530; --line:#2a3340;
+    --text:#e6eaf0; --muted:#8b96a5; --acc:#4cc2ff; --ok:#3ddc84;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{background:var(--bg); color:var(--text); font:14px/1.4 system-ui,Segoe UI,sans-serif;
+       display:flex; flex-direction:column; overflow:hidden; }
+  .app-shell{display:flex; flex-direction:column; height:100%;}
+  /* ----------------------------- header / toolbar ---------------------- */
+  header{background:var(--panel); border-bottom:1px solid var(--line);
+         padding:6px 14px; display:flex; align-items:center; gap:8px; flex:0 0 auto; flex-wrap:nowrap;}
+  .brand{font-size:16px; font-weight:700; letter-spacing:.3px; white-space:nowrap;}
+  .brand small{display:block; font-size:9.5px; font-weight:600; letter-spacing:1.2px;
+        color:var(--muted); text-transform:uppercase;}
+  .brand span{color:var(--acc);}
+  .tg{display:flex; align-items:center; gap:4px; padding:0 6px;}
+  .tg + .tg{border-left:1px solid var(--line);}
+  .tg .btn{padding:6px 9px; font-size:12px;}
+  .tg .btn b{font-weight:600;}
+  .badge{display:inline-block; background:#2a3340; border:1px solid var(--line); color:var(--muted);
+         font-size:10px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;
+         border-radius:999px; padding:2px 8px;}
+  .badge.pro{background:linear-gradient(90deg,#2b9bd8,#4cc2ff); border-color:#4cc2ff; color:#06121c;}
+  #btnView{transition:transform .15s, box-shadow .15s, border-color .15s; white-space:nowrap;}
+  #btnView:hover{transform:translateY(-1px); box-shadow:0 5px 14px rgba(43,155,216,.5); border-color:#4cc2ff;}
+  #btnView{margin-left:auto;}
+  /* ------------------------------ footer / status ---------------------- */
+  footer{flex:0 0 auto; background:var(--panel); border-top:1px solid var(--line);
+         padding:6px 14px; display:flex; align-items:center; gap:14px;
+         font-size:11.5px; color:var(--muted); flex-wrap:wrap;}
+  footer .foot{display:flex; align-items:center; gap:8px;}
+  #status{flex:1 1 auto; text-align:center; font-variant-numeric:tabular-nums;}
+  #status b{color:var(--acc); font-weight:600;}
+  main{flex:1 1 auto; display:flex; min-height:0;}
+  /* ------------------------------ sidebar ------------------------------ */
+  aside{width:258px; background:var(--panel); border-right:1px solid var(--line);
+        overflow-y:auto; padding:12px; flex:0 0 auto;}
+  aside h2{font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted);
+           margin:14px 0 8px; display:flex; align-items:center; gap:6px;}
+  aside h2:first-child{margin-top:0;}
+  aside h2 .tag{margin-left:auto; font-size:9.5px; letter-spacing:.4px; background:var(--panel2);
+        border:1px solid var(--line); border-radius:999px; padding:1px 7px; color:var(--accolde);}
+  .row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+  .btn{background:var(--panel2); color:var(--text); border:1px solid var(--line);
+       padding:7px 10px; border-radius:7px; cursor:pointer; font-size:12.5px; font-weight:600;
+       font-family:inherit;}
+  .btn:hover{border-color:var(--acc);}
+  .btn.on{background:#155e8a; border-color:var(--acc);}
+  .btn.danger:hover{border-color:#ff6b6b; background:#3a2026;}
+  .btn.primary{background:#2b9bd8; border-color:#2b9bd8; color:#06121c;}
+  .btn.disabled{opacity:.4; pointer-events:none; border-color:var(--line);}
+  .furn {width:100%; display:grid; grid-template-columns:1fr 1fr; gap:6px;}
+  .fbtn{display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left;
+        background:var(--panel2); border:1px solid var(--line); border-radius:8px;
+        padding:7px 9px; cursor:pointer; font-family:inherit; color:var(--text);}
+  .fbtn:hover{border-color:var(--acc);}
+  .fbtn.on{border-color:var(--acc); box-shadow:0 0 0 1px var(--acc);}
+  .fbtn b{font-size:12px; font-weight:600;}
+  .fbtn small{color:var(--muted); font-size:10.5px; letter-spacing:.3px;}
+  .fbtn .em{font-size:20px; line-height:1;}
+  .hint{background:var(--panel2); border:1px dashed var(--line); border-radius:8px;
+        padding:8px 10px; color:var(--muted); font-size:11.5px; line-height:1.5;}
+  .chk{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text); user-select:none; cursor:pointer;}
+  .chk input{accent-color:var(--acc);}
+  .layers{display:grid; grid-template-columns:1fr 1fr; gap:6px 10px;}
+  .layers .ty{cursor:pointer;}
+  .props .prow{display:flex; justify-content:space-between; align-items:center; gap:8px;
+        font-size:12px; margin-bottom:5px;}
+  .props .prow b{font-weight:700;}
+  .props .prow.small{color:var(--muted); font-size:11px;}
+  .props .gacts{display:flex; flex-wrap:wrap; gap:5px; margin-top:4px;}
+  .props .gacts .btn{padding:4px 8px; font-size:11px;}
+  .clrs{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .clr{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--muted);}
+  .clr input[type=color]{width:34px; height:24px; border:1px solid var(--line); border-radius:6px;
+        background:var(--panel2); padding:2px; cursor:pointer;}
+  .plancard{background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:10px;}
+  .prow{display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; font-size:12px;}
+  .prow.small{color:var(--muted); font-size:11.5px; margin:6px 0 2px;}
+  .meter{height:6px; background:#0c0f14; border-radius:4px; overflow:hidden; margin:3px 0;}
+  .meter > div{height:100%; width:0%; background:linear-gradient(90deg,#2b9bd8,#4cc2ff); transition:width .25s;}
+  .meter.full > div{background:linear-gradient(90deg,#ff9d5c,#ff6b6b);}
+  /* ------------------------------ área de desenho ---------------------- */
+  #view2d{flex:1 1 auto; position:relative; min-width:0;}
+  #c2d{position:absolute; inset:0; width:100%; height:100%; display:block; cursor:crosshair;}
+  #toast{position:absolute; left:50%; top:12px; transform:translateX(-50%);
+         background:#2b9bd8; color:#06121c; padding:8px 16px; border-radius:8px;
+         font-weight:600; font-size:13px; opacity:0; transition:opacity .25s; pointer-events:none; z-index:60;}
+  #toast.show{opacity:1;}
+  input[type=file], #fileJson{display:none;}
+  /* ------------------------------ overlays ----------------------------- */
+  .overlay{position:fixed; inset:0; background:rgba(8,11,16,.72); display:flex;
+           align-items:center; justify-content:center; z-index:50; padding:16px;}
+  .overlay.hidden{display:none;}
+  .modal{background:var(--panel); border:1px solid var(--line); border-radius:14px;
+         max-width:640px; width:100%; padding:20px; max-height:90vh; overflow-y:auto;}
+  .modal h2{margin-bottom:14px; font-size:16px;}
+  .gallery{max-width:900px; width:100%; padding:18px; max-height:88vh;}
+  .g-head{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+  .g-head h2{flex:1; margin:0;}
+  .g-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px;}
+  .gcard{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:8px;}
+  .gcard.current{border-color:var(--acc); box-shadow:0 0 0 1px var(--acc);}
+  .gcard h3{font-size:14px; display:flex; align-items:center; gap:6px;}
+  .gcard h3 .cur{font-size:9px; font-weight:800; letter-spacing:.6px; color:#06121c;
+        background:var(--acc); border-radius:999px; padding:1px 7px; text-transform:uppercase;}
+  .gmeta{font-size:11.5px; color:var(--muted); display:flex; flex-wrap:wrap; gap:2px 12px;}
+  .gmeta b{color:var(--text); font-weight:600;}
+  .gacts{display:flex; flex-wrap:wrap; gap:6px; margin-top:auto;}
+  .gacts .btn{padding:5px 8px; font-size:11.5px;}
+  .gacts .btn.on{color:#9adcff; border-color:var(--acc); background:transparent;}
+  /* ------------------------------ modal 2D ⇄ 3D ------------------------ */
+  .css2d-label{background:rgba(16,19,24,.82); color:var(--text); border:1px solid var(--line);
+        border-radius:999px; padding:2px 9px; font-size:10.5px; white-space:nowrap;
+        transform:translate(-50%,-50%); pointer-events:none; user-select:none;
+        box-shadow:0 1px 4px rgba(0,0,0,.35);}
+  .view-modal{max-width:1000px; width:100%; display:flex; flex-direction:column; gap:10px;
+        overflow:hidden; padding:16px 18px 18px; max-height:93vh;}
+  .vw-head{display:flex; align-items:center; gap:12px; flex:0 0 auto;}
+  .vw-head h2{margin:0; font-size:16px; white-space:nowrap;}
+  .vw-head h2 .arrow{color:var(--acc);}
+  .vw-ctl{display:flex; align-items:center; gap:12px; flex:1 1 auto; flex-wrap:wrap;
+        background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:5px 10px;}
+  .vw-ctl .chk{font-size:11.5px;}
+  .vw-ctl input[type=color]{width:30px; height:22px; border:1px solid var(--line); border-radius:6px;
+        background:var(--panel); padding:2px; cursor:pointer;}
+  .view-stack{position:relative; width:100%; height:min(62vh,540px); border-radius:10px; overflow:hidden;
+        border:1px solid var(--line); background:#dfe9f2; flex:1 1 auto; min-height:280px;}
+  .view-stack > canvas{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  #view3dLayer{position:absolute; inset:0; width:100%; height:100%;}
+  #view3dLayer > canvas{position:absolute; top:0; left:0; display:block;}
+  #view3dLayer > div{position:absolute; top:0; left:0;}
+  .fusion-bar{display:flex; align-items:center; gap:10px; padding:2px 4px 0; flex:0 0 auto;}
+  .fusion-bar b{font-size:12px; color:var(--muted); min-width:18px;}
+  #fusionRange{flex:1; accent-color:var(--acc); cursor:pointer;}
+  .vhint{font-size:11px; margin-left:auto;}
+  /* ------------------------------ plano/uprate ------------------------- */
+  .plans{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;}
+  .pcard{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:14px;}
+  .pcard.pro{border-color:var(--acc); box-shadow:0 0 0 1px var(--acc);}
+  .pcard h3{margin-bottom:2px;}
+  .pcard .price{font-size:22px; font-weight:800; margin:4px 0 10px;}
+  .pcard .price span{font-size:12px; font-weight:500; color:var(--muted);}
+  .pcard ul{list-style:none; margin-bottom:12px; font-size:12.5px; color:var(--text);}
+  .pcard li{padding:2px 0 2px 16px; position:relative;}
+  .pcard li::before{content:'✓'; position:absolute; left:0; color:var(--ok); font-weight:700;}
+  .pcard li.no{color:var(--muted);}
+  .pcard li.no::before{content:'✕'; color:#ff6b6b;}
+  .pcard .btn{width:100%;}
+  .note{color:var(--muted); font-size:11.5px; line-height:1.5;}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+<header>
+  <div class="brand">KitNet <span>3D</span><small>Espaços pequenos</small></div>
+
+  <div class="tg">
+    <button class="btn" id="btnGallery" title="Gerenciar desenhos salvos">📂 Desenhos</button>
+    <button class="btn" id="btnNewProject" title="Novo desenho em branco">➕ Novo</button>
+  </div>
+
+  <div class="tg">
+    <button class="btn" id="btnUndo" title="Desfazer (Ctrl+Z)">↶</button>
+    <button class="btn" id="btnRedo" title="Refazer (Ctrl+Y / Ctrl+Shift+Z)">↷</button>
+    <button class="btn danger" id="btnClear" title="Limpar desenho atual">✕</button>
+  </div>
+
+  <div class="tg">
+    <button class="btn" id="btnExample" title="Carregar espaço pequeno de exemplo">✦ <b>Exemplo</b></button>
+    <button class="btn" id="btnExport" title="Exportar JSON (pro)" accesskey="e">⇩ <b>Exportar</b></button>
+    <button class="btn" id="btnImport" title="Importar JSON">⇧ <b>Importar</b></button>
+    <button class="btn" id="btnSaveImg" title="Imagem de planta no fundo">🖼 <b>Fundo</b></button>
+    <button class="btn" id="btnSolve" title="Detectar paredes na imagem (pro)" accesskey="d">🔍 <b>Detectar</b></button>
+    <input type="file" id="fileImg" accept="image/*">
+    <input type="file" id="fileJson" accept="application/json">
+  </div>
+
+  <button class="btn" id="btnUpgrade" title="Ver planos"><span id="planBadge" class="badge">Grátis</span></button>
+  <button class="btn primary" id="btnView" title="Passe o mouse para sobrepor planta 2D e simulação 3D num único modal. No 3D: arrastar orbita, scroll amplia.">◱ Visualizar 2D / 3D</button>
+</header>
+
+<main>
+  <aside id="panel">
+    <h2>Desenho <span class="tag" id="projTitle">—</span></h2>
+    <div class="row"><button class="btn" id="btnOpenOther" style="width:100%">📂 Abrir outro desenho</button></div>
+
+    <h2>Ferramentas</h2>
+    <div class="row">
+      <button class="btn on" id="tWall">▰ Paredes</button>
+      <button class="btn" id="tFurn">🛋 Móveis</button>
+      <button class="btn" id="tErase">✕ Apagar</button>
+      <button class="btn" id="tPanT">✥ Mover tela</button>
+    </div>
+
+    <h2>Móveis</h2>
+    <div class="furn" id="furnList"></div>
+
+    <h2>Camadas</h2>
+    <div class="layers">
+      <label class="chk"><input type="checkbox" id="lyWalls" checked> Paredes</label>
+      <label class="chk"><input type="checkbox" id="lyFurn" checked> Móveis</label>
+      <label class="chk"><input type="checkbox" id="lyBg" checked> Fundo</label>
+      <label class="chk"><input type="checkbox" id="chkGrid" checked> Grade</label>
+      <label class="chk"><input type="checkbox" id="chkSnap" checked> Snap 0,1m</label>
+    </div>
+    <div class="layers" id="lyCateg" style="margin-top:6px"></div>
+
+    <h2>Propriedades</h2>
+    <div id="propsPanel" class="props">
+      <div class="hint">Clique em um móvel ou parede para inspecionar e editar.</div>
+    </div>
+
+    <h2>Opções 3D</h2>
+    <div class="layers">
+      <label class="chk"><input type="checkbox" id="chkTeto"> Teto</label>
+      <label class="chk"><input type="checkbox" id="chkSombra"> Sombras</label>
+      <label class="chk"><input type="checkbox" id="chkEtq" checked> Etiq. 3D</label>
+    </div>
+
+    <h2>Aparência</h2>
+    <div class="clrs">
+      <label class="clr" title="Cor das paredes no 3D">Paredes <input type="color" id="sideWallColor" value="#f4f1ea"></label>
+      <label class="clr" title="Cor do piso no 3D">Piso <input type="color" id="sideFloorColor" value="#e9e3d5"></label>
+    </div>
+
+    <h2>Plano</h2>
+    <div class="plancard">
+      <div class="prow"><b id="planName">Grátis</b><span id="planNote"></span></div>
+      <div class="prow small">Paredes: <b id="useWalls">0</b>/<span id="maxWalls">1</span></div>
+      <div class="meter"><div id="meterWalls"></div></div>
+      <div class="prow small">Móveis: <b id="useFurn">0</b>/<span id="maxFurn">1</span></div>
+      <div class="meter"><div id="meterFurn"></div></div>
+      <div class="prow small">Desenhos: <b id="useProj">0</b>/<span id="maxProj">1</span></div>
+      <div class="meter"><div id="meterProjects"></div></div>
+      <button class="btn primary" id="btnUpgradePlan" style="width:100%; margin-top:8px;">⬒ Fazer upgrade</button>
+    </div>
+
+    <h2>Ajuda</h2>
+    <div class="hint" id="hintMsg"></div>
+  </aside>
+
+  <section id="view2d">
+    <canvas id="c2d"></canvas>
+  </section>
+</main>
+
+<footer>
+  <span class="foot">© <span id="yearNow"></span> Projetos Dinâmicos</span>
+  <span id="status"></span>
+  <span class="foot" id="footMeta">Paredes: <b id="stWalls">0</b> · Móveis: <b id="stFurn">0</b> · Área: <b id="stArea">—</b> m²</span>
+</footer>
+</div>
+
+<div id="toast"></div>
+
+<!-- ------------------------------ modal 2D ⇄ 3D ------------------------- -->
+<div id="viewModal" class="overlay hidden">
+  <div class="modal view-modal" id="viewModalBox">
+    <div class="vw-head">
+      <h2>Visualização <span class="arrow">2D ⇄ 3D</span></h2>
+      <div class="vw-ctl">
+        <label class="chk"><input type="checkbox" id="mVwTeto"> Teto</label>
+        <label class="chk"><input type="checkbox" id="mVwSombra"> Sombras</label>
+        <label class="chk"><input type="checkbox" id="mVwEtq" checked> Etiquetas</label>
+        <label class="clr" title="Cor das paredes no 3D">🎨<input type="color" id="mVwWallColor" value="#f4f1ea"></label>
+        <label class="clr" title="Cor do piso no 3D">🏠<input type="color" id="mVwFloorColor" value="#e9e3d5"></label>
+      </div>
+      <button class="btn" id="btnCloseView" title="Fechar (Esc)">✕</button>
+    </div>
+    <div class="view-stack" id="viewStack">
+      <canvas id="c2dmod"></canvas>
+      <div id="view3dLayer"></div>
+    </div>
+    <div class="fusion-bar">
+      <b>2D</b>
+      <input type="range" id="fusionRange" min="0" max="100" value="50">
+      <b>3D</b>
+      <span class="note vhint">Deslize para sobrepor · arraste no 3D para orbitar · role para zoom</span>
+    </div>
+  </div>
+</div>
+
+<!-- ------------------------------ galeria de desenhos -------------------- -->
+<div id="galleryOverlay" class="overlay hidden">
+  <div class="modal gallery">
+    <div class="g-head">
+      <h2>📂 Meus desenhos</h2>
+      <button class="btn primary" id="btnNewProjectG">➕ Novo desenho</button>
+      <button class="btn" id="btnCloseGallery">✕ Fechar</button>
+    </div>
+    <div class="g-grid" id="galleryGrid"></div>
+  </div>
+</div>
+
+<!-- ------------------------------ planos --------------------------------- -->
+<div id="upgradeOverlay" class="overlay hidden">
+  <div class="modal">
+    <div id="upgradeReason" class="note" style="margin-bottom:10px;"></div>
+    <h2>Escolha seu plano</h2>
+    <div class="plans">
+      <div class="pcard" id="pcardFree">
+        <h3>Grátis</h3>
+        <div class="price">R$ 0</div>
+        <ul>
+          <li>1 parede</li>
+          <li>1 móvel</li>
+          <li>Vista 3D ilimitada</li>
+          <li>1 projeto salvo</li>
+          <li class="no">Exportar JSON</li>
+          <li class="no">Detecção automática</li>
+          <li class="no">Sombras e teto</li>
+        </ul>
+        <button class="btn" id="btnStayFree">Continuar Grátis</button>
+      </div>
+      <div class="pcard" id="pcardAvulso">
+        <h3>Avulso</h3>
+        <div class="price">R$ 9,90<span>/1 dia</span></div>
+        <ul>
+          <li>2 paredes</li>
+          <li>2 móveis</li>
+          <li>3 projetos salvo</li>
+          <li>Exportar JSON</li>
+          <li>Detecção automática</li>
+          <li>Sombras e teto</li>
+        </ul>
+        <a class="btn primary" id="btnBuyAvulso" href="https://mpago.la/25zi72B" target="_blank" rel="noopener noreferrer">Pagar R$ 9,90</a>
+      </div>
+      <div class="pcard" id="pcardEssencial">
+        <h3>Essencial</h3>
+        <div class="price">R$ 24,90<span>/mês</span></div>
+        <ul>
+          <li>3 paredes</li>
+          <li>5 móveis</li>
+          <li>10 projetos salvos</li>
+          <li>Exportar JSON</li>
+          <li class="no">Detecção automática</li>
+          <li>Sombras e teto</li>
+        </ul>
+        <a class="btn primary" id="btnBuyEssencial" href="https://mpago.la/1AF3asn" target="_blank" rel="noopener noreferrer">Assinar Essencial</a>
+      </div>
+      <div class="pcard pro" id="pcardPro">
+        <h3>Pro</h3>
+        <div class="price">R$ 79,90<span>/mês</span></div>
+        <ul>
+          <li>Paredes e móveis sem limite</li>
+          <li>Exportar JSON</li>
+          <li>Detecção automática de paredes</li>
+          <li>Sombras e teto no 3D</li>
+          <li>Sem marca d'água</li>
+        </ul>
+        <a class="btn primary" id="btnSubscribe" href="https://mpago.la/2eL1BXa" target="_blank" rel="noopener noreferrer">Assinar Pro</a>
+        <button class="btn" id="btnDemo" style="margin-top:6px">Testar Pro · 7 dias</button>
+      </div>
+    </div>
+    <p class="note">Pagamento via <b>Mercado Pago</b>. Ao clicar em <b>Assinar</b> você será levado ao pagamento seguro. No link de pagamento, configure o redirecionamento de volta para este site com <code>?pagamento_aprovado=1&amp;plano=avulso|essencial|pro</code> para ativar o plano automaticamente.</p>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.js",
+    "three/addons/": "./vendor/"
+  }
+}
+</script>
+<script type="module" src="main.js"></script>
+</body>
+</html>

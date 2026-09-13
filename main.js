@@ -1,7 +1,7 @@
 'use strict';
 /* =========================================================================
-   KitNet 3D — transforma planta baixa 2D em simulação 3D de kitnet
-   Site estático — Three.js via CDN (ES modules + importmap).
+   KitNet 3D — transforma planta baixa 2D em simulação 3D de espaços pequenos
+   Site estático — Three.js local (vendor/) com fallback 2,5D sem WebGL.
    ========================================================================= */
 
 import * as THREE from 'three';
@@ -48,7 +48,10 @@ const proj = {
   walls: [],        // {x1,y1,x2,y2}
   furniture: [],    // {type,x,y,rot,id}
   bg: null,         // { src,width,height,scale,x,y,visible }
+  colors: { wall: '#f4f1ea', floor: '#e9e3d5' },
 };
+const layers = { walls: true, furn: true, bg: true, types: {} };
+FURN_TYPES.forEach((t) => { layers.types[t] = true; });
 let view = { scale: 80, ox: 80, oy: 60 };
 let tool = 'wall';
 let selFurnType = 'cama';
@@ -65,13 +68,20 @@ let spaceDown = false;
 const bgImageCache = {};
 let animRunning = false;
 
+/* --------------------------- multi-desenhos ----------------------------- */
+const PROJECTS_KEY = 'kitnet3d_projects';   // [{id,name,updated,walls,furn}]
+const PROJ_PREFIX = 'kitnet3d_proj_';       // kitnet3d_proj_<id>
+const ACTIVE_KEY = 'kitnet3d_current';      // id ativo
+let currentId = 'default';
+let curName = 'Meu desenho';
+
 /* ------------------------------- planos -------------------------------- */
 const PLANS = {
-  free:      { name: 'Grátis',    price: 0,    dias: 0,  maxWalls: 12,   maxFurn: 20,   maxProjects: 1,
+  free:      { name: 'Grátis',    price: 0,    dias: 0,  maxWalls: 1,   maxFurn: 1,    maxProjects: 1,
                export: false, detect: false, shadows: false, teto: false },
-  avulso:    { name: 'Avulso',    price: 9.9,  dias: 1,  maxWalls: 60,   maxFurn: 100,  maxProjects: 3,
+  avulso:    { name: 'Avulso',    price: 9.9,  dias: 1,  maxWalls: 2,   maxFurn: 2,    maxProjects: 3,
                export: true, detect: true, shadows: true, teto: true },
-  essencial: { name: 'Essencial', price: 24.9, dias: 30, maxWalls: 200,  maxFurn: 300,  maxProjects: 10,
+  essencial: { name: 'Essencial', price: 24.9, dias: 30, maxWalls: 3,   maxFurn: 5,    maxProjects: 10,
                export: true, detect: false, shadows: true, teto: true },
 pro:       { name: 'Pro',       price: 79.9, dias: 30, maxWalls: 999, maxFurn: 999, maxProjects: 999,
                export: true, detect: true, shadows: true, teto: true },
@@ -111,8 +121,9 @@ function applyPlan(p, expires) {
 }
 function openUpgrade(reason) {
   const reasons = {
-    walls:   'Você atingiu o limite de paredes do plano Grátis (12).',
-    furn:    'Você atingiu o limite de móveis do plano Grátis (20).',
+    walls:   'Você atingiu o limite de paredes do seu plano.',
+    furn:    'Você atingiu o limite de móveis do seu plano.',
+    projects:'Você atingiu o limite de desenhos salvos do seu plano.',
     export:  'Exportar o projeto em JSON é um recurso dos planos pagos.',
     detect:  'A detecção automática de paredes é um recurso do Avulso e Pro.',
     shadows: 'Sombras na vista 3D é um recurso dos planos pagos.',
@@ -144,8 +155,12 @@ function updatePlanUI() {
   $('useFurn').textContent = proj.furniture.length;
   paintMeter($('meterWalls'), proj.walls.length, p.maxWalls);
   paintMeter($('meterFurn'), proj.furniture.length, p.maxFurn);
-  $('btnExport').innerHTML = p.export ? '⇩ Exportar' : '⇩ Exportar · <b style="color:#4cc2ff">PRO</b>';
-  $('btnSolve').innerHTML = p.detect ? '✦ Detectar paredes' : '✦ Detectar paredes · <b style="color:#4cc2ff">PRO</b>';
+  const nProj = listProjects().length;
+  $('maxProj').textContent = p.maxProjects >= 900 ? '∞' : p.maxProjects;
+  $('useProj').textContent = nProj;
+  paintMeter($('meterProjects'), nProj, p.maxProjects);
+  $('btnExport').innerHTML = p.export ? '⇩ <b>Exportar</b>' : '⇩ <b>Exportar</b> · <span style="color:#4cc2ff">PRO</span>';
+  $('btnSolve').innerHTML = p.detect ? '🔍 <b>Detectar</b>' : '🔍 <b>Detectar</b> · <span style="color:#4cc2ff">PRO</span>';
 }
 function paintMeter(el, used, max) {
   const full = max >= 900 ? 0 : used / Math.max(1, max);
@@ -183,12 +198,13 @@ function draw2dTo(ctx, W, H) {
   ctx.fillRect(0, 0, W, H);
   drawBg(ctx, W, H);
   if ($('chkGrid').checked) drawGrid(ctx, W, H);
-  drawWalls(ctx);
-  drawFurniture(ctx);
+  if (layers.walls) drawWalls(ctx);
+  if (layers.furn) drawFurniture(ctx);
   drawCursor(ctx);
 }
 
 function drawBg(ctx, W, H) {
+  if (!layers.bg) return;
   const bg = proj.bg;
   if (!bg || !bg.visible) return;
   const img = bgImageCache[bg.src];
@@ -293,6 +309,7 @@ function drawItemSlot(ctx, w, d, rot, cx, cy, def, fillAlpha) {
 
 function drawFurniture(ctx) {
   for (const it of proj.furniture) {
+    if (!layers.types[it.type]) continue;
     const def = FURNITURE_DEFS[it.type];
     drawItemSlot(ctx, def.w, def.d, rad(it.rot), it.x, it.y, def);
     if (it.id === selId) {
@@ -309,7 +326,7 @@ function drawFurniture(ctx) {
       ctx.textAlign = 'left';
     }
   }
-  if (tool === 'furn' && !drag) {
+  if (tool === 'furn' && !drag && layers.types[selFurnType]) {
     const def = FURNITURE_DEFS[selFurnType];
     const gx = $('chkSnap').checked ? snap(mouse.wx) : mouse.wx;
     const gy = $('chkSnap').checked ? snap(mouse.wy) : mouse.wy;
@@ -343,7 +360,7 @@ function pushUndo() {
   updateNav();
 }
 function stateJSON() {
-  return JSON.stringify({ walls: proj.walls, furniture: proj.furniture, bg: bgMeta() });
+  return JSON.stringify({ walls: proj.walls, furniture: proj.furniture, bg: bgMeta(), colors: proj.colors, layers });
 }
 function bgMeta() {
   const b = proj.bg;
@@ -355,9 +372,11 @@ function undo() {
   redoStack.push(stateJSON());
   const d = JSON.parse(s);
   proj.walls = d.walls; proj.furniture = d.furniture; proj.bg = d.bg;
+  if (d.colors) proj.colors = Object.assign({ wall: '#f4f1ea', floor: '#e9e3d5' }, d.colors);
+  if (d.layers) applyLayerState(d.layers);
   selId = null; selWall = -1; wallChain = [];
   scheduleSave(); toast('Voltou');
-  draw2d(); updateStats(); updateNav();
+  draw2d(); updateStats(); updateNav(); syncColors();
 }
 function redo() {
   const s = redoStack.pop();
@@ -365,14 +384,60 @@ function redo() {
   undoStack.push(stateJSON());
   const d = JSON.parse(s);
   proj.walls = d.walls; proj.furniture = d.furniture; proj.bg = d.bg;
+  if (d.colors) proj.colors = Object.assign({ wall: '#f4f1ea', floor: '#e9e3d5' }, d.colors);
+  if (d.layers) applyLayerState(d.layers);
   selId = null; selWall = -1; wallChain = [];
   scheduleSave(); toast('Avançou');
-  draw2d(); updateStats(); updateNav();
+  draw2d(); updateStats(); updateNav(); syncColors();
 }
 function updateNav() {
   const u = $('btnUndo'), r = $('btnRedo');
   if (u) u.classList.toggle('disabled', !undoStack.length);
   if (r) r.classList.toggle('disabled', !redoStack.length);
+  renderProps();
+}
+
+function renderProps() {
+  const p = $('propsPanel');
+  if (!p) return;
+  const item = selId != null ? proj.furniture.find((f) => f.id === selId) : null;
+  if (item) {
+    const def = FURNITURE_DEFS[item.type];
+    p.innerHTML =
+      `<div class="prow"><b>${def.emoji} ${esc(def.label)}</b><span>rot ${item.rot}°</span></div>` +
+      `<div class="prow small">X <b>${item.x.toLocaleString('pt-BR')}</b> · Y <b>${item.y.toLocaleString('pt-BR')}</b> m</div>` +
+      `<div class="prow small">Tamanho ${def.w.toLocaleString('pt-BR')} × ${def.d.toLocaleString('pt-BR')} m</div>` +
+      `<div class="gacts">` +
+      `<button class="btn" id="prRot" title="Girar 90° (R)">⟳ Girar</button>` +
+      `<button class="btn" id="prDup" title="Duplicar">⧉ Copiar</button>` +
+      `<button class="btn danger" id="prDel" title="Excluir (Delete)">✕ Apagar</button>` +
+      `</div>`;
+    $('prRot').onclick = rotateSelected;
+    $('prDup').onclick = duplicateSelected;
+    $('prDel').onclick = deleteSelected;
+  } else if (selWall >= 0 && proj.walls[selWall]) {
+    const wl = proj.walls[selWall];
+    const len = Math.hypot(wl.x2 - wl.x1, wl.y2 - wl.y1);
+    p.innerHTML =
+      `<div class="prow"><b>🧱 Parede</b><span>${len.toLocaleString('pt-BR')} m</span></div>` +
+      `<div class="prow small">de (${wl.x1.toFixed(2)}, ${wl.y1.toFixed(2)}) até (${wl.x2.toFixed(2)}, ${wl.y2.toFixed(2)})</div>` +
+      `<div class="gacts"><button class="btn danger" id="prDelW" title="Excluir (Delete)">✕ Apagar</button></div>`;
+    const b = $('prDelW'); if (b) b.onclick = deleteSelected;
+  } else {
+    p.innerHTML = '<div class="hint">Clique em um móvel ou parede para inspecionar e editar.</div>';
+  }
+}
+
+function duplicateSelected() {
+  if (selId == null) return;
+  const src = proj.furniture.find((f) => f.id === selId);
+  if (!src) return;
+  if (!canAddFurn()) { openUpgrade('furn'); return; }
+  pushUndo();
+  const it = { type: src.type, x: round2(src.x + 0.3), y: round2(src.y + 0.3), rot: src.rot, id: nextId() };
+  proj.furniture.push(it);
+  selId = it.id;
+  scheduleSave(); updateStats(); draw2d();
 }
 function toast(msg) {
   const t = $('toast');
@@ -381,15 +446,25 @@ function toast(msg) {
   clearTimeout(t._h);
   t._h = setTimeout(() => t.classList.remove('show'), 2000);
 }
+function projectDataObj() {
+  return { walls: proj.walls, furniture: proj.furniture, bg: bgMeta(), colors: proj.colors, layers, lastId };
+}
 function saveAuto() {
-  try {
-    localStorage.setItem('kitnet3d_proj', JSON.stringify({ walls: proj.walls, furniture: proj.furniture, bg: bgMeta(), lastId }));
-  } catch (e) {}
+  const data = projectDataObj();
+  try { localStorage.setItem('kitnet3d_proj', JSON.stringify(data)); } catch (e) {}
+  if (currentId) {
+    try { localStorage.setItem(PROJ_PREFIX + currentId, JSON.stringify(data)); } catch (e) {}
+    touchProjectMeta(currentId, {
+      updated: Date.now(), name: curName,
+      walls: proj.walls.length, furn: proj.furniture.length,
+    });
+  }
 }
 let saveTimer = null;
 function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveAuto, 300); }
 
 function updateStats() {
+  const t = $('projTitle'); if (t) t.textContent = curName;
   $('stWalls').textContent = proj.walls.length;
   $('stFurn').textContent = proj.furniture.length;
   const a = computeArea();
@@ -421,7 +496,7 @@ function addWallSeg(ax, ay, bx, by) {
   pushUndo();
   proj.walls.push({ x1: round2(ax), y1: round2(ay), x2: round2(bx), y2: round2(by) });
   selWall = proj.walls.length - 1;
-  scheduleSave(); updateStats(); draw2d();
+  scheduleSave(); updateStats(); draw2d(); renderProps();
 }
 
 function handleWallClick(w) {
@@ -466,7 +541,7 @@ function addFurniture(type, x, y, rot) {
   const it = { type, x: round2(x), y: round2(y), rot: rot || 0, id: nextId() };
   proj.furniture.push(it);
   selId = it.id;
-  scheduleSave(); updateStats(); draw2d();
+  scheduleSave(); updateStats(); draw2d(); renderProps();
   return it;
 }
 
@@ -482,7 +557,7 @@ function handleFurnClick(w) {
     if (!it) { draw2d(); return; }
     drag = { mode: 'dragItem', item: it };
   }
-  draw2d();
+  draw2d(); renderProps();
 }
 
 function eraseAt(w) {
@@ -491,7 +566,7 @@ function eraseAt(w) {
     pushUndo();
     proj.furniture = proj.furniture.filter((f) => f.id !== fu.id);
     selId = null;
-    scheduleSave(); updateStats(); draw2d();
+    scheduleSave(); updateStats(); draw2d(); renderProps();
     return;
   }
   let best = null, bd = 0.25;
@@ -504,7 +579,7 @@ function eraseAt(w) {
     pushUndo();
     proj.walls.splice(best, 1);
     selWall = -1;
-    scheduleSave(); updateStats(); draw2d();
+    scheduleSave(); updateStats(); draw2d(); renderProps();
   }
 }
 function distSeg(px, py, ax, ay, bx, by) {
@@ -522,19 +597,19 @@ function rotateSelected() {
   if (!it) return;
   pushUndo();
   it.rot = (it.rot + 90) % 360;
-  scheduleSave(); draw2d();
+  scheduleSave(); draw2d(); renderProps();
 }
 function deleteSelected() {
   if (selId != null) {
     pushUndo();
     proj.furniture = proj.furniture.filter((f) => f.id !== selId);
     selId = null;
-    scheduleSave(); updateStats(); draw2d();
+    scheduleSave(); updateStats(); draw2d(); renderProps();
   } else if (selWall >= 0 && proj.walls[selWall]) {
     pushUndo();
     proj.walls.splice(selWall, 1);
     selWall = -1;
-    scheduleSave(); updateStats(); draw2d();
+    scheduleSave(); updateStats(); draw2d(); renderProps();
   }
 }
 
@@ -585,6 +660,7 @@ c2.cn.addEventListener('pointermove', (e) => {
 });
 function endDrag() {
   if (drag && drag.mode === 'dragItem') scheduleSave();
+  if (drag && drag.mode === 'dragItem' && drag.item) renderProps();
   drag = null; isDown = false;
 }
 c2.cn.addEventListener('pointerup', endDrag);
@@ -617,9 +693,10 @@ window.addEventListener('keydown', (e) => {
     if (k === 'z' && e.shiftKey) { e.preventDefault(); redo(); return; }
     if (k === 'y') { e.preventDefault(); redo(); return; }
   }
+  if (e.key === 'Escape' && !$('galleryOverlay').classList.contains('hidden')) { closeGallery(); return; }
   if (e.key === 'Escape' && !$('viewModal').classList.contains('hidden')) { closeViewModal(); return; }
   if (e.code === 'Space') { spaceDown = true; e.preventDefault(); return; }
-  if (e.key === 'Escape') { wallChain = []; selId = null; selWall = -1; draw2d(); return; }
+  if (e.key === 'Escape') { wallChain = []; selId = null; selWall = -1; draw2d(); renderProps(); return; }
   if (e.key === 'r' || e.key === 'R') { rotateSelected(); return; }
   if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelected(); return; }
   if (e.key.startsWith('Arrow')) {
@@ -646,7 +723,8 @@ function updateStatus() {
   const gy = $('chkSnap').checked ? snap(mouse.wy) : mouse.wy;
   const t = tool === 'wall' ? 'Paredes' : tool === 'furn' ? 'Móveis' : tool === 'erase' ? 'Apagar' : 'Mover tela';
   statusEl.innerHTML = `<b>${t}</b> &nbsp; X: ${mouse.wx.toFixed(2)} m &nbsp; Y: ${mouse.wy.toFixed(2)} m` +
-    ($('chkSnap').checked ? ` &nbsp;<span style="color:#ff8c3a">snap ${gx.toFixed(1)}, ${gy.toFixed(1)}</span>` : '');
+    ($('chkSnap').checked ? ` &nbsp;<span style="color:#ff8c3a">snap ${gx.toFixed(1)}, ${gy.toFixed(1)}</span>` : '') +
+    ` &nbsp;·&nbsp; zoom ${Math.round(view.scale * 10) / 10}×`;
 }
 const statusEl = $('status');
 
@@ -880,7 +958,7 @@ function rebuild3d() {
   }
   scene3d.add(sun);
 
-  const floorMat = new THREE.MeshLambertMaterial({ color: 0xe9e3d5 });
+  const floorMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(proj.colors.floor) });
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(bw + 1.6, bd + 1.6), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.position.set(cx, 0, cz);
@@ -891,15 +969,17 @@ function rebuild3d() {
   grid.position.set(cx, 0.005, cz);
   scene3d.add(grid);
 
-  const wallMat = new THREE.MeshLambertMaterial({ color: 0xf4f1ea });
-  for (const w of wallsM) {
-    const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
-    if (len < 1e-6) continue;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(len, WALL_H, WALL_T), wallMat);
-    m.position.set((w.x1 + w.x2) / 2, WALL_H / 2, (w.y1 + w.y2) / 2);
-    m.rotation.y = Math.atan2(w.y2 - w.y1, w.x2 - w.x1);
-    m.castShadow = shadows;
-    scene3d.add(m);
+  const wallMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(proj.colors.wall) });
+  if (layers.walls) {
+    for (const w of wallsM) {
+      const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
+      if (len < 1e-6) continue;
+      const m = new THREE.Mesh(new THREE.BoxGeometry(len, WALL_H, WALL_T), wallMat);
+      m.position.set((w.x1 + w.x2) / 2, WALL_H / 2, (w.y1 + w.y2) / 2);
+      m.rotation.y = Math.atan2(w.y2 - w.y1, w.x2 - w.x1);
+      m.castShadow = shadows;
+      scene3d.add(m);
+    }
   }
 
   if ($('chkTeto').checked) {
@@ -912,17 +992,21 @@ function rebuild3d() {
     scene3d.add(ceil);
   }
 
-  for (const it of proj.furniture) {
-    const grp = furnitureMesh(it);
-    if (!grp) continue;
-    grp.position.set(it.x, 0, it.y);
-    grp.rotation.y = rad(it.rot);
-    if (shadows) grp.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-    scene3d.add(grp);
+  if (layers.furn) {
+    for (const it of proj.furniture) {
+      if (!layers.types[it.type]) continue;
+      const grp = furnitureMesh(it);
+      if (!grp) continue;
+      grp.position.set(it.x, 0, it.y);
+      grp.rotation.y = rad(it.rot);
+      if (shadows) grp.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+      scene3d.add(grp);
+    }
   }
 
-  if ($('chkEtq').checked) {
+  if ($('chkEtq').checked && layers.furn) {
     for (const it of proj.furniture) {
+      if (!layers.types[it.type]) continue;
       const label = furnitureLabel(it);
       if (!label) continue;
       label.position.set(it.x, 1.5, it.y);
@@ -1244,7 +1328,7 @@ function renderFallback3d() {
   ctx.moveTo(fl[0][0], fl[0][1]);
   for (let i = 1; i < 4; i++) ctx.lineTo(fl[i][0], fl[i][1]);
   ctx.closePath();
-  ctx.fillStyle = '#e9e3d5';
+  ctx.fillStyle = proj.colors.floor;
   ctx.fill();
   ctx.strokeStyle = 'rgba(30,40,55,.25)';
   ctx.stroke();
@@ -1261,23 +1345,28 @@ function renderFallback3d() {
   }
 
   const boxes = [];
-  for (const w of mergeWalls(proj.walls)) {
-    const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
-    if (len < 1e-6) continue;
-    const nx = -(w.y2 - w.y1) / len * (WALL_T / 2);
-    const nz = (w.x2 - w.x1) / len * (WALL_T / 2);
-    const base = [
-      { x: w.x1 + nx, z: w.y1 + nz },
-      { x: w.x2 + nx, z: w.y2 + nz },
-      { x: w.x2 - nx, z: w.y2 - nz },
-      { x: w.x1 - nx, z: w.y1 - nz },
-    ];
-    boxes.push({ base, h: WALL_H, color: '#f4f1ea', depth: ((w.x1 + w.x2) / 2) * s + ((w.y1 + w.y2) / 2) * c });
+  if (layers.walls) {
+    for (const w of mergeWalls(proj.walls)) {
+      const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
+      if (len < 1e-6) continue;
+      const nx = -(w.y2 - w.y1) / len * (WALL_T / 2);
+      const nz = (w.x2 - w.x1) / len * (WALL_T / 2);
+      const base = [
+        { x: w.x1 + nx, z: w.y1 + nz },
+        { x: w.x2 + nx, z: w.y2 + nz },
+        { x: w.x2 - nx, z: w.y2 - nz },
+        { x: w.x1 - nx, z: w.y1 - nz },
+      ];
+      boxes.push({ base, h: WALL_H, color: proj.colors.wall, depth: ((w.x1 + w.x2) / 2) * s + ((w.y1 + w.y2) / 2) * c });
+    }
   }
-  for (const it of proj.furniture) {
-    const def = FURNITURE_DEFS[it.type];
-    const base = rectCorners(def.w, def.d, rad(it.rot)).map(([a, b]) => ({ x: it.x + a, z: it.y + b }));
-    boxes.push({ base, h: FURN_H[it.type] || 0.8, color: def.color, depth: it.x * s + it.y * c });
+  if (layers.furn) {
+    for (const it of proj.furniture) {
+      if (!layers.types[it.type]) continue;
+      const def = FURNITURE_DEFS[it.type];
+      const base = rectCorners(def.w, def.d, rad(it.rot)).map(([a, b]) => ({ x: it.x + a, z: it.y + b }));
+      boxes.push({ base, h: FURN_H[it.type] || 0.8, color: def.color, depth: it.x * s + it.y * c });
+    }
   }
   boxes.sort((p, q) => q.depth - p.depth);
   for (const box of boxes) drawFbBox(ctx, box.base, box.h, box.color);
@@ -1287,6 +1376,219 @@ function renderFallback3d() {
   ctx.textAlign = 'left';
   ctx.fillText('Render 2,5D (sem WebGL) — arrastar: girar · scroll: zoom', 12, H - 12);
 }
+
+/* ----------------------------- multi-desenhos -------------------------- */
+function listProjects() {
+  try { const a = JSON.parse(localStorage.getItem(PROJECTS_KEY) || '[]'); return Array.isArray(a) ? a : []; }
+  catch (e) { return []; }
+}
+function saveProjects(list) {
+  try { localStorage.setItem(PROJECTS_KEY, JSON.stringify(list)); } catch (e) {}
+}
+function projMeta(id) { return listProjects().find((p) => p.id === id) || null; }
+function touchProjectMeta(id, updates) {
+  const list = listProjects();
+  const p = list.find((x) => x.id === id);
+  if (p) { Object.assign(p, updates); saveProjects(list); }
+}
+function setName(id, name) {
+  const n = (name || '').trim();
+  if (!n) return;
+  touchProjectMeta(id, { name: n.slice(0, 40) });
+  if (id === currentId) curName = projMeta(id).name;
+  const t = $('projTitle'); if (t) t.textContent = curName;
+}
+
+function migrateProjects() {
+  let list = listProjects();
+  if (!list.length) { list = [{ id: 'default', name: 'Meu desenho', updated: Date.now() }]; saveProjects(list); }
+  currentId = localStorage.getItem(ACTIVE_KEY);
+  if (!list.some((p) => p.id === currentId)) currentId = list[0].id;
+  const m = projMeta(currentId);
+  curName = m ? m.name : 'Meu desenho';
+}
+
+function applyProjectData(d) {
+  proj.walls = (d && d.walls) || [];
+  proj.furniture = (d && d.furniture) || [];
+  proj.bg = (d && d.bg) || null;
+  proj.colors = Object.assign({ wall: '#f4f1ea', floor: '#e9e3d5' }, (d && d.colors) || {});
+  const l = d && d.layers;
+  layers.walls = !l || l.walls !== false;
+  layers.furn = !l || l.furn !== false;
+  layers.bg = !l || l.bg !== false;
+  for (const t of FURN_TYPES) layers.types[t] = !l || !l.types ? true : l.types[t] !== false;
+  lastId = (d && d.lastId) || 1;
+  syncLayerUI(); syncColors();
+  preloadBg();
+}
+function preloadBg() {
+  const bg = proj.bg;
+  if (bg && bg.src && bg.width) {
+    const img = bgImageCache[bg.src] || new Image(bg.width, bg.height);
+    img.src = bg.src;
+    bgImageCache[bg.src] = img;
+  }
+}
+function readProjectData(id) {
+  try { const s = localStorage.getItem(PROJ_PREFIX + id); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+}
+function readLegacyData() {
+  try { const s = localStorage.getItem('kitnet3d_proj'); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+}
+
+function loadProject(id) {
+  saveAuto();
+  applyProjectData(readProjectData(id) || (id === 'default' ? readLegacyData() : null));
+  currentId = id;
+  const m = projMeta(id);
+  curName = m ? m.name : 'Meu desenho';
+  try { localStorage.setItem(ACTIVE_KEY, id); } catch (e) {}
+  selId = null; selWall = -1; wallChain = []; undoStack = []; redoStack = []; updateNav();
+  const t = $('projTitle'); if (t) t.textContent = curName;
+  scheduleSave(); updateStats(); draw2d();
+  toast('Desenho aberto: ' + curName);
+}
+
+function createProject(name) {
+  const list = listProjects();
+  if (list.length >= getPlan().maxProjects) { openUpgrade('projects'); return; }
+  const id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const n = (name || '').trim() || ('Desenho ' + (list.length + 1));
+  list.push({ id, name: n, updated: Date.now(), walls: 0, furn: 0 });
+  saveProjects(list);
+  loadProject(id);
+  renderGallery();
+  toast('Novo desenho criado');
+}
+
+function duplicateProject(id) {
+  const list = listProjects();
+  if (list.length >= getPlan().maxProjects) { openUpgrade('projects'); return; }
+  const src = readProjectData(id);
+  const nid = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  if (src) { try { localStorage.setItem(PROJ_PREFIX + nid, JSON.stringify(src)); } catch (e) {} }
+  const m = projMeta(id);
+  const nm = (m ? m.name : 'Desenho') + ' (cópia)';
+  list.push({ id: nid, name: nm, updated: Date.now(), walls: src ? src.walls.length : 0, furn: src ? src.furniture.length : 0 });
+  saveProjects(list);
+  loadProject(nid);
+  renderGallery();
+  toast('Desenho duplicado');
+}
+
+function renameProject(id) {
+  const m = projMeta(id);
+  const nn = prompt('Nome do desenho:', m ? m.name : '');
+  if (nn && nn.trim()) { setName(id, nn); }
+  renderGallery();
+}
+
+function deleteProject(id) {
+  const m = projMeta(id);
+  if (!m) return;
+  if (!confirm('Excluir o desenho "' + m.name + '"? Essa ação não pode ser desfeita.')) return;
+  try { localStorage.removeItem(PROJ_PREFIX + id); } catch (e) {}
+  let list = listProjects().filter((p) => p.id !== id);
+  if (!list.length) { list = [{ id: 'default', name: 'Meu desenho', updated: Date.now() }]; }
+  saveProjects(list);
+  if (currentId === id) currentId = list[0].id;
+  loadProject(currentId);
+  renderGallery();
+  toast('Desenho excluído');
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function fmtDate(v) {
+  const d = new Date(Number(v) || Date.now());
+  return isNaN(d) ? '' : d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderGallery() {
+  const grid = $('galleryGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const list = listProjects();
+  for (const p of list) {
+    const card = document.createElement('div');
+    card.className = 'gcard' + (p.id === currentId ? ' current' : '');
+    const cur = p.id === currentId ? '<span class="cur">aberto</span>' : '';
+    card.innerHTML =
+      '<h3>' + esc(p.name) + ' ' + cur + '</h3>' +
+      '<div class="gmeta"><span>Paredes: <b>' + (p.walls || 0) + '</b></span><span>Móveis: <b>' + (p.furn || 0) + '</b></span><span>' + fmtDate(p.updated) + '</span></div>' +
+      '<div class="gacts">' +
+        '<button class="btn' + (p.id === currentId ? ' on' : '') + '" data-a="open">' + (p.id === currentId ? 'Aberto' : 'Abrir') + '</button>' +
+        '<button class="btn" data-a="dup">Duplicar</button>' +
+        '<button class="btn" data-a="ren">Renomear</button>' +
+        '<button class="btn danger" data-a="del">Excluir</button>' +
+      '</div>';
+    card.querySelector('[data-a="open"]').onclick = () => { if (p.id !== currentId) loadProject(p.id); closeGallery(); };
+    card.querySelector('[data-a="dup"]').onclick = () => duplicateProject(p.id);
+    card.querySelector('[data-a="ren"]').onclick = () => renameProject(p.id);
+    card.querySelector('[data-a="del"]').onclick = () => deleteProject(p.id);
+    grid.appendChild(card);
+  }
+}
+function openGallery() { renderGallery(); $('galleryOverlay').classList.remove('hidden'); }
+function closeGallery() { $('galleryOverlay').classList.add('hidden'); }
+
+/* ------------------------- camadas e aparência ------------------------- */
+function applyLayerState(l) {
+  layers.walls = !l || l.walls !== false;
+  layers.furn = !l || l.furn !== false;
+  layers.bg = !l || l.bg !== false;
+  for (const t of FURN_TYPES) layers.types[t] = !l || !l.types ? true : l.types[t] !== false;
+  syncLayerUI();
+}
+function syncLayerUI() {
+  const s = (id, v) => { const el = $(id); if (el) el.checked = v; };
+  s('lyWalls', layers.walls); s('lyFurn', layers.furn); s('lyBg', layers.bg);
+  document.querySelectorAll('#lyCateg .lytype').forEach((el) => { el.checked = layers.types[el.dataset.type]; });
+}
+function buildLayerPalette() {
+  const el = $('lyCateg');
+  if (!el) return;
+  el.innerHTML = '';
+  for (const t of FURN_TYPES) {
+    const def = FURNITURE_DEFS[t];
+    const l = document.createElement('label');
+    l.className = 'chk ty';
+    const ck = document.createElement('input');
+    ck.type = 'checkbox'; ck.checked = layers.types[t]; ck.dataset.type = t;
+    ck.classList.add('lytype');
+    ck.onchange = () => { layers.types[t] = ck.checked; applyLayerChange(); };
+    l.appendChild(ck);
+    l.appendChild(document.createTextNode(def.emoji + ' ' + def.label));
+    el.appendChild(l);
+  }
+}
+function applyLayerChange() { scheduleSave(); draw2d(); if (scene3d) rebuild3d(); }
+function syncColors() {
+  const s = (id, v) => { const el = $(id); if (el) el.value = v; };
+  s('sideWallColor', proj.colors.wall); s('sideFloorColor', proj.colors.floor);
+  s('mVwWallColor', proj.colors.wall); s('mVwFloorColor', proj.colors.floor);
+}
+function set3DOption(kind, checked) {
+  const mk = { Teto: 'Teto', Sombra: 'Sombra', Etiquetas: 'Etq' };
+  const gate = kind === 'Teto' ? 'teto' : kind === 'Sombra' ? 'shadows' : null;
+  const sideId = 'chk' + (kind === 'Etiquetas' ? 'Etq' : kind);
+  const mvId = 'mVw' + mk[kind];
+  if (checked && gate && !getPlan()[gate]) {
+    const a = $(sideId), b = $(mvId);
+    if (a) a.checked = false;
+    if (b) b.checked = false;
+    openUpgrade(gate);
+    return;
+  }
+  const a = $(sideId), b = $(mvId);
+  if (a) a.checked = checked;
+  if (b) b.checked = checked;
+  if (scene3d) rebuild3d();
+}
+function setWallColor(v) { proj.colors.wall = v; syncColors(); scheduleSave(); if (scene3d) rebuild3d(); }
+function setFloorColor(v) { proj.colors.floor = v; syncColors(); scheduleSave(); if (scene3d) rebuild3d(); }
 
 /* ----------------------- modal 2D ⇄ 3D sobrepostos --------------------- */
 let viewPinned = false;
@@ -1345,9 +1647,18 @@ function openViewModal(pin) {
   init3d();
   if (s !== lastViewSig) { rebuild3d(); lastViewSig = s; }
   resize3dView();
+  syncViewControls();
   applyFusion();
   startAnimation();
   if ($('fusionRange').value > 0 && viewPinned) $('btnCloseView').focus();
+}
+
+function syncViewControls() {
+  const s = (id, v) => { const el = $(id); if (el) el.checked = v; };
+  s('mVwTeto', $('chkTeto').checked);
+  s('mVwSombra', $('chkSombra').checked);
+  s('mVwEtq', $('chkEtq').checked);
+  syncColors();
 }
 
 function closeViewModal() {
@@ -1391,18 +1702,18 @@ function loadExample() {
   selId = null; selWall = -1; wallChain = [];
   view.scale = 80; view.ox = 80; view.oy = 60;
   scheduleSave(); updateStats(); draw2d();
-  toast('Kitnet de exemplo carregada');
+  toast('Espaço de exemplo carregado');
 }
 
 /* --------------------------- importar/exportar ------------------------- */
 function exportProject() {
   if (!requirePro('export')) return;
-  const data = { v: 1, walls: proj.walls, furniture: proj.furniture, bg: bgMeta() };
+  const data = { v: 2, walls: proj.walls, furniture: proj.furniture, bg: bgMeta(), colors: proj.colors, layers };
   saveAuto();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'kitnet.json';
+  a.download = 'espaco.json';
   a.click();
   toast('Projeto exportado');
 }
@@ -1414,14 +1725,16 @@ async function importProjectFile(f) {
     proj.walls = data.walls || [];
     proj.furniture = data.furniture || [];
     proj.bg = data.bg || null;
-    if (proj.bg && proj.bg.src && proj.bg.width) {
+    proj.colors = Object.assign({ wall: '#f4f1ea', floor: '#e9e3d5' }, data.colors || {});
+    if (data.layers) applyLayerState(data.layers);
+    if (data.bg && data.bg.src && data.bg.width) {
       const img = new Image(proj.bg.width, proj.bg.height);
       img.src = proj.bg.src;
       bgImageCache[proj.bg.src] = img;
     }
     lastId = Math.max(1, ...proj.furniture.map((f) => f.id || 0)) + 1;
     selId = null; selWall = -1; wallChain = [];
-    scheduleSave(); updateStats(); draw2d();
+    scheduleSave(); updateStats(); draw2d(); renderProps();
     toast('Projeto importado');
   } catch (e) { toast('JSON inválido'); }
 }
@@ -1585,6 +1898,10 @@ function buildFurniturePalette() {
 }
 
 function wireUI() {
+  $('tWall').onclick = () => setTool('wall');
+  $('tFurn').onclick = () => setTool('furn');
+  $('tErase').onclick = () => setTool('erase');
+  $('tPanT').onclick = () => setTool('pan');
   $('btnExample').onclick = loadExample;
   $('btnUndo').onclick = undo;
   $('btnRedo').onclick = redo;
@@ -1593,7 +1910,7 @@ function wireUI() {
     pushUndo();
     proj.walls = []; proj.furniture = []; proj.bg = null;
     selId = null; selWall = -1; wallChain = [];
-    scheduleSave(); updateStats(); draw2d();
+    scheduleSave(); updateStats(); draw2d(); renderProps();
     toast('Projeto limpo');
   };
   $('btnExport').onclick = exportProject;
@@ -1610,16 +1927,11 @@ function wireUI() {
   $('btnSolve').onclick = detectWalls;
   $('chkGrid').onchange = draw2d;
   $('chkSnap').onchange = draw2d;
-  $('chkTeto').onchange = () => {
-    if ($('chkTeto').checked && !getPlan().teto) { $('chkTeto').checked = false; openUpgrade('teto'); return; }
-    if (scene3d) rebuild3d();
-  };
-  $('chkSombra').onchange = () => {
-    if ($('chkSombra').checked && !getPlan().shadows) { $('chkSombra').checked = false; openUpgrade('shadows'); return; }
-    if (scene3d) rebuild3d();
-  };
-  $('chkEtq').onchange = () => { if (scene3d) rebuild3d(); };
+  $('chkTeto').onchange = () => set3DOption('Teto', $('chkTeto').checked);
+  $('chkSombra').onchange = () => set3DOption('Sombra', $('chkSombra').checked);
+  $('chkEtq').onchange = () => set3DOption('Etiquetas', $('chkEtq').checked);
   $('btnUpgrade').onclick = () => openUpgrade();
+  $('btnUpgradePlan').onclick = () => openUpgrade();
   $('planBadge').onclick = () => openUpgrade();
   $('btnStayFree').onclick = closeUpgrade;
   function buyPlan(k) {
@@ -1659,13 +1971,31 @@ function wireUI() {
   vw.addEventListener('click', (e) => {
     if (e.target === vw) closeViewModal();
   });
+  $('btnCloseGallery').onclick = closeGallery;
+  $('btnGallery').onclick = openGallery;
+  $('btnOpenOther').onclick = openGallery;
+  $('btnNewProject').onclick = () => createProject();
+  $('btnNewProjectG').onclick = () => createProject();
+  $('galleryOverlay').addEventListener('click', (e) => { if (e.target === $('galleryOverlay')) closeGallery(); });
+  $('lyWalls').onchange = () => { layers.walls = $('lyWalls').checked; applyLayerChange(); };
+  $('lyFurn').onchange = () => { layers.furn = $('lyFurn').checked; applyLayerChange(); };
+  $('lyBg').onchange = () => { layers.bg = $('lyBg').checked; applyLayerChange(); };
+  $('sideWallColor').oninput = (e) => setWallColor(e.target.value);
+  $('sideFloorColor').oninput = (e) => setFloorColor(e.target.value);
+  $('mVwTeto').onchange = () => set3DOption('Teto', $('mVwTeto').checked);
+  $('mVwSombra').onchange = () => set3DOption('Sombra', $('mVwSombra').checked);
+  $('mVwEtq').onchange = () => set3DOption('Etiquetas', $('mVwEtq').checked);
+  $('mVwWallColor').oninput = (e) => setWallColor(e.target.value);
+  $('mVwFloorColor').oninput = (e) => setFloorColor(e.target.value);
 }
 
 /* --------------------------------- init -------------------------------- */
 (function boot() {
-  restoreAuto();
+  migrateProjects();
+  loadProject(currentId);
   loadPlan();
   buildFurniturePalette();
+  buildLayerPalette();
   wireUI();
   resize2d();
   updateStats();

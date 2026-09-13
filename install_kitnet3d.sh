@@ -293,6 +293,9 @@ mkdir -p "$DATA_DIR" && info "Diretório de dados criado: $DATA_DIR" || warn "Er
 # Copiar front estático (se presente junto ao script)
 if [ -f "$SCRIPT_DIR/index.html" ]; then
   cp "$SCRIPT_DIR/index.html" "$INSTALL_DIR/index.html" && info "index.html copiado" || warn "Falha ao copiar index.html"
+  cp "$SCRIPT_DIR/dashboard.html" "$INSTALL_DIR/dashboard.html" && info "dashboard.html copiado" || warn "Falha ao copiar dashboard.html"
+  cp -r "$SCRIPT_DIR/vendor" "$INSTALL_DIR/vendor" && info "vendor/ (Three.js local) copiado" || warn "Falha ao copiar vendor/"
+  [ -f "$SCRIPT_DIR/favicon.svg" ] && cp "$SCRIPT_DIR/favicon.svg" "$INSTALL_DIR/favicon.svg" || true
   cp "$SCRIPT_DIR/main.js" "$INSTALL_DIR/main.js" && info "main.js copiado" || warn "Falha ao copiar main.js"
 else
   warn "index.html não encontrado em $SCRIPT_DIR — a API rodará sem o front (só endpoints REST)"
@@ -669,6 +672,9 @@ COPY api/src/ ./src/
 
 # Front estático servido pela mesma API
 COPY index.html ./index.html
+COPY dashboard.html ./dashboard.html
+COPY vendor/ ./vendor/
+COPY favicon.svg ./favicon.svg
 COPY main.js ./main.js
 
 EXPOSE 3002
