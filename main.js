@@ -56,6 +56,7 @@ let selId = null;
 let selWall = -1;
 let wallChain = [];
 let undoStack = [];
+let redoStack = [];
 let lastId = 1;
 const mouse = { x: 0, y: 0, wx: 0, wy: 0 };
 let isDown = false;
@@ -336,8 +337,13 @@ function drawCursor(ctx) {
 function nextId() { return lastId++; }
 
 function pushUndo() {
-  undoStack.push(JSON.stringify({ walls: proj.walls, furniture: proj.furniture, bg: bgMeta() }));
+  undoStack.push(stateJSON());
   if (undoStack.length > 60) undoStack.shift();
+  redoStack.length = 0;
+  updateNav();
+}
+function stateJSON() {
+  return JSON.stringify({ walls: proj.walls, furniture: proj.furniture, bg: bgMeta() });
 }
 function bgMeta() {
   const b = proj.bg;
@@ -345,12 +351,28 @@ function bgMeta() {
 }
 function undo() {
   const s = undoStack.pop();
-  if (!s) { toast('Nada para desfazer'); return; }
+  if (!s) { toast('Nada para voltar'); return; }
+  redoStack.push(stateJSON());
   const d = JSON.parse(s);
   proj.walls = d.walls; proj.furniture = d.furniture; proj.bg = d.bg;
   selId = null; selWall = -1; wallChain = [];
-  scheduleSave(); toast('Desfeito');
-  draw2d(); updateStats();
+  scheduleSave(); toast('Voltou');
+  draw2d(); updateStats(); updateNav();
+}
+function redo() {
+  const s = redoStack.pop();
+  if (!s) { toast('Nada para avançar'); return; }
+  undoStack.push(stateJSON());
+  const d = JSON.parse(s);
+  proj.walls = d.walls; proj.furniture = d.furniture; proj.bg = d.bg;
+  selId = null; selWall = -1; wallChain = [];
+  scheduleSave(); toast('Avançou');
+  draw2d(); updateStats(); updateNav();
+}
+function updateNav() {
+  const u = $('btnUndo'), r = $('btnRedo');
+  if (u) u.classList.toggle('disabled', !undoStack.length);
+  if (r) r.classList.toggle('disabled', !redoStack.length);
 }
 function toast(msg) {
   const t = $('toast');
@@ -589,6 +611,12 @@ c2.cn.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 window.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+    const k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
+    if (k === 'z' && e.shiftKey) { e.preventDefault(); redo(); return; }
+    if (k === 'y') { e.preventDefault(); redo(); return; }
+  }
   if (e.key === 'Escape' && !$('viewModal').classList.contains('hidden')) { closeViewModal(); return; }
   if (e.code === 'Space') { spaceDown = true; e.preventDefault(); return; }
   if (e.key === 'Escape') { wallChain = []; selId = null; selWall = -1; draw2d(); return; }
@@ -746,7 +774,14 @@ let scene3d = null, renderer3d = null, camera3d = null, controls3d = null, cssRe
 function init3d() {
   if (scene3d) return;
   const cn = $('view3dLayer');
-  renderer3d = new THREE.WebGLRenderer({ antialias: true });
+  try {
+    renderer3d = new THREE.WebGLRenderer({ antialias: true });
+  } catch (e) { renderer3d = null; }
+  if (!renderer3d || !renderer3d.domElement) {
+    cn.innerHTML = '<div style="padding:18px 20px; color:var(--muted); font-size:12.5px">WebGL indisponível neste navegador — a camada 3D não pôde ser criada.</div>';
+    renderer3d = null;
+    return;
+  }
   renderer3d.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer3d.setSize(cn.clientWidth, cn.clientHeight);
   renderer3d.setClearColor(0xdfe9f2);
@@ -1064,6 +1099,13 @@ function startAnimation() {
 /* ----------------------- modal 2D ⇄ 3D sobrepostos --------------------- */
 let viewPinned = false;
 let lastViewSig = '';
+let hoverCloseTimer = null;
+let hoverOutside = false;
+
+function scheduleHoverClose() {
+  clearTimeout(hoverCloseTimer);
+  hoverCloseTimer = setTimeout(closeViewModal, 600);
+}
 
 function projSig() {
   return JSON.stringify({ w: proj.walls, f: proj.furniture, b: bgMeta() });
@@ -1102,6 +1144,8 @@ function isInside(e, el) {
 }
 
 function openViewModal(pin) {
+  clearTimeout(hoverCloseTimer);
+  hoverOutside = false;
   if (pin !== undefined) viewPinned = !!pin;
   $('viewModal').classList.remove('hidden');
   snapshot2d();
@@ -1115,6 +1159,8 @@ function openViewModal(pin) {
 }
 
 function closeViewModal() {
+  clearTimeout(hoverCloseTimer);
+  hoverOutside = false;
   viewPinned = false;
   $('viewModal').classList.add('hidden');
 }
@@ -1349,6 +1395,7 @@ function buildFurniturePalette() {
 function wireUI() {
   $('btnExample').onclick = loadExample;
   $('btnUndo').onclick = undo;
+  $('btnRedo').onclick = redo;
   $('btnClear').onclick = () => {
     if (!proj.walls.length && !proj.furniture.length) { toast('Já está vazio'); return; }
     pushUndo();
@@ -1409,8 +1456,13 @@ function wireUI() {
   $('btnCloseView').onclick = closeViewModal;
   $('fusionRange').addEventListener('input', applyFusion);
   vw.addEventListener('pointermove', (e) => {
-    if (viewPinned) return;
-    if (!isInside(e, $('viewModalBox')) && !isInside(e, btnView)) closeViewModal();
+    if (viewPinned) { hoverOutside = false; return; }
+    if (isInside(e, $('viewModalBox')) || isInside(e, btnView)) {
+      hoverOutside = false;
+      clearTimeout(hoverCloseTimer);
+      return;
+    }
+    if (!hoverOutside) { hoverOutside = true; scheduleHoverClose(); }
   });
   vw.addEventListener('click', (e) => {
     if (e.target === vw) closeViewModal();
@@ -1425,6 +1477,7 @@ function wireUI() {
   wireUI();
   resize2d();
   updateStats();
+  updateNav();
   setTool('wall');
   if (!proj.walls.length && !proj.furniture.length) loadExample();
   const q = new URLSearchParams(location.search);
