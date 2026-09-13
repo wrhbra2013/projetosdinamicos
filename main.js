@@ -1,8 +1,12 @@
 'use strict';
 /* =========================================================================
    KitNet 3D — transforma planta baixa 2D em simulação 3D de kitnet
-   Site estático — usa apenas Three.js via CDN.
+   Site estático — Three.js via CDN (ES modules + importmap).
    ========================================================================= */
+
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -743,7 +747,7 @@ function areaOf(loop, pnt) {
 }
 
 /* ------------------------------- 3D ------------------------------------ */
-let scene3d = null, renderer3d = null, camera3d = null, controls3d = null;
+let scene3d = null, renderer3d = null, camera3d = null, controls3d = null, cssRenderer3d = null;
 
 function init3d() {
   if (scene3d) { rebuild3d(); return; }
@@ -753,9 +757,18 @@ function init3d() {
   renderer3d.setSize(cn.clientWidth, cn.clientHeight);
   renderer3d.setClearColor(0xdfe9f2);
   cn.appendChild(renderer3d.domElement);
+
+  cssRenderer3d = new CSS2DRenderer();
+  cssRenderer3d.setSize(cn.clientWidth, cn.clientHeight);
+  cssRenderer3d.domElement.style.position = 'absolute';
+  cssRenderer3d.domElement.style.top = '0';
+  cssRenderer3d.domElement.style.left = '0';
+  cssRenderer3d.domElement.style.pointerEvents = 'none';
+  cn.appendChild(cssRenderer3d.domElement);
+
   scene3d = new THREE.Scene();
   camera3d = new THREE.PerspectiveCamera(50, cn.clientWidth / Math.max(1, cn.clientHeight), 0.05, 300);
-  controls3d = new THREE.OrbitControls(camera3d, renderer3d.domElement);
+  controls3d = new OrbitControls(camera3d, renderer3d.domElement);
   controls3d.enableDamping = true;
   controls3d.dampingFactor = 0.15;
   controls3d.maxPolarAngle = Math.PI * 0.49;
@@ -763,6 +776,7 @@ function init3d() {
     camera3d.aspect = cn.clientWidth / Math.max(1, cn.clientHeight);
     camera3d.updateProjectionMatrix();
     renderer3d.setSize(cn.clientWidth, cn.clientHeight);
+    if (cssRenderer3d) cssRenderer3d.setSize(cn.clientWidth, cn.clientHeight);
   }).observe(cn);
   rebuild3d();
 }
@@ -876,6 +890,15 @@ function rebuild3d() {
     grp.rotation.y = rad(it.rot);
     if (shadows) grp.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     scene3d.add(grp);
+  }
+
+  if ($('chkEtq').checked) {
+    for (const it of proj.furniture) {
+      const label = furnitureLabel(it);
+      if (!label) continue;
+      label.position.set(it.x, 1.5, it.y);
+      scene3d.add(label);
+    }
   }
 
   const dist = Math.max(bw, bd, 4) * 1.15;
@@ -1020,6 +1043,16 @@ function furnitureMesh(item) {
   return g;
 }
 
+function furnitureLabel(item) {
+  const def = FURNITURE_DEFS[item.type];
+  if (!def) return null;
+  const el = document.createElement('div');
+  el.className = 'css2d-label';
+  el.textContent = def.emoji + ' ' + def.label + ' · ' +
+    def.w.toLocaleString('pt-BR') + '×' + def.d.toLocaleString('pt-BR') + 'm';
+  return new CSS2DObject(el);
+}
+
 function startAnimation() {
   if (animRunning) return;
   animRunning = true;
@@ -1028,6 +1061,7 @@ function startAnimation() {
     if (renderer3d && $('view3d').style.display !== 'none') {
       controls3d.update();
       renderer3d.render(scene3d, camera3d);
+      if (cssRenderer3d) cssRenderer3d.render(scene3d, camera3d);
     }
   };
   loop();
@@ -1293,6 +1327,7 @@ function wireUI() {
     if ($('chkSombra').checked && !getPlan().shadows) { $('chkSombra').checked = false; openUpgrade('shadows'); return; }
     if (scene3d) rebuild3d();
   };
+  $('chkEtq').onchange = () => { if (scene3d) rebuild3d(); };
   $('btnUpgrade').onclick = () => openUpgrade();
   $('planBadge').onclick = () => openUpgrade();
   $('btnStayFree').onclick = closeUpgrade;
