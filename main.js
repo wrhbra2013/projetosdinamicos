@@ -777,9 +777,9 @@ function init3d() {
   try {
     renderer3d = new THREE.WebGLRenderer({ antialias: true });
   } catch (e) { renderer3d = null; }
-  if (!renderer3d || !renderer3d.domElement) {
-    cn.innerHTML = '<div style="padding:18px 20px; color:var(--muted); font-size:12.5px">WebGL indisponível neste navegador — a camada 3D não pôde ser criada.</div>';
+  if (!renderer3d || !renderer3d.getContext()) {
     renderer3d = null;
+    initFallback3d();
     return;
   }
   renderer3d.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -1087,13 +1087,205 @@ function startAnimation() {
   animRunning = true;
   const loop = () => {
     requestAnimationFrame(loop);
-    if (renderer3d && !$('viewModal').classList.contains('hidden')) {
+    if ($('viewModal').classList.contains('hidden')) return;
+    if (fb.active) { renderFallback3d(); return; }
+    if (renderer3d) {
       controls3d.update();
       renderer3d.render(scene3d, camera3d);
       if (cssRenderer3d) cssRenderer3d.render(scene3d, camera3d);
     }
   };
   loop();
+}
+
+/* ------------------------ fallback 3D sem WebGL ------------------------ */
+const fb = {
+  active: false, canvas: null, ctx: null,
+  yaw: -0.7, scale: 55, drag: null, resize: null,
+};
+const FB_PITCH = 32 * Math.PI / 180;
+const FB_SIN = Math.sin(FB_PITCH), FB_COS = Math.cos(FB_PITCH);
+const FURN_H = {
+  cama: 0.6, sofa: 0.75, mesa: 0.8, cadeira: 0.5, cozinha: 0.9,
+  fogao: 0.95, geladeira: 1.9, rouparia: 2.15, vaso: 0.78, chuveiro: 2.1,
+  piaB: 0.92, maquina: 0.9, tv: 1.0, porta: 2.0, janela: 1.3, planta: 0.9,
+};
+
+function initFallback3d() {
+  const cn = $('view3dLayer');
+  const cv = document.createElement('canvas');
+  cv.style.cssText = 'position:absolute; inset:0; width:100%; height:100%; cursor:grab; touch-action:none;';
+  cn.innerHTML = '';
+  cn.appendChild(cv);
+  fb.canvas = cv;
+  fb.ctx = cv.getContext('2d');
+  fb.active = true;
+
+  cv.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    cv.setPointerCapture(e.pointerId);
+    fb.drag = { x: e.clientX, yaw: fb.yaw };
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!fb.drag) return;
+    fb.yaw = fb.drag.yaw + (e.clientX - fb.drag.x) * 0.006;
+  });
+  cv.addEventListener('pointerup', () => { fb.drag = null; });
+  cv.addEventListener('pointercancel', () => { fb.drag = null; });
+  cv.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    fb.scale = clamp(fb.scale * Math.exp(-e.deltaY * 0.0012), 10, 400);
+  }, { passive: false });
+
+  fb.resize = new ResizeObserver(() => resizeFallback());
+  fb.resize.observe($('view3dLayer'));
+}
+
+function resizeFallback() {
+  const cn = $('view3dLayer');
+  if (!fb.canvas || !cn.clientWidth) return;
+  const dpr = window.devicePixelRatio || 1;
+  fb.canvas.width = Math.max(1, Math.round(cn.clientWidth * dpr));
+  fb.canvas.height = Math.max(1, Math.round(cn.clientHeight * dpr));
+  fb.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function fbx(wx, wy, h) {
+  const c = Math.cos(fb.yaw), s = Math.sin(fb.yaw);
+  const xr = wx * c - wy * s;
+  const zr = wx * s + wy * c;
+  const cx = fb.canvas.clientWidth / 2, cy = fb.canvas.clientHeight / 2;
+  return [cx + xr * fb.scale, cy - zr * FB_SIN * fb.scale - h * FB_COS * fb.scale];
+}
+
+function fadeColor(hex, f) {
+  const v = parseInt(hex.slice(1), 16);
+  const r = clamp(Math.round(((v >> 16) & 255) * f), 0, 255);
+  const g = clamp(Math.round(((v >> 8) & 255) * f), 0, 255);
+  const b = clamp(Math.round((v & 255) * f), 0, 255);
+  return `rgb(${r},${g},${b})`;
+}
+
+function ensureCCW(pts) {
+  let a = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i], q = pts[(i + 1) % pts.length];
+    a += p.x * q.z - q.x * p.z;
+  }
+  if (a < 0) pts.reverse();
+}
+
+function drawFbBox(ctx, base, h, color) {
+  ensureCCW(base);
+  const u = 1 / Math.max(1e-6, Math.hypot(Math.cos(fb.yaw), Math.sin(fb.yaw)));
+  const viewX = Math.sin(fb.yaw) * u, viewZ = Math.cos(fb.yaw) * u;
+  const faces = [];
+  for (let i = 0; i < base.length; i++) {
+    const a = base[i], b = base[(i + 1) % base.length];
+    const dx = b.x - a.x, dz = b.z - a.z;
+    const l = Math.hypot(dx, dz) || 1e-6;
+    const n = { x: dz / l, z: -dx / l };
+    const vis = n.x * viewX + n.z * viewZ;
+    if (vis > 1e-6) {
+      const shade = (n.x * viewZ - n.z * viewX) > 0 ? 0.92 : 0.72;
+      const pa = fbx(a.x, a.z, 0), pb = fbx(b.x, b.z, 0);
+      const pt1 = fbx(a.x, a.z, h), pt2 = fbx(b.x, b.z, h);
+      faces.push({ pts: [pa, pb, pt2, pt1], fill: fadeColor(color, shade) });
+    }
+  }
+  for (const f of faces) {
+    ctx.beginPath();
+    ctx.moveTo(f.pts[0][0], f.pts[0][1]);
+    for (let j = 1; j < f.pts.length; j++) ctx.lineTo(f.pts[j][0], f.pts[j][1]);
+    ctx.closePath();
+    ctx.fillStyle = f.fill;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(30,40,55,.35)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  const topPts = base.map((p) => fbx(p.x, p.z, h));
+  ctx.beginPath();
+  ctx.moveTo(topPts[0][0], topPts[0][1]);
+  for (let j = 1; j < topPts.length; j++) ctx.lineTo(topPts[j][0], topPts[j][1]);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(30,40,55,.4)';
+  ctx.stroke();
+}
+
+function fbBounds() {
+  const wallsM = mergeWalls(proj.walls);
+  let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+  const has = wallsM.length > 0;
+  for (const w of wallsM) {
+    minX = Math.min(minX, w.x1, w.x2); minY = Math.min(minY, w.y1, w.y2);
+    maxX = Math.max(maxX, w.x1, w.x2); maxY = Math.max(maxY, w.y1, w.y2);
+  }
+  if (!has) { minX = -3; maxX = 3; minY = -2; maxY = 2; }
+  return { minX, minY, maxX, maxY, has };
+}
+
+function renderFallback3d() {
+  if (!fb.ctx || !fb.canvas.clientWidth) return;
+  const ctx = fb.ctx;
+  const W = fb.canvas.clientWidth, H = fb.canvas.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#dfe9f2';
+  ctx.fillRect(0, 0, W, H);
+
+  const b = fbBounds();
+  const c = Math.cos(fb.yaw), s = Math.sin(fb.yaw);
+
+  ctx.beginPath();
+  const fl = [[b.minX, b.minY], [b.maxX, b.minY], [b.maxX, b.maxY], [b.minX, b.maxY]]
+    .map(([x, z]) => fbx(x, z, 0));
+  ctx.moveTo(fl[0][0], fl[0][1]);
+  for (let i = 1; i < 4; i++) ctx.lineTo(fl[i][0], fl[i][1]);
+  ctx.closePath();
+  ctx.fillStyle = '#e9e3d5';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(30,40,55,.25)';
+  ctx.stroke();
+
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(20,30,45,.10)';
+  for (let x = Math.ceil(b.minX / 0.5) * 0.5; x <= b.maxX + 1e-9; x += 0.5) {
+    const p1 = fbx(x, b.minY, 0), p2 = fbx(x, b.maxY, 0);
+    ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+  }
+  for (let z = Math.ceil(b.minY / 0.5) * 0.5; z <= b.maxY + 1e-9; z += 0.5) {
+    const p1 = fbx(b.minX, z, 0), p2 = fbx(b.maxX, z, 0);
+    ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+  }
+
+  const boxes = [];
+  for (const w of mergeWalls(proj.walls)) {
+    const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
+    if (len < 1e-6) continue;
+    const nx = -(w.y2 - w.y1) / len * (WALL_T / 2);
+    const nz = (w.x2 - w.x1) / len * (WALL_T / 2);
+    const base = [
+      { x: w.x1 + nx, z: w.y1 + nz },
+      { x: w.x2 + nx, z: w.y2 + nz },
+      { x: w.x2 - nx, z: w.y2 - nz },
+      { x: w.x1 - nx, z: w.y1 - nz },
+    ];
+    boxes.push({ base, h: WALL_H, color: '#f4f1ea', depth: ((w.x1 + w.x2) / 2) * s + ((w.y1 + w.y2) / 2) * c });
+  }
+  for (const it of proj.furniture) {
+    const def = FURNITURE_DEFS[it.type];
+    const base = rectCorners(def.w, def.d, rad(it.rot)).map(([a, b]) => ({ x: it.x + a, z: it.y + b }));
+    boxes.push({ base, h: FURN_H[it.type] || 0.8, color: def.color, depth: it.x * s + it.y * c });
+  }
+  boxes.sort((p, q) => q.depth - p.depth);
+  for (const box of boxes) drawFbBox(ctx, box.base, box.h, box.color);
+
+  ctx.fillStyle = 'rgba(16,19,24,.55)';
+  ctx.font = '11px system-ui';
+  ctx.textAlign = 'left';
+  ctx.fillText('Render 2,5D (sem WebGL) — arrastar: girar · scroll: zoom', 12, H - 12);
 }
 
 /* ----------------------- modal 2D ⇄ 3D sobrepostos --------------------- */
