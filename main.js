@@ -18,9 +18,9 @@ const WALL_H = 2.6;   // pé-direito (m)
 const WALL_T = 0.15;  // espessura da parede (m)
 const SNAP = 0.1;
 const MPAGO_LINKS = {
-  avulso:    'https://mpago.la/18BKYTi',
-  essencial: 'https://mpago.la/19miWAs',
-  pro:       'https://mpago.la/1osFKmb',
+  avulso:    'https://mpago.la/25zi72B',
+  essencial: 'https://mpago.la/1AF3asn',
+  pro:       'https://mpago.la/2eL1BXa',
 }; // Links de pagamento do Mercado Pago (ex.: https://mpago.la/XXXXXXXX)
 
 const FURNITURE_DEFS = {
@@ -171,9 +171,12 @@ function snap(v) { return Math.round(v / SNAP) * SNAP; }
 
 /* ------------------------------ desenho 2D ----------------------------- */
 function draw2d() {
-  const ctx = c2.ctx;
   const W = c2.cn.clientWidth, H = c2.cn.clientHeight;
   if (!W || !H) return;
+  draw2dTo(c2.ctx, W, H);
+}
+
+function draw2dTo(ctx, W, H) {
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#f4f6f8';
   ctx.fillRect(0, 0, W, H);
@@ -388,16 +391,6 @@ function setTool(t) {
   $('hintMsg').innerHTML = hints[t] || '';
   draw2d();
 }
-function setTab(which) {
-  const want3d = which === '3d';
-  $('view2d').style.display = want3d ? 'none' : '';
-  $('view3d').style.display = want3d ? '' : 'none';
-  document.querySelector('.menu-item[data-tab="2d"]').classList.toggle('active', !want3d);
-  document.querySelector('.menu-item[data-tab="3d"]').classList.toggle('active', want3d);
-  $('btnBack3d').style.display = want3d ? '' : 'none';
-  if (want3d) { init3d(); startAnimation(); }
-}
-window.setTab = setTab;
 
 /* ------------------------------- paredes ------------------------------- */
 function addWallSeg(ax, ay, bx, by) {
@@ -596,6 +589,7 @@ c2.cn.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('viewModal').classList.contains('hidden')) { closeViewModal(); return; }
   if (e.code === 'Space') { spaceDown = true; e.preventDefault(); return; }
   if (e.key === 'Escape') { wallChain = []; selId = null; selWall = -1; draw2d(); return; }
   if (e.key === 'r' || e.key === 'R') { rotateSelected(); return; }
@@ -750,8 +744,8 @@ function areaOf(loop, pnt) {
 let scene3d = null, renderer3d = null, camera3d = null, controls3d = null, cssRenderer3d = null;
 
 function init3d() {
-  if (scene3d) { rebuild3d(); return; }
-  const cn = $('c3d');
+  if (scene3d) return;
+  const cn = $('view3dLayer');
   renderer3d = new THREE.WebGLRenderer({ antialias: true });
   renderer3d.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer3d.setSize(cn.clientWidth, cn.clientHeight);
@@ -1058,13 +1052,71 @@ function startAnimation() {
   animRunning = true;
   const loop = () => {
     requestAnimationFrame(loop);
-    if (renderer3d && $('view3d').style.display !== 'none') {
+    if (renderer3d && !$('viewModal').classList.contains('hidden')) {
       controls3d.update();
       renderer3d.render(scene3d, camera3d);
       if (cssRenderer3d) cssRenderer3d.render(scene3d, camera3d);
     }
   };
   loop();
+}
+
+/* ----------------------- modal 2D ⇄ 3D sobrepostos --------------------- */
+let viewPinned = false;
+let lastViewSig = '';
+
+function projSig() {
+  return JSON.stringify({ w: proj.walls, f: proj.furniture, b: bgMeta() });
+}
+
+function snapshot2d() {
+  const cn = $('c2dmod');
+  const ctx = cn.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  cn.width = Math.max(1, Math.round(cn.clientWidth * dpr));
+  cn.height = Math.max(1, Math.round(cn.clientHeight * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  draw2dTo(ctx, cn.clientWidth, cn.clientHeight);
+}
+
+function resize3dView() {
+  const cn = $('view3dLayer');
+  if (!renderer3d) return;
+  camera3d.aspect = cn.clientWidth / Math.max(1, cn.clientHeight);
+  camera3d.updateProjectionMatrix();
+  renderer3d.setSize(cn.clientWidth, cn.clientHeight);
+  if (cssRenderer3d) cssRenderer3d.setSize(cn.clientWidth, cn.clientHeight);
+}
+
+function applyFusion() {
+  const r = clamp(+$('fusionRange').value, 0, 100) / 100;
+  $('view3dLayer').style.opacity = r;
+  $('view3dLayer').style.pointerEvents = r > 0 ? 'auto' : 'none';
+  $('c2dmod').style.opacity = (1 - r * 0.45).toFixed(2);
+}
+
+function isInside(e, el) {
+  const r = el.getBoundingClientRect();
+  return e.clientX >= r.left && e.clientX <= r.right &&
+         e.clientY >= r.top && e.clientY <= r.bottom;
+}
+
+function openViewModal(pin) {
+  if (pin !== undefined) viewPinned = !!pin;
+  $('viewModal').classList.remove('hidden');
+  snapshot2d();
+  const s = projSig();
+  init3d();
+  if (s !== lastViewSig) { rebuild3d(); lastViewSig = s; }
+  resize3dView();
+  applyFusion();
+  startAnimation();
+  if ($('fusionRange').value > 0 && viewPinned) $('btnCloseView').focus();
+}
+
+function closeViewModal() {
+  viewPinned = false;
+  $('viewModal').classList.add('hidden');
 }
 
 /* ------------------------------ exemplo -------------------------------- */
@@ -1347,6 +1399,22 @@ function wireUI() {
     const d = new Date(); d.setDate(d.getDate() + 7);
     applyPlan('pro', d); closeUpgrade();
   };
+
+  const vw = $('viewModal');
+  const btnView = $('btnView');
+  btnView.addEventListener('pointerenter', () => {
+    if (vw.classList.contains('hidden')) openViewModal(false);
+  });
+  btnView.addEventListener('click', () => openViewModal(true));
+  $('btnCloseView').onclick = closeViewModal;
+  $('fusionRange').addEventListener('input', applyFusion);
+  vw.addEventListener('pointermove', (e) => {
+    if (viewPinned) return;
+    if (!isInside(e, $('viewModalBox')) && !isInside(e, btnView)) closeViewModal();
+  });
+  vw.addEventListener('click', (e) => {
+    if (e.target === vw) closeViewModal();
+  });
 }
 
 /* --------------------------------- init -------------------------------- */

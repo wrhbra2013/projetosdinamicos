@@ -23,7 +23,8 @@
   .menu-item{padding:7px 16px; border-radius:6px; color:var(--muted); text-decoration:none;
         font-weight:600; font-size:13px; cursor:pointer; border:0; background:transparent;}
   .menu-item.active,.menu-item:hover{background:#2b9bd8; color:#06121c;}
-  #btnBack3d{display:none; margin-left:8px;}
+  #btnView{transition:transform .15s, box-shadow .15s, border-color .15s;}
+  #btnView:hover{transform:translateY(-1px); box-shadow:0 5px 14px rgba(43,155,216,.5); border-color:#4cc2ff;}
   footer{flex:0 0 auto; background:var(--panel); border-top:1px solid var(--line);
          padding:7px 14px; display:flex; justify-content:space-between; gap:10px;
          font-size:11.5px; color:var(--muted); flex-wrap:wrap;}
@@ -53,8 +54,8 @@
         padding:8px 10px; color:var(--muted); font-size:11.5px; line-height:1.5;}
   .chk{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--muted); user-select:none;}
   .chk input{accent-color:var(--acc);}
-  #view2d, #view3d{flex:1 1 auto; position:relative; min-width:0;}
-  #c2d, #c3d{position:absolute; inset:0; width:100%; height:100%; display:block; cursor:crosshair;}
+  #view2d{flex:1 1 auto; position:relative; min-width:0;}
+  #c2d{position:absolute; inset:0; width:100%; height:100%; display:block; cursor:crosshair;}
   #status{position:absolute; left:10px; bottom:8px; background:rgba(16,19,24,.85);
           border:1px solid var(--line); border-radius:7px; padding:6px 10px;
           font-size:11.5px; color:var(--muted); pointer-events:none; max-width:80%;}
@@ -98,6 +99,21 @@
         border-radius:999px; padding:2px 9px; font-size:10.5px; white-space:nowrap;
         transform:translate(-50%,-50%); pointer-events:none; user-select:none;
         box-shadow:0 1px 4px rgba(0,0,0,.35);}
+  .modal-vw{max-width:980px; width:100%; display:flex; flex-direction:column; gap:10px;
+        overflow:hidden; padding:16px 18px 18px; max-height:92vh;}
+  .vw-head{display:flex; align-items:center; justify-content:space-between; gap:12px; flex:0 0 auto;}
+  .vw-head h2{margin-bottom:0; font-size:16px;}
+  .vw-head h2 .arrow{color:var(--acc);}
+  .view-stack{position:relative; width:100%; height:min(62vh,540px); border-radius:10px; overflow:hidden;
+        border:1px solid var(--line); background:#dfe9f2; flex:1 1 auto; min-height:260px;}
+  .view-stack > canvas{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  #view3dLayer{position:absolute; inset:0; width:100%; height:100%;}
+  #view3dLayer > canvas{position:absolute; top:0; left:0; display:block;}
+  #view3dLayer > div{position:absolute; top:0; left:0;}
+  .fusion-bar{display:flex; align-items:center; gap:10px; padding:2px 4px 0; flex:0 0 auto;}
+  .fusion-bar b{font-size:12px; color:var(--muted); min-width:18px;}
+  #fusionRange{flex:1; accent-color:var(--acc); cursor:pointer;}
+  .vhint{font-size:11px; margin-left:auto;}
 </style>
 </head>
 <body>
@@ -105,13 +121,11 @@
 <div class="app-shell">
 <header>
   <div class="brand">Projetos <span>Dinâmicos</span></div>
+  <button class="btn primary" id="btnView" title="Passe o mouse para sobrepor planta 2D e simulação 3D num único modal. No 3D: arrastar orbita, scroll amplia.">◱ Visualizar 2D / 3D</button>
   <nav class="menu">
-    <a href="#" data-tab="2d" class="active menu-item" onclick="setTab('2d'); return false;">Planta 2D</a>
-    <a href="#" data-tab="3d" class="menu-item" onclick="setTab('3d'); return false;">Vista 3D</a>
     <a href="#" class="menu-item" onclick="openUpgrade(); return false;">Planos</a>
   </nav>
   <span id="planBadge" class="badge">Grátis</span>
-  <button class="btn" id="btnBack3d" onclick="setTab('2d')">&larr; Editar planta</button>
 </header>
 
 <main>
@@ -180,13 +194,6 @@
     <canvas id="c2d"></canvas>
     <div id="status"></div>
   </section>
-
-  <section id="view3d" style="display:none">
-    <canvas id="c3d"></canvas>
-    <div id="status3d" style="position:absolute; top:10px; right:12px; background:rgba(16,19,24,.85); border:1px solid var(--line); border-radius:7px; padding:6px 10px; font-size:11.5px; color:var(--muted); pointer-events:none;">
-      Arrastar: orbitar &nbsp;•&nbsp; Scroll: zoom &nbsp;•&nbsp; Botão direito: mover
-    </div>
-  </section>
 </main>
 
 <footer>
@@ -196,6 +203,25 @@
 </div>
 
 <div id="toast"></div>
+
+<div id="viewModal" class="overlay hidden">
+  <div class="modal modal-vw" id="viewModalBox">
+    <div class="vw-head">
+      <h2>Visualização <span class="arrow">2D ⇄ 3D</span> sobreposta</h2>
+      <button class="btn" id="btnCloseView">✕ Fechar</button>
+    </div>
+    <div class="view-stack" id="viewStack">
+      <canvas id="c2dmod"></canvas>
+      <div id="view3dLayer"></div>
+    </div>
+    <div class="fusion-bar">
+      <b>2D</b>
+      <input type="range" id="fusionRange" min="0" max="100" value="50">
+      <b>3D</b>
+      <span class="note vhint">Deslize para sobrepor · arraste no 3D para orbitar · role para zoom</span>
+    </div>
+  </div>
+</div>
 
 <div id="upgradeOverlay" class="overlay hidden">
   <div class="modal">
@@ -227,7 +253,7 @@
           <li>Detecção automática</li>
           <li>Sombras e teto</li>
         </ul>
-        <a class="btn primary" id="btnBuyAvulso" href="https://mpago.la/18BKYTi" target="_blank" rel="noopener noreferrer">Pagar R$ 9,90</a>
+        <a class="btn primary" id="btnBuyAvulso" href="https://mpago.la/25zi72B" target="_blank" rel="noopener noreferrer">Pagar R$ 9,90</a>
       </div>
       <div class="pcard" id="pcardEssencial">
         <h3>Essencial</h3>
@@ -240,7 +266,7 @@
           <li class="no">Detecção automática</li>
           <li>Sombras e teto</li>
         </ul>
-        <a class="btn primary" id="btnBuyEssencial" href="https://mpago.la/19miWAs" target="_blank" rel="noopener noreferrer">Assinar Essencial</a>
+        <a class="btn primary" id="btnBuyEssencial" href="https://mpago.la/1AF3asn" target="_blank" rel="noopener noreferrer">Assinar Essencial</a>
       </div>
       <div class="pcard pro" id="pcardPro">
         <h3>Pro</h3>
@@ -252,7 +278,7 @@
           <li>Sombras e teto no 3D</li>
           <li>Sem marca d'água</li>
         </ul>
-        <a class="btn primary" id="btnSubscribe" href="https://mpago.la/1osFKmb" target="_blank" rel="noopener noreferrer">Assinar Pro</a>
+        <a class="btn primary" id="btnSubscribe" href="https://mpago.la/2eL1BXa" target="_blank" rel="noopener noreferrer">Assinar Pro</a>
         <button class="btn" id="btnDemo" style="margin-top:6px">Testar Pro · 7 dias</button>
       </div>
     </div>
