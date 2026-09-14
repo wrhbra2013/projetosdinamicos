@@ -1,12 +1,8 @@
 'use strict';
 /* =========================================================================
    KitNet 3D — transforma planta baixa 2D em simulação 3D de espaços pequenos
-   Site estático — Three.js local (vendor/) com fallback 2,5D sem WebGL.
+   Site estático — uma única vista: planta 2D com perspectiva 3D aérea ao passar o mouse.
    ========================================================================= */
-
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -66,7 +62,6 @@ let isDown = false;
 let drag = null;
 let spaceDown = false;
 const bgImageCache = {};
-let animRunning = false;
 
 /* --------------------------- multi-desenhos ----------------------------- */
 const PROJECTS_KEY = 'kitnet3d_projects';   // [{id,name,updated,walls,furn}]
@@ -177,6 +172,7 @@ function resize2d() {
   c2.cn.width = Math.max(1, Math.round(c2.cn.clientWidth * dpr));
   c2.cn.height = Math.max(1, Math.round(c2.cn.clientHeight * dpr));
   c2.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  resizeV3d();
   draw2d();
 }
 window.addEventListener('resize', () => resize2d());
@@ -190,6 +186,7 @@ function draw2d() {
   const W = c2.cn.clientWidth, H = c2.cn.clientHeight;
   if (!W || !H) return;
   draw2dTo(c2.ctx, W, H);
+  renderAerial();
 }
 
 function draw2dTo(ctx, W, H) {
@@ -696,7 +693,7 @@ window.addEventListener('keydown', (e) => {
     if (k === 'y') { e.preventDefault(); redo(); return; }
   }
   if (e.key === 'Escape' && !$('galleryOverlay').classList.contains('hidden')) { closeGallery(); return; }
-  if (e.key === 'Escape' && !$('viewModal').classList.contains('hidden')) { closeViewModal(); return; }
+  if (e.key === 'Escape' && v3dOn) { hide3D(); return; }
   if (e.code === 'Space') { spaceDown = true; e.preventDefault(); return; }
   if (e.key === 'Escape') { wallChain = []; selId = null; selWall = -1; draw2d(); renderProps(); return; }
   if (e.key === 'r' || e.key === 'R') { rotateSelected(); return; }
@@ -849,47 +846,6 @@ function areaOf(loop, pnt) {
 }
 
 /* ------------------------------- 3D ------------------------------------ */
-let scene3d = null, renderer3d = null, camera3d = null, controls3d = null, cssRenderer3d = null;
-
-function init3d() {
-  if (scene3d) return;
-  const cn = $('view3dLayer');
-  try {
-    renderer3d = new THREE.WebGLRenderer({ antialias: true });
-  } catch (e) { renderer3d = null; }
-  if (!renderer3d || !renderer3d.getContext()) {
-    renderer3d = null;
-    initFallback3d();
-    return;
-  }
-  renderer3d.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer3d.setSize(cn.clientWidth, cn.clientHeight);
-  renderer3d.setClearColor(0xdfe9f2);
-  cn.appendChild(renderer3d.domElement);
-
-  cssRenderer3d = new CSS2DRenderer();
-  cssRenderer3d.setSize(cn.clientWidth, cn.clientHeight);
-  cssRenderer3d.domElement.style.position = 'absolute';
-  cssRenderer3d.domElement.style.top = '0';
-  cssRenderer3d.domElement.style.left = '0';
-  cssRenderer3d.domElement.style.pointerEvents = 'none';
-  cn.appendChild(cssRenderer3d.domElement);
-
-  scene3d = new THREE.Scene();
-  camera3d = new THREE.PerspectiveCamera(50, cn.clientWidth / Math.max(1, cn.clientHeight), 0.05, 300);
-  controls3d = new OrbitControls(camera3d, renderer3d.domElement);
-  controls3d.enableDamping = true;
-  controls3d.dampingFactor = 0.15;
-  controls3d.maxPolarAngle = Math.PI * 0.49;
-  new ResizeObserver(() => {
-    camera3d.aspect = cn.clientWidth / Math.max(1, cn.clientHeight);
-    camera3d.updateProjectionMatrix();
-    renderer3d.setSize(cn.clientWidth, cn.clientHeight);
-    if (cssRenderer3d) cssRenderer3d.setSize(cn.clientWidth, cn.clientHeight);
-  }).observe(cn);
-  rebuild3d();
-}
-
 function mergeWalls(segs) {
   const res = segs.map((s) => ({ ...s }));
   let changed = true;
@@ -926,323 +882,11 @@ function tryMerge(a, b) {
   };
 }
 
-function rebuild3d() {
-  if (!scene3d) return;
-  while (scene3d.children.length) scene3d.remove(scene3d.children[0]);
-
-  const shadows = !!$('chkSombra').checked;
-  renderer3d.shadowMap.enabled = shadows;
-  renderer3d.shadowMap.type = THREE.PCFSoftShadowMap;
-
-  const wallsM = mergeWalls(proj.walls);
-  let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
-  if (wallsM.length) {
-    for (const w of wallsM) {
-      minX = Math.min(minX, w.x1, w.x2); minY = Math.min(minY, w.y1, w.y2);
-      maxX = Math.max(maxX, w.x1, w.x2); maxY = Math.max(maxY, w.y1, w.y2);
-    }
-  } else { minX = -3; maxX = 3; minY = -2; maxY = 2; }
-
-  const cx = (minX + maxX) / 2, cz = (minY + maxY) / 2;
-  const bw = Math.max(maxX - minX, 0.1), bd = Math.max(maxY - minY, 0.1);
-
-  scene3d.add(new THREE.HemisphereLight(0xffffff, 0xc8d6e4, 0.9));
-  const sun = new THREE.DirectionalLight(0xffffff, 0.95);
-  sun.position.set(cx + 8, 14, cz - 6);
-  if (shadows) {
-    sun.castShadow = true;
-    const e = Math.max(bw, bd) + 2;
-    sun.shadow.mapSize.set(1024, 1024);
-    sun.shadow.camera.near = 1;
-    sun.shadow.camera.far = 60;
-    sun.shadow.camera.left = -e; sun.shadow.camera.right = e;
-    sun.shadow.camera.top = e; sun.shadow.camera.bottom = -e;
-  }
-  scene3d.add(sun);
-
-  const floorMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(proj.colors.floor) });
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(bw + 1.6, bd + 1.6), floorMat);
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.set(cx, 0, cz);
-  floor.receiveShadow = shadows;
-  scene3d.add(floor);
-
-  const grid = new THREE.GridHelper(Math.max(bw, bd) + 1.6, Math.max(1, Math.round((Math.max(bw, bd) + 1.6) / 0.5)), 0x9ab0c8, 0xa5b8cd);
-  grid.position.set(cx, 0.005, cz);
-  scene3d.add(grid);
-
-  const wallMat = wallMat3D(proj.mats.wall, proj.colors.wall);
-  if (layers.walls) {
-    for (const w of wallsM) {
-      const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
-      if (len < 1e-6) continue;
-      const m = new THREE.Mesh(new THREE.BoxGeometry(len, WALL_H, WALL_T), wallMat);
-      m.position.set((w.x1 + w.x2) / 2, WALL_H / 2, (w.y1 + w.y2) / 2);
-      m.rotation.y = Math.atan2(w.y2 - w.y1, w.x2 - w.x1);
-      m.castShadow = shadows;
-      scene3d.add(m);
-    }
-  }
-
-  if ($('chkTeto').checked) {
-    const ceil = new THREE.Mesh(
-      new THREE.PlaneGeometry(bw + 1.6, bd + 1.6),
-      new THREE.MeshLambertMaterial({ color: 0xffffff })
-    );
-    ceil.rotation.x = Math.PI / 2;
-    ceil.position.set(cx, WALL_H, cz);
-    scene3d.add(ceil);
-  }
-
-  if (layers.furn) {
-    for (const it of proj.furniture) {
-      if (!layers.types[it.type]) continue;
-      const grp = furnitureMesh(it);
-      if (!grp) continue;
-      grp.position.set(it.x, 0, it.y);
-      grp.rotation.y = rad(it.rot);
-      if (shadows) grp.traverse((o) => { if (o.isMesh) o.castShadow = true; });
-      scene3d.add(grp);
-    }
-  }
-
-  if ($('chkEtq').checked && layers.furn) {
-    for (const it of proj.furniture) {
-      if (!layers.types[it.type]) continue;
-      const label = furnitureLabel(it);
-      if (!label) continue;
-      label.position.set(it.x, 1.5, it.y);
-      scene3d.add(label);
-    }
-  }
-
-  const dist = Math.max(bw, bd, 4) * 1.15;
-  camera3d.position.set(cx + dist * 0.75, dist * 0.85, cz + dist * 0.95);
-  controls3d.target.set(cx, 1.0, cz);
-  controls3d.update();
-}
-
-function furnitureMesh(item) {
-  const def = FURNITURE_DEFS[item.type];
-  const w = def.w, d = def.d;
-  const g = new THREE.Group();
-  const M = (c) => new THREE.MeshLambertMaterial({ color: c });
-  const box = (bw, bh, bd2, mat, oy = 0, xoff = 0, zoff = 0) => {
-    if (bw < 0.005 || bh < 0.005 || bd2 < 0.005) return null;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd2), mat);
-    m.position.set(xoff, oy + bh / 2, zoff);
-    g.add(m);
-    return m;
-  };
-  const cyl = (rt, rb, h, mat, oy = 0, xoff = 0, zoff = 0, seg = 16) => {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), mat);
-    m.position.set(xoff, oy + h / 2, zoff);
-    g.add(m);
-    return m;
-  };
-
-  switch (item.type) {
-    case 'cama':
-      box(w, 0.22, d, M(0x7d5236));
-      box(w - 0.05, 0.2, d - 0.45, M(0xf2efe7), 0.22);
-      box(0.6, 0.13, 0.4, M(0xffffff), 0.32, 0, -(d - 0.45) / 2 + 0.2);
-      box(w, 0.55, 0.09, M(0x6b4528), 0, 0, -d / 2);
-      break;
-    case 'sofa':
-      box(w - 0.14, 0.32, d, M(0x8a5f7e));
-      box(w - 0.14, 0.5, 0.14, M(0x7a4f6b), 0.32, 0, -d / 2 + 0.07);
-      box(0.12, 0.55, d - 0.1, M(0x8a5f7e), 0, -(w - 0.14) / 2 + 0.06, 0);
-      box(0.12, 0.55, d - 0.1, M(0x8a5f7e), 0, (w - 0.14) / 2 - 0.06, 0);
-      box(w - 0.14, 0.12, d - 0.18, M(0x9c7b90), 0.28);
-      box(w - 0.14, 0.04, 0.09, M(0x6a3f5c), 0.45, 0, -d / 2 + 0.02);
-      break;
-    case 'mesa':
-      box(w, 0.05, d, M(0xd8cfbf), 0.74);
-      for (const [ox, oz] of [[-w / 2 + 0.06, -d / 2 + 0.06], [w / 2 - 0.06, -d / 2 + 0.06], [-w / 2 + 0.06, d / 2 - 0.06], [w / 2 - 0.06, d / 2 - 0.06]])
-        box(0.05, 0.72, 0.05, M(0x7a6a55), 0, ox, oz);
-      break;
-    case 'cadeira':
-      box(w, 0.07, d, M(0xc9b89a), 0.44);
-      box(w, 0.45, 0.06, M(0xb9a581), 0.44, 0, -d / 2 + 0.03);
-      for (const [ox, oz] of [[-w / 2 + 0.04, -d / 2 + 0.04], [w / 2 - 0.04, -d / 2 + 0.04], [-w / 2 + 0.04, d / 2 - 0.04], [w / 2 - 0.04, d / 2 - 0.04]])
-        box(0.04, 0.42, 0.04, M(0x8a7a60), 0, ox, oz);
-      break;
-    case 'cozinha':
-      box(w, 0.85, d, M(0x9b7b5e));
-      box(w + 0.02, 0.05, d + 0.02, M(0xd9e0dc), 0.85);
-      box(w * 0.5, 0.05, 0.4, M(0x9fb3bd), 0.845, 0, 0);
-      cyl(0.02, 0.02, 0.3, M(0x9fb3bd), 0.89, w * 0.28, 0.12);
-      break;
-    case 'fogao':
-      box(w, 0.9, d, M(0xf0f1f3));
-      box(w, 0.05, d, M(0x2c3038), 0.9);
-      for (const [ox, oz] of [[-0.15, -0.13], [0.15, -0.13], [-0.15, 0.13], [0.15, 0.13]])
-        cyl(0.05, 0.05, 0.02, M(0x2c3038), 0.93, ox, oz, 20);
-      break;
-    case 'geladeira':
-      box(w, 1.85, d, M(0xd7dde3));
-      box(w * 0.06, 0.5, 0.02, M(0x2c3038), 1.35, w / 2 - 0.05, 0.1);
-      box(w, 0.02, d, M(0xc0c9d1), 0.85);
-      break;
-    case 'rouparia':
-      box(w, 2.1, d, M(0xb08a66));
-      box(w, 0.03, d + 0.02, M(0xc9a37e), 0.02);
-      box(w / 2 - 0.015, 2.1, d * 0.93, M(0xd8b898), 0.02);
-      box(w * 0.72, 0.18, d * 0.93, M(0x2c3038), 1.95, 0, 0);
-      box(0.03, 2.1, d * 0.93, M(0x5a4430), 0, 0, 0);
-      break;
-    case 'vaso':
-      box(0.4, 0.72, 0.18, M(0xf2f2f4), 0, 0, -0.2);
-      cyl(0.15, 0.19, 0.4, M(0xe8e8ec), 0, 0, 0.12, 20);
-      box(0.34, 0.04, 0.34, M(0xffffff), 0.4, 0, 0.12);
-      box(0.08, 0.03, 0.1, M(0x9aa2ab), 0.55, 0.12, -0.2);
-      break;
-    case 'chuveiro':
-      box(w, 0.05, d, M(0xe9e9ed));
-      {
-        const glass = new THREE.MeshLambertMaterial({ color: 0xbfdcec, transparent: true, opacity: 0.35 });
-        box(w, 1.9, 0.025, glass, 0.05, 0, -d / 2 + 0.012);
-        box(w, 1.9, 0.025, glass, 0.05, 0, d / 2 - 0.012);
-      }
-      cyl(0.015, 0.015, 2.05, M(0x9aa2ab), 1.05, 0, -d / 2 + 0.02, 8);
-      cyl(0.16, 0.16, 0.04, M(0x9aa2ab), 2.05, 0, -d / 2 + 0.05, 20);
-      break;
-    case 'piaB':
-      cyl(0.2, 0.2, 0.72, M(0xf0ede4), 0, 0, -0.05, 18);
-      box(w, 0.16, d, M(0xffffff), 0.72, 0, -0.02);
-      cyl(0.02, 0.02, 0.25, M(0xb7c4cf), 0.86, 0.14, 0.05);
-      break;
-    case 'maquina':
-      box(w, 0.85, d, M(0xe8eaec));
-      cyl(0.19, 0.19, 0.03, M(0x9aa4ad), 0.5, 0, d / 2 - 0.02, 24);
-      cyl(0.07, 0.07, 0.03, M(0x2c3038), 0.5, 0.16, d / 2 - 0.03, 12);
-      break;
-    case 'tv':
-      cyl(0.03, 0.04, 0.3, M(0x2c3038), 0, 0, 0, 10);
-      box(0.5, 0.04, 0.04, M(0x2c3038), 0.3);
-      box(w, 0.7, 0.05, M(0x14181f), 0.3, 0, -0.02);
-      break;
-    case 'porta':
-      box(w, 0.08, 0.06, M(0x7d6650), 2.0);
-      box(0.08, 2.0, 0.06, M(0x7d6650), 0, -w / 2 + 0.04, 0);
-      box(0.08, 2.0, 0.06, M(0x7d6650), 0, w / 2 - 0.04, 0);
-      box(w - 0.06, 2.02, 0.04, M(0xa8895f), 0.02, 0, 0);
-      box(0.05, 0.8, 0.02, M(0x5a4a38), 0.45, w / 2 - 0.05, 0.03);
-      break;
-    case 'janela':
-      box(w, 0.05, 0.02, M(0xd8d1c4), 1.3);
-      {
-        const glass = new THREE.MeshLambertMaterial({ color: 0xa8ccdd, transparent: true, opacity: 0.45 });
-        box(w - 0.06, 1.15, 0.03, glass, 0.02);
-      }
-      box(w, 0.06, 0.03, M(0xeceae2), 1.2);
-      box(0.06, 1.15, 0.03, M(0xeceae2), 0, -w / 2 + 0.03, 0);
-      box(0.06, 1.15, 0.03, M(0xeceae2), 0, w / 2 - 0.03, 0);
-      break;
-    case 'planta':
-      cyl(0.15, 0.11, 0.32, M(0xc06a3c), 0, 0, 0, 14);
-      cyl(0.02, 0.025, 0.3, M(0x7a5230), 0.32, 0, 0, 8);
-      {
-        const leaf = M(0x58aa5c);
-        for (const [rx, ry, rz] of [[0, 0.05, 0], [0.12, 0.08, 0.1], [-0.12, 0.05, 0.08], [0, 0.1, -0.1]]) {
-          const m = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), leaf);
-          m.position.set(rx, 0.62 + ry, rz);
-          m.castShadow = true;
-          g.add(m);
-        }
-      }
-      break;
-    default:
-      return null;
-  }
-  return g;
-}
-
-function furnitureLabel(item) {
-  const def = FURNITURE_DEFS[item.type];
-  if (!def) return null;
-  const el = document.createElement('div');
-  el.className = 'css2d-label';
-  el.textContent = def.emoji + ' ' + def.label + ' · ' +
-    def.w.toLocaleString('pt-BR') + '×' + def.d.toLocaleString('pt-BR') + 'm';
-  return new CSS2DObject(el);
-}
-
-function startAnimation() {
-  if (animRunning) return;
-  animRunning = true;
-  const loop = () => {
-    requestAnimationFrame(loop);
-    if ($('viewModal').classList.contains('hidden')) return;
-    if (fb.active) { renderFallback3d(); return; }
-    if (renderer3d) {
-      controls3d.update();
-      renderer3d.render(scene3d, camera3d);
-      if (cssRenderer3d) cssRenderer3d.render(scene3d, camera3d);
-    }
-  };
-  loop();
-}
-
-/* ------------------------ fallback 3D sem WebGL ------------------------ */
-const fb = {
-  active: false, canvas: null, ctx: null,
-  yaw: -0.7, scale: 55, drag: null, resize: null,
-};
-const FB_PITCH = 32 * Math.PI / 180;
-const FB_SIN = Math.sin(FB_PITCH), FB_COS = Math.cos(FB_PITCH);
 const FURN_H = {
   cama: 0.6, sofa: 0.75, mesa: 0.8, cadeira: 0.5, cozinha: 0.9,
   fogao: 0.95, geladeira: 1.9, rouparia: 2.15, vaso: 0.78, chuveiro: 2.1,
   piaB: 0.92, maquina: 0.9, tv: 1.0, porta: 2.0, janela: 1.3, planta: 0.9,
 };
-
-function initFallback3d() {
-  const cn = $('view3dLayer');
-  const cv = document.createElement('canvas');
-  cv.style.cssText = 'position:absolute; inset:0; width:100%; height:100%; cursor:grab; touch-action:none;';
-  cn.innerHTML = '';
-  cn.appendChild(cv);
-  fb.canvas = cv;
-  fb.ctx = cv.getContext('2d');
-  fb.active = true;
-
-  cv.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
-    cv.setPointerCapture(e.pointerId);
-    fb.drag = { x: e.clientX, yaw: fb.yaw };
-  });
-  cv.addEventListener('pointermove', (e) => {
-    if (!fb.drag) return;
-    fb.yaw = fb.drag.yaw + (e.clientX - fb.drag.x) * 0.006;
-  });
-  cv.addEventListener('pointerup', () => { fb.drag = null; });
-  cv.addEventListener('pointercancel', () => { fb.drag = null; });
-  cv.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    fb.scale = clamp(fb.scale * Math.exp(-e.deltaY * 0.0012), 10, 400);
-  }, { passive: false });
-
-  fb.resize = new ResizeObserver(() => resizeFallback());
-  fb.resize.observe($('view3dLayer'));
-}
-
-function resizeFallback() {
-  const cn = $('view3dLayer');
-  if (!fb.canvas || !cn.clientWidth) return;
-  const dpr = window.devicePixelRatio || 1;
-  fb.canvas.width = Math.max(1, Math.round(cn.clientWidth * dpr));
-  fb.canvas.height = Math.max(1, Math.round(cn.clientHeight * dpr));
-  fb.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-
-function fbx(wx, wy, h) {
-  const c = Math.cos(fb.yaw), s = Math.sin(fb.yaw);
-  const xr = wx * c - wy * s;
-  const zr = wx * s + wy * c;
-  const cx = fb.canvas.clientWidth / 2, cy = fb.canvas.clientHeight / 2;
-  return [cx + xr * fb.scale, cy - zr * FB_SIN * fb.scale - h * FB_COS * fb.scale];
-}
 
 function fadeColor(hex, f) {
   const v = parseInt(hex.slice(1), 16);
@@ -1270,54 +914,6 @@ function lightHex(hex, f) {
   const g = Math.round(((v >> 8) & 255) + (255 - ((v >> 8) & 255)) * f);
   const b = Math.round((v & 255) + (255 - (v & 255)) * f);
   return '#' + [r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('');
-}
-
-function wallMat3D(kind, color) {
-  if (kind === 'massa' || !THREE) return new THREE.MeshLambertMaterial({ color: new THREE.Color(color) });
-  const cv = document.createElement('canvas');
-  cv.width = 256; cv.height = 256;
-  const g = cv.getContext('2d');
-  const base = new THREE.Color(color).getStyle();
-  if (kind === 'gradiente') {
-    const gr = g.createLinearGradient(0, 0, 0, 256);
-    gr.addColorStop(0, lightHex(base, 0.22));
-    gr.addColorStop(0.5, base);
-    gr.addColorStop(1, fadeColor(base, 0.6));
-    g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
-  } else if (kind === 'tijolo') {
-    g.fillStyle = fadeColor(base, 0.5); g.fillRect(0, 0, 256, 256);
-    g.lineWidth = 5; g.strokeStyle = fadeColor(base, 0.42);
-    const rows = 4, bh = 256 / rows, bw = 256 / 2;
-    for (let r = 0; r < rows; r++) {
-      const off = (r % 2) * (bw / 2);
-      for (let c = -1; c < 3; c++) {
-        const x = c * bw + off + 3, y = r * bh + 3, w = bw - 6, h = bh - 6;
-        g.fillStyle = r % 2 ? lightHex(base, 0.05) : base;
-        g.beginPath();
-        const rad = 6;
-        g.moveTo(x + rad, y); g.arcTo(x + w, y, x + w, y + h, rad); g.arcTo(x + w, y + h, x, y + h, rad);
-        g.arcTo(x, y + h, x, y, rad); g.arcTo(x, y, x + w, y, rad); g.closePath();
-        g.fill(); g.stroke();
-      }
-    }
-  } else { // azulejo
-    g.fillStyle = lightHex(base, 0.04); g.fillRect(0, 0, 256, 256);
-    g.lineWidth = 6; g.strokeStyle = lightHex(base, 0.5);
-    const n = 4, S = 256 / n;
-    for (let i = 0; i <= n; i++) {
-      g.beginPath(); g.moveTo(i * S + 0.5, 0); g.lineTo(i * S + 0.5, 256); g.stroke();
-      g.beginPath(); g.moveTo(0, i * S + 0.5); g.lineTo(256, i * S + 0.5); g.stroke();
-    }
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-      const hg = g.createLinearGradient(c * S, r * S, c * S, (r + 1) * S);
-      hg.addColorStop(0, 'rgba(255,255,255,.22)'); hg.addColorStop(0.45, 'rgba(255,255,255,0)'); hg.addColorStop(1, 'rgba(0,0,0,.08)');
-      g.fillStyle = hg; g.fillRect(c * S + 1, r * S + 1, S - 2, S - 2);
-    }
-  }
-  const tex = new THREE.CanvasTexture(cv);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(1, 1);
-  return new THREE.MeshLambertMaterial({ map: tex, color: new THREE.Color(0xffffff) });
 }
 
 function drawFbPattern(ctx, kind, color) {
@@ -1348,136 +944,6 @@ function drawFbPattern(ctx, kind, color) {
       ctx.beginPath(); ctx.moveTo(0, i * S); ctx.lineTo(1, i * S); ctx.stroke();
     }
   }
-}
-
-function drawFbBox(ctx, base, h, color, kind) {
-  ensureCCW(base);
-  const u = 1 / Math.max(1e-6, Math.hypot(Math.cos(fb.yaw), Math.sin(fb.yaw)));
-  const viewX = Math.sin(fb.yaw) * u, viewZ = Math.cos(fb.yaw) * u;
-  const pat = kind && kind !== 'massa' ? kind : null;
-  const faces = [];
-  for (let i = 0; i < base.length; i++) {
-    const a = base[i], b = base[(i + 1) % base.length];
-    const dx = b.x - a.x, dz = b.z - a.z;
-    const l = Math.hypot(dx, dz) || 1e-6;
-    const n = { x: dz / l, z: -dx / l };
-    const vis = n.x * viewX + n.z * viewZ;
-    if (vis > 1e-6) {
-      const shade = (n.x * viewZ - n.z * viewX) > 0 ? 0.92 : 0.72;
-      const pa = fbx(a.x, a.z, 0), pb = fbx(b.x, b.z, 0);
-      const pt1 = fbx(a.x, a.z, h), pt2 = fbx(b.x, b.z, h);
-      faces.push({ pts: [pa, pb, pt2, pt1], fill: fadeColor(color, shade), pa, pb, pt1 });
-    }
-  }
-  for (const f of faces) {
-    ctx.beginPath();
-    ctx.moveTo(f.pts[0][0], f.pts[0][1]);
-    for (let j = 1; j < f.pts.length; j++) ctx.lineTo(f.pts[j][0], f.pts[j][1]);
-    ctx.closePath();
-    ctx.fillStyle = f.fill;
-    ctx.fill();
-    if (pat) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.moveTo(f.pts[0][0], f.pts[0][1]);
-      for (let j = 1; j < f.pts.length; j++) ctx.lineTo(f.pts[j][0], f.pts[j][1]);
-      ctx.closePath();
-      ctx.clip();
-      ctx.transform(f.pb[0] - f.pa[0], f.pb[1] - f.pa[1], f.pt1[0] - f.pa[0], f.pt1[1] - f.pa[1], f.pa[0], f.pa[1]);
-      drawFbPattern(ctx, pat, color);
-      ctx.restore();
-    }
-    ctx.strokeStyle = 'rgba(30,40,55,.35)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
-  const topPts = base.map((p) => fbx(p.x, p.z, h));
-  ctx.beginPath();
-  ctx.moveTo(topPts[0][0], topPts[0][1]);
-  for (let j = 1; j < topPts.length; j++) ctx.lineTo(topPts[j][0], topPts[j][1]);
-  ctx.closePath();
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(30,40,55,.4)';
-  ctx.stroke();
-}
-
-function fbBounds() {
-  const wallsM = mergeWalls(proj.walls);
-  let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
-  const has = wallsM.length > 0;
-  for (const w of wallsM) {
-    minX = Math.min(minX, w.x1, w.x2); minY = Math.min(minY, w.y1, w.y2);
-    maxX = Math.max(maxX, w.x1, w.x2); maxY = Math.max(maxY, w.y1, w.y2);
-  }
-  if (!has) { minX = -3; maxX = 3; minY = -2; maxY = 2; }
-  return { minX, minY, maxX, maxY, has };
-}
-
-function renderFallback3d() {
-  if (!fb.ctx || !fb.canvas.clientWidth) return;
-  const ctx = fb.ctx;
-  const W = fb.canvas.clientWidth, H = fb.canvas.clientHeight;
-  ctx.clearRect(0, 0, W, H);
-  ctx.fillStyle = '#dfe9f2';
-  ctx.fillRect(0, 0, W, H);
-
-  const b = fbBounds();
-  const c = Math.cos(fb.yaw), s = Math.sin(fb.yaw);
-
-  ctx.beginPath();
-  const fl = [[b.minX, b.minY], [b.maxX, b.minY], [b.maxX, b.maxY], [b.minX, b.maxY]]
-    .map(([x, z]) => fbx(x, z, 0));
-  ctx.moveTo(fl[0][0], fl[0][1]);
-  for (let i = 1; i < 4; i++) ctx.lineTo(fl[i][0], fl[i][1]);
-  ctx.closePath();
-  ctx.fillStyle = proj.colors.floor;
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(30,40,55,.25)';
-  ctx.stroke();
-
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(20,30,45,.10)';
-  for (let x = Math.ceil(b.minX / 0.5) * 0.5; x <= b.maxX + 1e-9; x += 0.5) {
-    const p1 = fbx(x, b.minY, 0), p2 = fbx(x, b.maxY, 0);
-    ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
-  }
-  for (let z = Math.ceil(b.minY / 0.5) * 0.5; z <= b.maxY + 1e-9; z += 0.5) {
-    const p1 = fbx(b.minX, z, 0), p2 = fbx(b.maxX, z, 0);
-    ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
-  }
-
-  const boxes = [];
-  if (layers.walls) {
-    for (const w of mergeWalls(proj.walls)) {
-      const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
-      if (len < 1e-6) continue;
-      const nx = -(w.y2 - w.y1) / len * (WALL_T / 2);
-      const nz = (w.x2 - w.x1) / len * (WALL_T / 2);
-      const base = [
-        { x: w.x1 + nx, z: w.y1 + nz },
-        { x: w.x2 + nx, z: w.y2 + nz },
-        { x: w.x2 - nx, z: w.y2 - nz },
-        { x: w.x1 - nx, z: w.y1 - nz },
-      ];
-      boxes.push({ base, h: WALL_H, color: proj.colors.wall, kind: proj.mats.wall, depth: ((w.x1 + w.x2) / 2) * s + ((w.y1 + w.y2) / 2) * c });
-    }
-  }
-  if (layers.furn) {
-    for (const it of proj.furniture) {
-      if (!layers.types[it.type]) continue;
-      const def = FURNITURE_DEFS[it.type];
-      const base = rectCorners(def.w, def.d, rad(it.rot)).map(([a, b]) => ({ x: it.x + a, z: it.y + b }));
-      boxes.push({ base, h: FURN_H[it.type] || 0.8, color: def.color, depth: it.x * s + it.y * c });
-    }
-  }
-  boxes.sort((p, q) => q.depth - p.depth);
-  for (const box of boxes) drawFbBox(ctx, box.base, box.h, box.color, box.kind);
-
-  ctx.fillStyle = 'rgba(16,19,24,.55)';
-  ctx.font = '11px system-ui';
-  ctx.textAlign = 'left';
-  ctx.fillText('Render 2,5D (sem WebGL) — arrastar: girar · scroll: zoom', 12, H - 12);
 }
 
 /* ----------------------------- multi-desenhos -------------------------- */
@@ -1668,114 +1134,158 @@ function buildLayerPalette() {
     el.appendChild(l);
   }
 }
-function applyLayerChange() { scheduleSave(); draw2d(); if (scene3d) rebuild3d(); }
+function applyLayerChange() { scheduleSave(); draw2d(); renderAerial(); }
 function syncColors() {
   const s = (id, v) => { const el = $(id); if (el) el.value = v; };
   s('sideWallColor', proj.colors.wall); s('sideFloorColor', proj.colors.floor);
-  s('mVwWallColor', proj.colors.wall); s('mVwFloorColor', proj.colors.floor);
-  s('sideWallMat', proj.mats.wall); s('mVwWallMat', proj.mats.wall);
+  s('sideWallMat', proj.mats.wall);
 }
 function set3DOption(kind, checked) {
-  const mk = { Teto: 'Teto', Sombra: 'Sombra', Etiquetas: 'Etq' };
   const gate = kind === 'Teto' ? 'teto' : kind === 'Sombra' ? 'shadows' : null;
   const sideId = 'chk' + (kind === 'Etiquetas' ? 'Etq' : kind);
-  const mvId = 'mVw' + mk[kind];
   if (checked && gate && !getPlan()[gate]) {
-    const a = $(sideId), b = $(mvId);
+    const a = $(sideId);
     if (a) a.checked = false;
-    if (b) b.checked = false;
     openUpgrade(gate);
     return;
   }
-  const a = $(sideId), b = $(mvId);
+  const a = $(sideId);
   if (a) a.checked = checked;
-  if (b) b.checked = checked;
-  if (scene3d) rebuild3d();
+  renderAerial();
 }
 function setWallMat(v) {
   proj.mats.wall = WALL_MATS.includes(v) ? v : 'massa';
-  syncColors(); scheduleSave();
-  if (scene3d) rebuild3d(); else renderFallback3d();
+  syncColors(); scheduleSave(); renderAerial();
 }
-function setWallColor(v) { proj.colors.wall = v; syncColors(); scheduleSave(); if (scene3d) rebuild3d(); }
-function setFloorColor(v) { proj.colors.floor = v; syncColors(); scheduleSave(); if (scene3d) rebuild3d(); }
+function setWallColor(v) { proj.colors.wall = v; syncColors(); scheduleSave(); renderAerial(); }
+function setFloorColor(v) { proj.colors.floor = v; syncColors(); scheduleSave(); renderAerial(); }
 
-/* ----------------------- modal 2D ⇄ 3D sobrepostos --------------------- */
-let viewPinned = false;
-let lastViewSig = '';
-let hoverCloseTimer = null;
-let hoverOutside = false;
+/* ----------------------- vista única: 2D + 3D aéreo -------------------- */
+let v3dOn = false;
+let v3dHideTimer = null;
+const AERIAL_RISE = 0.3;
 
-function scheduleHoverClose() {
-  clearTimeout(hoverCloseTimer);
-  hoverCloseTimer = setTimeout(closeViewModal, 600);
+function show3D() {
+  clearTimeout(v3dHideTimer);
+  v3dOn = true;
+  resizeV3d();
+  renderAerial();
+  $('v3dLayer').classList.add('on');
 }
-
-function projSig() {
-  return JSON.stringify({ w: proj.walls, f: proj.furniture, b: bgMeta() });
+function hide3D() {
+  v3dOn = false;
+  clearTimeout(v3dHideTimer);
+  $('v3dLayer').classList.remove('on');
 }
+function toggle3D() { if (v3dOn) hide3D(); else show3D(); }
 
-function snapshot2d() {
-  const cn = $('c2dmod');
-  const ctx = cn.getContext('2d');
+function resizeV3d() {
+  const cn = $('v3dLayer');
+  const cv = $('c3d');
+  if (!cn || !cv || !cn.clientWidth) return;
   const dpr = window.devicePixelRatio || 1;
-  cn.width = Math.max(1, Math.round(cn.clientWidth * dpr));
-  cn.height = Math.max(1, Math.round(cn.clientHeight * dpr));
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  draw2dTo(ctx, cn.clientWidth, cn.clientHeight);
+  cv.width = Math.max(1, Math.round(cn.clientWidth * dpr));
+  cv.height = Math.max(1, Math.round(cn.clientHeight * dpr));
+  cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
-function resize3dView() {
-  const cn = $('view3dLayer');
-  if (!renderer3d) return;
-  camera3d.aspect = cn.clientWidth / Math.max(1, cn.clientHeight);
-  camera3d.updateProjectionMatrix();
-  renderer3d.setSize(cn.clientWidth, cn.clientHeight);
-  if (cssRenderer3d) cssRenderer3d.setSize(cn.clientWidth, cn.clientHeight);
+function renderAerial() {
+  if (!v3dOn) return;
+  const cn = $('v3dLayer');
+  const cv = $('c3d');
+  if (!cn || !cv) return;
+  const ctx = cv.getContext('2d');
+  const W = cn.clientWidth, H = cn.clientHeight;
+  if (!W || !H) return;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(244,246,248,.45)';
+  ctx.fillRect(0, 0, W, H);
+
+  const boxes = [];
+  if (layers.walls) {
+    for (const w of mergeWalls(proj.walls)) {
+      const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
+      if (len < 1e-6) continue;
+      const nx = -(w.y2 - w.y1) / len * (WALL_T / 2);
+      const nz = (w.x2 - w.x1) / len * (WALL_T / 2);
+      const base = [
+        { x: w.x1 + nx, y: w.y1 + nz },
+        { x: w.x2 + nx, y: w.y2 + nz },
+        { x: w.x2 - nx, y: w.y2 - nz },
+        { x: w.x1 - nx, y: w.y1 - nz },
+      ];
+      boxes.push({ base, h: WALL_H, color: proj.colors.wall, kind: proj.mats.wall, depth: (w.y1 + w.y2) / 2 });
+    }
+  }
+  if (layers.furn) {
+    for (const it of proj.furniture) {
+      if (!layers.types[it.type]) continue;
+      const def = FURNITURE_DEFS[it.type];
+      const base = rectCorners(def.w, def.d, rad(it.rot)).map(([a, b]) => ({ x: it.x + a, y: it.y + b }));
+      boxes.push({ base, h: FURN_H[it.type] || 0.8, color: def.color, depth: it.y, label: def.label });
+    }
+  }
+  boxes.sort((p, q) => p.depth - q.depth);
+  for (const box of boxes) drawAerialBox(ctx, box);
 }
 
-function applyFusion() {
-  const r = clamp(+$('fusionRange').value, 0, 100) / 100;
-  $('view3dLayer').style.opacity = r;
-  $('view3dLayer').style.pointerEvents = r > 0 ? 'auto' : 'none';
-  $('c2dmod').style.opacity = (1 - r * 0.45).toFixed(2);
-}
+function drawAerialBox(ctx, box) {
+  const base = box.base.map((p) => w2s(p.x, p.y));
+  const rise = clamp(box.h * view.scale * AERIAL_RISE, 4, 160);
+  const top = base.map(([x, y]) => [x, y - rise]);
 
-function isInside(e, el) {
-  const r = el.getBoundingClientRect();
-  return e.clientX >= r.left && e.clientX <= r.right &&
-         e.clientY >= r.top && e.clientY <= r.bottom;
-}
+  if ($('chkSombra').checked) {
+    ctx.beginPath();
+    base.forEach(([x, y], i) => { const X = x, Y = y + rise * 0.6; if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y); });
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(20,30,45,.10)';
+    ctx.fill();
+  }
 
-function openViewModal(pin) {
-  clearTimeout(hoverCloseTimer);
-  hoverOutside = false;
-  if (pin !== undefined) viewPinned = !!pin;
-  $('viewModal').classList.remove('hidden');
-  snapshot2d();
-  const s = projSig();
-  init3d();
-  if (s !== lastViewSig) { rebuild3d(); lastViewSig = s; }
-  resize3dView();
-  syncViewControls();
-  applyFusion();
-  startAnimation();
-  if ($('fusionRange').value > 0 && viewPinned) $('btnCloseView').focus();
-}
+  for (let i = 0; i < 4; i++) {
+    const p0 = base[i], p1 = base[(i + 1) % 4];
+    const t0 = top[i], t1 = top[(i + 1) % 4];
+    const dx = p1[0] - p0[0], dy = p1[1] - p0[1];
+    const l = Math.hypot(dx, dy) || 1e-6;
+    const ny = -dx / l;
+    const shade = ny > 0.15 ? 0.88 : ny < -0.15 ? 0.7 : 0.78;
+    ctx.beginPath();
+    ctx.moveTo(p0[0], p0[1]); ctx.lineTo(p1[0], p1[1]); ctx.lineTo(t1[0], t1[1]); ctx.lineTo(t0[0], t0[1]);
+    ctx.closePath();
+    ctx.fillStyle = fadeColor(box.color, shade);
+    ctx.fill();
+    if (box.kind) {
+      ctx.save();
+      ctx.clip();
+      ctx.transform(dx, dy, t0[0] - p0[0], t0[1] - p0[1], p0[0], p0[1]);
+      drawFbPattern(ctx, box.kind, box.color);
+      ctx.restore();
+    }
+    ctx.strokeStyle = 'rgba(30,40,55,.18)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
 
-function syncViewControls() {
-  const s = (id, v) => { const el = $(id); if (el) el.checked = v; };
-  s('mVwTeto', $('chkTeto').checked);
-  s('mVwSombra', $('chkSombra').checked);
-  s('mVwEtq', $('chkEtq').checked);
-  syncColors();
-}
+  ctx.beginPath();
+  ctx.moveTo(top[0][0], top[0][1]);
+  for (let i = 1; i < 4; i++) ctx.lineTo(top[i][0], top[i][1]);
+  ctx.closePath();
+  ctx.fillStyle = box.color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(30,40,55,.35)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
 
-function closeViewModal() {
-  clearTimeout(hoverCloseTimer);
-  hoverOutside = false;
-  viewPinned = false;
-  $('viewModal').classList.add('hidden');
+  if (box.label && $('chkEtq').checked) {
+    const cx = (top[0][0] + top[1][0] + top[2][0] + top[3][0]) / 4;
+    const cy = (top[0][1] + top[1][1] + top[2][1] + top[3][1]) / 4;
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = 'rgba(30,40,55,.5)';
+    ctx.strokeText(box.label, cx, cy + 3);
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.fillText(box.label, cx, cy + 3);
+  }
 }
 
 /* ------------------------------ exemplo -------------------------------- */
@@ -1971,23 +1481,6 @@ function components(bin, W, H) {
 }
 
 /* ---------------------------- restauração e UI ------------------------- */
-function restoreAuto() {
-  try {
-    const s = localStorage.getItem('kitnet3d_proj');
-    if (!s) return;
-    const d = JSON.parse(s);
-    proj.walls = d.walls || [];
-    proj.furniture = d.furniture || [];
-    proj.bg = d.bg || null;
-    lastId = d.lastId || 1;
-    if (proj.bg && proj.bg.src) {
-      const img = new Image(proj.bg.width, proj.bg.height);
-      img.src = proj.bg.src;
-      bgImageCache[proj.bg.src] = img;
-    }
-  } catch (e) {}
-}
-
 function buildFurniturePalette() {
   const el = $('furnList');
   el.innerHTML = '';
@@ -2061,26 +1554,10 @@ function wireUI() {
     applyPlan('pro', d); closeUpgrade();
   };
 
-  const vw = $('viewModal');
-  const btnView = $('btnView');
-  btnView.addEventListener('pointerenter', () => {
-    if (vw.classList.contains('hidden')) openViewModal(false);
-  });
-  btnView.addEventListener('click', () => openViewModal(true));
-  $('btnCloseView').onclick = closeViewModal;
-  $('fusionRange').addEventListener('input', applyFusion);
-  vw.addEventListener('pointermove', (e) => {
-    if (viewPinned) { hoverOutside = false; return; }
-    if (isInside(e, $('viewModalBox')) || isInside(e, btnView)) {
-      hoverOutside = false;
-      clearTimeout(hoverCloseTimer);
-      return;
-    }
-    if (!hoverOutside) { hoverOutside = true; scheduleHoverClose(); }
-  });
-  vw.addEventListener('click', (e) => {
-    if (e.target === vw) closeViewModal();
-  });
+  const b3 = $('btn3d');
+  b3.addEventListener('pointerenter', () => { clearTimeout(v3dHideTimer); show3D(); });
+  b3.addEventListener('pointerleave', () => { v3dHideTimer = setTimeout(hide3D, 350); });
+  b3.addEventListener('click', (e) => { e.stopPropagation(); toggle3D(); });
   $('btnCloseGallery').onclick = closeGallery;
   $('btnGallery').onclick = openGallery;
   $('btnOpenOther').onclick = openGallery;
@@ -2093,12 +1570,6 @@ function wireUI() {
   $('sideWallColor').oninput = (e) => setWallColor(e.target.value);
   $('sideFloorColor').oninput = (e) => setFloorColor(e.target.value);
   $('sideWallMat').onchange = (e) => setWallMat(e.target.value);
-  $('mVwWallMat').onchange = (e) => setWallMat(e.target.value);
-  $('mVwTeto').onchange = () => set3DOption('Teto', $('mVwTeto').checked);
-  $('mVwSombra').onchange = () => set3DOption('Sombra', $('mVwSombra').checked);
-  $('mVwEtq').onchange = () => set3DOption('Etiquetas', $('mVwEtq').checked);
-  $('mVwWallColor').oninput = (e) => setWallColor(e.target.value);
-  $('mVwFloorColor').oninput = (e) => setFloorColor(e.target.value);
 }
 
 /* --------------------------------- init -------------------------------- */
