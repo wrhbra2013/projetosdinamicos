@@ -1,8 +1,12 @@
 'use strict';
 /* =========================================================================
    KitNet 3D — transforma planta baixa 2D em simulação 3D de espaços pequenos
-   Site estático — uma única vista: planta 2D com perspectiva 3D aérea ao passar o mouse.
+   Site estático — planta 2D com vista 3D completa (Three.js) e perspectiva
+   3D aérea ao passar o mouse.
    ========================================================================= */
+import * as THREE from 'three';
+import { OrbitControls } from './vendor/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from './vendor/renderers/CSS2DRenderer.js';
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -189,7 +193,7 @@ function draw2d() {
   renderAerial();
 }
 
-function draw2dTo(ctx, W, H) {
+function draw2dTo(ctx, W, H, noCursor) {
   ctx.clearRect(0, 0, W, H);
   ctx.fillStyle = '#f4f6f8';
   ctx.fillRect(0, 0, W, H);
@@ -197,7 +201,7 @@ function draw2dTo(ctx, W, H) {
   if ($('chkGrid').checked) drawGrid(ctx, W, H);
   if (layers.walls) drawWalls(ctx);
   if (layers.furn) drawFurniture(ctx);
-  drawCursor(ctx);
+  if (!noCursor) drawCursor(ctx);
 }
 
 function drawBg(ctx, W, H) {
@@ -693,6 +697,7 @@ window.addEventListener('keydown', (e) => {
     if (k === 'y') { e.preventDefault(); redo(); return; }
   }
   if (e.key === 'Escape' && !$('galleryOverlay').classList.contains('hidden')) { closeGallery(); return; }
+  if (e.key === 'Escape' && !$('viewModal').classList.contains('hidden')) { closeView3d(); return; }
   if (e.key === 'Escape' && v3dOn) { hide3D(); return; }
   if (e.code === 'Space') { spaceDown = true; e.preventDefault(); return; }
   if (e.key === 'Escape') { wallChain = []; selId = null; selWall = -1; draw2d(); renderProps(); return; }
@@ -1288,6 +1293,495 @@ function drawAerialBox(ctx, box) {
   }
 }
 
+/* --------------------- vista 3D completa (Three.js) --------------------- */
+let scene3d = null, renderer3d = null, camera3d = null, controls3d = null;
+let cssRenderer3d = null, animRunning = false;
+
+function stdMat(color, opts = {}) {
+  const m = new THREE.MeshStandardMaterial({ color, roughness: opts.roughness ?? 0.7, metalness: opts.metalness ?? 0.05 });
+  if (opts.transparent) { m.transparent = true; m.opacity = opts.opacity; }
+  if (opts.emissive != null) { m.emissive = new THREE.Color(opts.emissive); if (opts.emissiveIntensity != null) m.emissiveIntensity = opts.emissiveIntensity; }
+  return m;
+}
+
+function init3d() {
+  if (scene3d) return;
+  const cn = $('view3dLayer');
+  try {
+    renderer3d = new THREE.WebGLRenderer({ antialias: true });
+  } catch (e) { renderer3d = null; }
+  if (!renderer3d || !renderer3d.domElement) {
+    cn.innerHTML = '<div style="padding:18px 20px; color:var(--muted); font-size:12.5px">WebGL indisponível neste navegador — a vista 3D não pôde ser criada.</div>';
+    renderer3d = null;
+    return;
+  }
+  renderer3d.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer3d.setSize(cn.clientWidth || 640, cn.clientHeight || 480);
+  renderer3d.setClearColor(0xdfe9f2);
+  cn.appendChild(renderer3d.domElement);
+
+  cssRenderer3d = new CSS2DRenderer();
+  cssRenderer3d.setSize(cn.clientWidth || 640, cn.clientHeight || 480);
+  cssRenderer3d.domElement.style.position = 'absolute';
+  cssRenderer3d.domElement.style.top = '0';
+  cssRenderer3d.domElement.style.left = '0';
+  cssRenderer3d.domElement.style.pointerEvents = 'none';
+  cn.appendChild(cssRenderer3d.domElement);
+
+  scene3d = new THREE.Scene();
+  camera3d = new THREE.PerspectiveCamera(50, (cn.clientWidth || 640) / Math.max(1, cn.clientHeight || 480), 0.05, 300);
+  controls3d = new OrbitControls(camera3d, renderer3d.domElement);
+  controls3d.enableDamping = true;
+  controls3d.dampingFactor = 0.12;
+  controls3d.maxPolarAngle = Math.PI * 0.49;
+  controls3d.minDistance = 1.2;
+  controls3d.maxDistance = 40;
+  new ResizeObserver(() => {
+    const w = cn.clientWidth, h = cn.clientHeight;
+    if (!w || !h || !renderer3d) return;
+    camera3d.aspect = w / h;
+    camera3d.updateProjectionMatrix();
+    renderer3d.setSize(w, h);
+    if (cssRenderer3d) cssRenderer3d.setSize(w, h);
+  }).observe(cn);
+}
+
+function makeFinishTexture(kind, color) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(256, 0, 0, 256, 0, 0);
+  drawFbPattern(ctx, kind, color);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+function viewOpts() {
+  return {
+    teto: $('mVwTeto').checked,
+    sombra: $('mVwSombra').checked,
+    etq: $('mVwEtq').checked,
+    wall: $('mVwWallColor').value,
+    floor: $('mVwFloorColor').value,
+  };
+}
+
+function rebuild3d() {
+  if (!scene3d) return;
+  while (scene3d.children.length) scene3d.remove(scene3d.children[0]);
+
+  const o = viewOpts();
+  const shadows = o.sombra;
+  renderer3d.shadowMap.enabled = shadows;
+  renderer3d.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const wallsM = mergeWalls(proj.walls);
+  let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+  if (wallsM.length) {
+    for (const w of wallsM) {
+      minX = Math.min(minX, w.x1, w.x2); minY = Math.min(minY, w.y1, w.y2);
+      maxX = Math.max(maxX, w.x1, w.x2); maxY = Math.max(maxY, w.y1, w.y2);
+    }
+  } else { minX = -3; maxX = 3; minY = -2; maxY = 2; }
+
+  const cx = (minX + maxX) / 2, cz = (minY + maxY) / 2;
+  const bw = Math.max(maxX - minX, 0.1), bd = Math.max(maxY - minY, 0.1);
+
+  scene3d.add(new THREE.HemisphereLight(0xffffff, 0xc8d6e4, 0.95));
+  const sun = new THREE.DirectionalLight(0xfff4e0, 1.15);
+  sun.position.set(cx + 9, 16, cz - 7);
+  if (shadows) {
+    const e = Math.max(bw, bd) + 2;
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1536, 1536);
+    sun.shadow.camera.near = 1;
+    sun.shadow.camera.far = 70;
+    sun.shadow.camera.left = -e; sun.shadow.camera.right = e;
+    sun.shadow.camera.top = e; sun.shadow.camera.bottom = -e;
+    sun.shadow.bias = -0.0006;
+  }
+  scene3d.add(sun);
+  const fill = new THREE.DirectionalLight(0xbcd6ff, 0.4);
+  fill.position.set(cx - 9, 9, cz + 9);
+  scene3d.add(fill);
+
+  const floorMat = new THREE.MeshStandardMaterial({ color: o.floor, roughness: 0.88, metalness: 0.03 });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(bw + 2.2, bd + 2.2), floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.set(cx, 0, cz);
+  floor.receiveShadow = shadows;
+  scene3d.add(floor);
+
+  const grid = new THREE.GridHelper(Math.max(bw, bd) + 2.2, Math.max(1, Math.round((Math.max(bw, bd) + 2.2) / 0.5)), 0x8ba2bb, 0xa3b6cc);
+  grid.position.set(cx, 0.004, cz);
+  scene3d.add(grid);
+
+  const hasFinish = proj.mats && proj.mats.wall && proj.mats.wall !== 'massa';
+  for (const w of wallsM) {
+    const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
+    if (len < 1e-6) continue;
+    const wallMat = new THREE.MeshStandardMaterial({ color: o.wall, roughness: 0.72, metalness: 0.03 });
+    if (hasFinish) {
+      const tex = makeFinishTexture(proj.mats.wall, o.wall);
+      tex.repeat.set(Math.max(1, Math.round(len / 0.6)), 1);
+      wallMat.map = tex;
+    }
+    const m = new THREE.Mesh(new THREE.BoxGeometry(len, WALL_H, WALL_T), wallMat);
+    m.position.set((w.x1 + w.x2) / 2, WALL_H / 2, (w.y1 + w.y2) / 2);
+    m.rotation.y = Math.atan2(w.y2 - w.y1, w.x2 - w.x1);
+    m.castShadow = shadows;
+    m.receiveShadow = shadows;
+    scene3d.add(m);
+
+    const trim = new THREE.Mesh(
+      new THREE.BoxGeometry(len, 0.09, WALL_T + 0.02),
+      new THREE.MeshStandardMaterial({ color: 0xf3f0e9, roughness: 0.6 })
+    );
+    trim.position.set((w.x1 + w.x2) / 2, 0.045, (w.y1 + w.y2) / 2);
+    trim.rotation.y = Math.atan2(w.y2 - w.y1, w.x2 - w.x1);
+    scene3d.add(trim);
+  }
+
+  if (o.teto) {
+    const ceil = new THREE.Mesh(
+      new THREE.PlaneGeometry(bw + 2.2, bd + 2.2),
+      new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: 0.9 })
+    );
+    ceil.rotation.x = Math.PI / 2;
+    ceil.position.set(cx, WALL_H, cz);
+    scene3d.add(ceil);
+  }
+
+  for (const it of proj.furniture) {
+    if (!layers.types[it.type]) continue;
+    const grp = furnitureMesh(it);
+    if (!grp) continue;
+    grp.position.set(it.x, 0, it.y);
+    grp.rotation.y = rad(it.rot);
+    if (shadows) grp.traverse((nd) => { if (nd.isMesh) { nd.castShadow = true; nd.receiveShadow = true; } });
+    scene3d.add(grp);
+  }
+
+  if (o.etq) {
+    for (const it of proj.furniture) {
+      if (!layers.types[it.type]) continue;
+      const label = furnitureLabel(it);
+      if (!label) continue;
+      label.position.set(it.x, 1.55, it.y);
+      scene3d.add(label);
+    }
+  }
+
+  const dist = Math.max(bw, bd, 4) * 1.15;
+  camera3d.position.set(cx + dist * 0.75, dist * 0.9, cz + dist * 0.95);
+  controls3d.target.set(cx, 1.0, cz);
+  controls3d.update();
+}
+
+function furnitureMesh(item) {
+  const def = FURNITURE_DEFS[item.type];
+  const w = def.w, d = def.d;
+  const g = new THREE.Group();
+  const mat = (c, o) => stdMat(c, o);
+  const wood = (c = 0x8a6d4b) => stdMat(c, { roughness: 0.55, metalness: 0.04 });
+  const steel = () => stdMat(0xcfd6dc, { roughness: 0.25, metalness: 0.9 });
+  const porcelain = () => stdMat(0xf4f6f8, { roughness: 0.35, metalness: 0.02 });
+  const box = (bw, bh, bd2, ml, oy = 0, xoff = 0, zoff = 0) => {
+    if (bw < 0.004 || bh < 0.004 || bd2 < 0.004) return null;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd2), ml);
+    m.position.set(xoff, oy + bh / 2, zoff);
+    g.add(m);
+    return m;
+  };
+  const cyl = (rt, rb, h, ml, oy = 0, xoff = 0, zoff = 0, seg = 18) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), ml);
+    m.position.set(xoff, oy + h / 2, zoff);
+    g.add(m);
+    return m;
+  };
+  const sph = (r, ml, oy = 0, xoff = 0, zoff = 0, sx = 1, sy = 1, sz = 1) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 12), ml);
+    m.scale.set(sx, sy, sz);
+    m.position.set(xoff, oy, zoff);
+    g.add(m);
+    return m;
+  };
+  const legs4 = (bh, legC, ox, oz) => {
+    for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]])
+      box(0.06, bh, 0.06, legC, 0, lx * ox, lz * oz);
+  };
+
+  switch (item.type) {
+    case 'cama': {
+      const wd = wood(0x8a5a36);
+      for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]])
+        box(0.09, 0.16, 0.09, wd, 0, lx * (w / 2 - 0.06), lz * (d / 2 - 0.06));
+      box(w, 0.16, d, wd, 0.16);
+      box(w + 0.06, 0.5, 0.06, wd, 0, 0, -d / 2 + 0.03);
+      box(w + 0.06, 0.08, 0.05, wood(0x6d4a2b), 0.66, 0, -d / 2 + 0.02);
+      const mz = (d - 0.5) / 2;
+      box(w - 0.08, 0.2, d - 0.5, porcelain(), 0.32);
+      box(w - 0.08, 0.08, mz, stdMat(0x5f8fbb, { roughness: 0.92, metalness: 0.02 }), 0.42, 0, mz / 2);
+      box(0.76, 0.1, 0.42, stdMat(0xffffff, { roughness: 0.95 }), 0.43, 0.08, -mz + 0.21);
+      break;
+    }
+    case 'sofa': {
+      const c = 0x8a6a8c, cL = 0x9d80a1;
+      const seatW = (w - 0.3) / 2;
+      box(w - 0.18, 0.28, d - 0.1, mat(c, { roughness: 0.85 }), 0.06);
+      box(w - 0.18, 0.55, 0.16, mat(c, { roughness: 0.85 }), 0.34, 0, -d / 2 + 0.08);
+      for (const s of [-1, 1])
+        box(0.14, 0.5, d - 0.06, mat(c, { roughness: 0.85 }), 0.06, s * (w / 2 - 0.07));
+      for (const s of [-1, 1])
+        box(seatW - 0.02, 0.14, d - 0.4, mat(cL, { roughness: 0.9 }), 0.34, s * (seatW + 0.02));
+      box(w - 0.1, 0.06, 0.09, mat(0x5e4353, { roughness: 0.8 }), 0.5, 0, -d / 2 + 0.0);
+      legs4(0.07, wood(0x2f241d), w / 2 - 0.06, d / 2 - 0.04);
+      break;
+    }
+    case 'mesa': {
+      const wd = wood(0x9a7446), wd2 = wood(0x6f4e28);
+      box(w, 0.05, d, wd, 0.74);
+      box(w - 0.08, 0.09, d - 0.08, wd2, 0.62);
+      for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]])
+        box(0.07, 0.62, 0.07, wd2, 0, lx * (w / 2 - 0.06), lz * (d / 2 - 0.06));
+      box(w - 0.14, 0.035, d - 0.14, wd2, 0.3);
+      break;
+    }
+    case 'cadeira': {
+      const wd = wood(0xb98b55), wd2 = wood(0x7a5a33);
+      box(w, 0.06, d, wd, 0.45);
+      box(w - 0.05, 0.44, 0.05, wd, 0.45, 0, -d / 2 + 0.025);
+      box(w - 0.1, 0.07, 0.05, wd, 0.62, 0, -d / 2 + 0.025);
+      box(w - 0.1, 0.07, 0.05, wd, 0.84, 0, -d / 2 + 0.025);
+      for (const [lx, lz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]])
+        box(0.045, 0.45, 0.045, wd2, 0, lx * (w / 2 - 0.03), lz * (d / 2 - 0.03));
+      break;
+    }
+    case 'cozinha': {
+      const wd = wood(0x9c6b3f), wd2 = wood(0x7d5130);
+      box(w, 0.82, d, wd, 0);
+      for (let i = 0; i < 3; i++) box(w / 3 - 0.035, 0.78, 0.04, wd2, 0.02, -w / 3 + i * (w / 3), d / 2 + 0.005);
+      box(w + 0.03, 0.045, d + 0.03, stdMat(0xeae6de, { roughness: 0.25, metalness: 0.08 }), 0.82);
+      box(w - 0.02, 0.04, 0.34, stdMat(0xaab5bd, { roughness: 0.35, metalness: 0.65 }), 0.865);
+      box(0.36, 0.045, 0.26, stdMat(0x39424a, { roughness: 0.4, metalness: 0.7 }), 0.895);
+      box(w - 0.04, 0.18, 0.02, stdMat(0xcfd6dc, { roughness: 0.3, metalness: 0.4 }), 0.86, 0, -d / 2 - 0.02);
+      cyl(0.014, 0.014, 0.18, steel(), 0.865, 0.16, 0.1, 12);
+      const spout = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.12, 12), steel());
+      spout.rotation.x = Math.PI / 2;
+      spout.position.set(0.24, 1.03, 0.1);
+      g.add(spout);
+      break;
+    }
+    case 'fogao': {
+      const body = stdMat(0xf4f6f8, { roughness: 0.5, metalness: 0.04 });
+      const dark = stdMat(0x2f363c, { roughness: 0.45, metalness: 0.35 });
+      box(w, 0.84, d, body, 0);
+      box(w + 0.01, 0.04, d + 0.01, dark, 0.84);
+      box(w, 0.1, d, dark, 0.84, 0, d / 2 - 0.04);
+      for (const [bx, bz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]])
+        cyl(0.045, 0.045, 0.012, stdMat(0x191d22, { metalness: 0.5 }), 0.876, bx * 0.17, bz * 0.17, 22);
+      for (let i = 0; i < 4; i++)
+        cyl(0.014, 0.014, 0.035, dark, 0.9, -0.18 + i * 0.12, d / 2 - 0.03, 12);
+      box(w - 0.06, 0.03, 0.05, steel(), 0.865, 0, d / 2 - 0.06);
+      break;
+    }
+    case 'geladeira': {
+      const body = stdMat(0xe9edf2, { roughness: 0.35, metalness: 0.4 });
+      box(w, 1.8, d, body, 0.02);
+      box(w + 0.01, 0.03, d + 0.01, stdMat(0x0f1215, { roughness: 0.3 }), 1.97);
+      box(w - 0.03, 0.52, d - 0.03, stdMat(0xfbfcfe, { roughness: 0.3, metalness: 0.25 }), 0.48, 0, 0);
+      box(w - 0.02, 0.015, d - 0.03, stdMat(0x8d98a3, { roughness: 0.4 }), 0.72, 0, 0);
+      box(w - 0.03, 1.0, d - 0.03, stdMat(0xfbfcfe, { roughness: 0.3, metalness: 0.25 }), 0.76, 0, 0);
+      box(0.025, 0.42, 0.02, stdMat(0x2c3038, { roughness: 0.3, metalness: 0.6 }), 0.94, w / 2 - 0.06, d / 2 + 0.0);
+      box(0.025, 0.75, 0.02, stdMat(0x2c3038, { roughness: 0.3, metalness: 0.6 }), 0.02, w / 2 - 0.06, d / 2 - 0.0);
+      legs4(0.06, stdMat(0x9aa3a9), w / 2 - 0.02, d / 2 - 0.02);
+      break;
+    }
+    case 'rouparia': {
+      const wd = wood(0xa97c50), wd2 = wood(0xc2945f);
+      box(w, 2.08, d, wd, 0);
+      box(w, 0.09, d + 0.02, wood(0x6f4a2a), 0);
+      for (const s of [-1, 1]) box(w / 2 - 0.03, 1.98, 0.05, wd2, 0.06, s * w / 4, d / 2 - 0.025);
+      for (const s of [-1, 1]) box(0.022, 0.4, 0.025, stdMat(0x2c2c2c, { metalness: 0.5 }), 0.8, s * w / 4, d / 2 - 0.01);
+      box(w * 0.72, 0.04, d * 0.4, wood(0x6f4a2a), 2.02, 0, d / 2 - 0.1);
+      break;
+    }
+    case 'vaso': {
+      box(0.44, 0.42, 0.16, porcelain(), 0.16, 0, -d / 2 + 0.08);
+      box(0.46, 0.05, 0.18, porcelain(), 0.58, 0, -d / 2 + 0.08);
+      cyl(0.018, 0.018, 0.03, stdMat(0xcfd6dc, { metalness: 0.7 }), 0.6, 0, -d / 2 + 0.08, 10);
+      sph(0.15, porcelain(), 0.18, 0, 0.08, 1, 0.75, 1.4);
+      cyl(0.15, 0.18, 0.16, porcelain(), 0, 0, 0.05, 20);
+      cyl(0.35, 0.35, 0.035, stdMat(0xf8fafc), 0.47, 0, 0.05, 24);
+      cyl(0.12, 0.16, 0.22, porcelain(), 0, 0, 0.03, 16);
+      break;
+    }
+    case 'chuveiro': {
+      box(w, 0.08, d, stdMat(0xe6eaee, { roughness: 0.35 }), 0.04);
+      cyl(0.012, 0.012, 0.6, steel(), 0.3, 0, -d / 2 + 0.05, 10);
+      cyl(0.012, 0.012, 0.5, steel(), 1.6, 0, -d / 2 + 0.05, 10);
+      cyl(0.16, 0.16, 0.04, steel(), 2.0, 0, -d / 2 + 0.12, 24);
+      const glass = stdMat(0xbfdcec, { transparent: true, opacity: 0.3, roughness: 0.1, metalness: 0.05 });
+      box(w, 1.9, 0.02, glass, 0.1, 0, d / 2 - 0.01);
+      box(0.02, 1.9, d, glass, 0.1, w / 2 - 0.01, 0);
+      const rail = stdMat(0xc8d2db, { roughness: 0.3, metalness: 0.7 });
+      box(w, 0.03, 0.03, rail, 1.92, 0, d / 2 - 0.03);
+      box(0.03, 0.03, d, rail, 1.92, w / 2 - 0.03, 0);
+      break;
+    }
+    case 'piaB': {
+      cyl(0.1, 0.14, 0.52, porcelain(), 0, 0, -0.02, 16);
+      box(w, 0.15, d, porcelain(), 0.5, 0, -0.02);
+      box(w - 0.08, 0.08, d - 0.08, stdMat(0xe9e4d8, { roughness: 0.4 }), 0.545, 0, -0.02);
+      cyl(0.014, 0.014, 0.14, steel(), 0.66, 0.16, 0.04, 12);
+      const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.11, 12), steel());
+      sp.rotation.x = Math.PI / 2;
+      sp.position.set(0.25, 0.78, 0.04);
+      g.add(sp);
+      box(0.36, 0.42, 0.03, stdMat(0xcfe2ee, { roughness: 0.15, metalness: 0.1 }), 1.12, 0.02, -d / 2 - 0.01);
+      box(0.36, 0.05, 0.03, stdMat(0xd8e6f0, { roughness: 0.3 }), 1.36, 0.02, -d / 2 - 0.01);
+      break;
+    }
+    case 'maquina': {
+      box(w, 0.85, d, stdMat(0xf2f4f6, { roughness: 0.4, metalness: 0.05 }), 0.04);
+      cyl(0.17, 0.17, 0.03, stdMat(0xa8b6c0, { roughness: 0.2, metalness: 0.4 }), 0.52, 0.1, d / 2 + 0.01, 30);
+      cyl(0.14, 0.14, 0.025, stdMat(0x4a5560, { roughness: 0.15, metalness: 0.3, transparent: true, opacity: 0.82 }), 0.52, 0.1, d / 2 + 0.023, 30);
+      cyl(0.028, 0.028, 0.03, stdMat(0x2c3038, { roughness: 0.3, metalness: 0.5 }), 0.52, 0.18, d / 2 + 0.012, 12);
+      box(w, 0.05, d, stdMat(0xdfe3e8, { roughness: 0.5 }), 0);
+      break;
+    }
+    case 'tv': {
+      const dark = stdMat(0x22262c, { roughness: 0.5, metalness: 0.1 });
+      box(0.26, 0.05, 0.26, dark, 0);
+      box(0.08, 0.3, 0.08, dark, 0.05);
+      box(w, 0.7, 0.035, stdMat(0x0d1117, { roughness: 0.2, metalness: 0.2, emissive: 0x2a4a6b, emissiveIntensity: 0.5 }), 0.3, 0, -0.01);
+      box(w - 0.06, 0.63, 0.005, stdMat(0x08121f, { roughness: 0.1, metalness: 0.1, emissive: 0x9ec9ff, emissiveIntensity: 0.8 }), 0.305, 0, -0.025);
+      box(0.02, 0.7, 0.04, dark, 0.3, -w / 2 + 0.01, -0.01);
+      box(0.02, 0.7, 0.04, dark, 0.3, w / 2 - 0.01, -0.01);
+      break;
+    }
+    case 'porta': {
+      const wd = wood(0x9a7b52), fr = wood(0x6f522f);
+      box(0.08, WALL_H, d, fr, 0, -w / 2 + 0.01, 0);
+      box(0.08, WALL_H, d, fr, 0, w / 2 - 0.01, 0);
+      box(w, 0.08, d, fr, WALL_H - 0.08, 0, 0);
+      box(w, 1.98, 0.05, wd, 0.02, 0, d / 2 - 0.025);
+      box(w, 0.3, 0.05, wd, 1.5, 0, d / 2 - 0.025);
+      box(w, 0.16, 0.05, wd, 0.85, 0, d / 2 - 0.025);
+      box(w - 0.12, 0.03, 0.05, wd, 1.72, 0, d / 2 - 0.025);
+      cyl(0.03, 0.03, 0.08, steel(), 1.04, -w / 2 + 0.04, d / 2 + 0.0, 12);
+      cyl(0.015, 0.015, 0.04, steel(), 1.78, -w / 2 + 0.09, d / 2, 10);
+      break;
+    }
+    case 'janela': {
+      const wh = 1.2, sill = 0.98;
+      const frC = stdMat(0xeceae2, { roughness: 0.6 });
+      const glass = stdMat(0xaad4ea, { roughness: 0.08, metalness: 0.05, transparent: true, opacity: 0.45 });
+      box(w, 0.05, 0.06, frC, sill, 0, 0);
+      box(w, 0.05, 0.06, frC, sill + wh, 0, 0);
+      box(0.05, wh, 0.06, frC, sill, -w / 2 + 0.025, 0);
+      box(0.05, wh, 0.06, frC, sill, w / 2 - 0.025, 0);
+      box(w - 0.05, wh - 0.02, 0.03, glass, sill + 0.01, 0, 0);
+      box(0.04, wh - 0.1, 0.03, frC, sill + 0.05, 0, 0);
+      box(0.02, wh - 0.1, 0.03, frC, sill + 0.05, -w / 4, 0);
+      box(0.02, wh - 0.1, 0.03, frC, sill + 0.05, w / 4, 0);
+      break;
+    }
+    case 'planta': {
+      cyl(0.13, 0.09, 0.26, stdMat(0xc0693b, { roughness: 0.75 }), 0, 0, 0, 14);
+      cyl(0.11, 0.11, 0.03, stdMat(0x3a2a20, { roughness: 0.9 }), 0.26, 0, 0, 14);
+      cyl(0.015, 0.02, 0.34, stdMat(0x5d4524, { roughness: 0.7 }), 0.29, 0, 0, 8);
+      const leaf = stdMat(0x4e9c56, { roughness: 0.8 });
+      sph(0.13, leaf, 0.72, 0, 0, 1, 1, 1);
+      sph(0.11, leaf, 0.92, 0.09, 0.05, 1, 1.2, 1);
+      sph(0.11, leaf, 0.9, -0.1, -0.06, 1, 1.2, 1);
+      sph(0.1, leaf, 0.86, -0.02, 0.12, 1, 1, 1);
+      sph(0.09, leaf, 0.85, 0.12, 0.0, 1, 1, 1);
+      break;
+    }
+    default:
+      return null;
+  }
+  return g;
+}
+
+function furnitureLabel(item) {
+  const def = FURNITURE_DEFS[item.type];
+  if (!def) return null;
+  const el = document.createElement('div');
+  el.className = 'css2d-label';
+  el.textContent = def.emoji + ' ' + def.label + ' · ' +
+    def.w.toLocaleString('pt-BR') + '×' + def.d.toLocaleString('pt-BR') + 'm';
+  return new CSS2DObject(el);
+}
+
+function startAnimation() {
+  if (animRunning) return;
+  animRunning = true;
+  const loop = () => {
+    requestAnimationFrame(loop);
+    if (renderer3d && !$('viewModal').classList.contains('hidden')) {
+      controls3d.update();
+      renderer3d.render(scene3d, camera3d);
+      if (cssRenderer3d) cssRenderer3d.render(scene3d, camera3d);
+    }
+  };
+  loop();
+}
+
+function syncViewModalOpts() {
+  const s = (id, v) => { const el = $(id); if (el) el.checked = v; };
+  s('mVwTeto', $('chkTeto').checked);
+  s('mVwSombra', $('chkSombra').checked);
+  s('mVwEtq', $('chkEtq').checked);
+  $('mVwWallColor').value = proj.colors.wall;
+  $('mVwFloorColor').value = proj.colors.floor;
+}
+
+function snapshot2d() {
+  const cn = $('c2dmod');
+  if (!cn) return;
+  const ctx = cn.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  cn.width = Math.max(1, Math.round(cn.clientWidth * dpr));
+  cn.height = Math.max(1, Math.round(cn.clientHeight * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  draw2dTo(ctx, cn.clientWidth, cn.clientHeight, true);
+}
+
+function resize3dView() {
+  const cn = $('view3dLayer');
+  if (!renderer3d) return;
+  const w = cn.clientWidth, h = cn.clientHeight;
+  if (!w || !h) return;
+  camera3d.aspect = w / h;
+  camera3d.updateProjectionMatrix();
+  renderer3d.setSize(w, h);
+  if (cssRenderer3d) cssRenderer3d.setSize(w, h);
+}
+
+function applyFusion() {
+  const r = clamp(+$('fusionRange').value, 0, 100) / 100;
+  $('view3dLayer').style.opacity = r;
+  $('view3dLayer').style.pointerEvents = r > 0 ? 'auto' : 'none';
+  $('c2dmod').style.opacity = (1 - r * 0.45).toFixed(2);
+}
+
+function openView3d() {
+  init3d();
+  syncViewModalOpts();
+  $('viewModal').classList.remove('hidden');
+  applyFusion();
+  if (!renderer3d) return;
+  rebuild3d();
+  snapshot2d();
+  resize3dView();
+  requestAnimationFrame(() => { resize3dView(); startAnimation(); });
+  toast('Vista 3D — arraste para orbitar, role para zoom, deslize para misturar com a planta');
+}
+function closeView3d() { $('viewModal').classList.add('hidden'); }
+
 /* ------------------------------ exemplo -------------------------------- */
 function loadExample() {
   pushUndo();
@@ -1558,6 +2052,15 @@ function wireUI() {
   b3.addEventListener('pointerenter', () => { clearTimeout(v3dHideTimer); show3D(); });
   b3.addEventListener('pointerleave', () => { v3dHideTimer = setTimeout(hide3D, 350); });
   b3.addEventListener('click', (e) => { e.stopPropagation(); toggle3D(); });
+  $('btnCenter3d').onclick = openView3d;
+  $('btnCloseView').onclick = closeView3d;
+  $('viewModal').addEventListener('click', (e) => { if (e.target === $('viewModal')) closeView3d(); });
+  $('fusionRange').oninput = applyFusion;
+  $('mVwTeto').onchange = rebuild3d;
+  $('mVwSombra').onchange = rebuild3d;
+  $('mVwEtq').onchange = rebuild3d;
+  $('mVwWallColor').oninput = rebuild3d;
+  $('mVwFloorColor').oninput = rebuild3d;
   $('btnCloseGallery').onclick = closeGallery;
   $('btnGallery').onclick = openGallery;
   $('btnOpenOther').onclick = openGallery;

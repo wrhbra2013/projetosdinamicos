@@ -130,6 +130,44 @@
         box-shadow:0 3px 10px rgba(0,0,0,.3); z-index:20; white-space:nowrap;
         transition:transform .15s, box-shadow .15s;}
   #btn3d:hover{transform:translateX(-50%) translateY(-1px); box-shadow:0 6px 16px rgba(43,155,216,.5);}
+  /* ------------------------------ botão 3D central ---------------------- */
+  #btnCenter3d{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+        width:86px; height:86px; border-radius:50%; border:2px solid rgba(255,255,255,.5); cursor:pointer; z-index:15;
+        background:radial-gradient(circle at 30% 28%, #6fd3ff, #1b6fae 72%);
+        color:#06121c; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px;
+        box-shadow:0 10px 30px rgba(43,155,216,.5), inset 0 1px 0 rgba(255,255,255,.55);
+        animation:btn3dPulse 2.6s ease-in-out infinite; transition:transform .18s, box-shadow .18s;}
+  #btnCenter3d:hover{transform:translate(-50%,-50%) scale(1.07); box-shadow:0 14px 40px rgba(43,155,216,.7), inset 0 1px 0 rgba(255,255,255,.55);}
+  #btnCenter3d:active{transform:translate(-50%,-50%) scale(.97);}
+  #btnCenter3d .ic{font-size:30px; line-height:1;}
+  #btnCenter3d .lbl{font-size:11px; font-weight:800; letter-spacing:.6px; text-transform:uppercase;}
+  @keyframes btn3dPulse{0%,100%{box-shadow:0 10px 30px rgba(43,155,216,.5);}50%{box-shadow:0 10px 44px rgba(43,155,216,.85);}}
+  /* ------------------------------ modal 3D ------------------------------ */
+  .css2d-label{background:rgba(16,19,24,.82); color:var(--text); border:1px solid var(--line);
+        border-radius:999px; padding:2px 9px; font-size:10.5px; white-space:nowrap;
+        transform:translate(-50%,-50%); pointer-events:none; user-select:none;
+        box-shadow:0 1px 4px rgba(0,0,0,.35);}
+  .view-modal{max-width:1060px; width:100%; display:flex; flex-direction:column; gap:10px;
+        overflow:hidden; padding:16px 18px 18px; max-height:93vh;}
+  .vw-head{display:flex; align-items:center; gap:12px; flex:0 0 auto;}
+  .vw-head h2{margin:0; font-size:16px; white-space:nowrap;}
+  .vw-head h2 .arrow{color:var(--acc);}
+  .vw-ctl{display:flex; align-items:center; gap:14px; flex:1 1 auto; flex-wrap:wrap;
+        background:var(--panel2); border:1px solid var(--line); border-radius:9px; padding:5px 11px;}
+  .vw-ctl .chk{font-size:11.5px;}
+  .vw-ctl .clr{display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--muted);}
+  .vw-ctl input[type=color]{width:30px; height:22px; border:1px solid var(--line); border-radius:6px;
+        background:var(--panel); padding:2px; cursor:pointer;}
+  .view-stack{position:relative; width:100%; height:min(62vh,540px); border-radius:10px; overflow:hidden;
+        border:1px solid var(--line); background:#dfe9f2; flex:1 1 auto; min-height:280px;}
+  .view-stack > canvas{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  #view3dLayer{position:absolute; inset:0; width:100%; height:100%;}
+  #view3dLayer > canvas{position:absolute; top:0; left:0; display:block;}
+  #view3dLayer > div{position:absolute; top:0; left:0;}
+  .fusion-bar{display:flex; align-items:center; gap:10px; padding:2px 4px 0; flex:0 0 auto;}
+  .fusion-bar b{font-size:12px; color:var(--muted); min-width:42px; font-weight:700;}
+  #fusionRange{flex:1; accent-color:var(--acc); cursor:pointer;}
+  .vhint{font-size:11px; margin-left:auto;}
   /* ------------------------------ plano/uprate ------------------------- */
   .plans{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;}
   .pcard{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:14px;}
@@ -248,6 +286,7 @@
     <canvas id="c2d"></canvas>
     <div id="v3dLayer"><canvas id="c3d"></canvas></div>
     <button id="btn3d" title="Passar o mouse mostra a perspectiva 3D aérea sobre a planta 2D">◱ 3D sobre 2D</button>
+    <button id="btnCenter3d" title="Abrir a visualização 3D completa — arraste para orbitar, role para zoom"><span class="ic">◱</span><span class="lbl">3D</span></button>
   </section>
 </main>
 
@@ -259,6 +298,33 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- ------------------------------ modal 2D ⇄ 3D ------------------------- -->
+<div id="viewModal" class="overlay hidden">
+  <div class="modal view-modal" id="viewModalBox">
+    <div class="vw-head">
+      <h2>Visualização <span class="arrow">2D ⇄ 3D</span></h2>
+      <div class="vw-ctl">
+        <label class="chk"><input type="checkbox" id="mVwTeto"> Teto</label>
+        <label class="chk"><input type="checkbox" id="mVwSombra"> Sombras</label>
+        <label class="chk"><input type="checkbox" id="mVwEtq" checked> Etiquetas</label>
+        <label class="clr" title="Cor das paredes no 3D">🎨<input type="color" id="mVwWallColor" value="#f4f1ea"></label>
+        <label class="clr" title="Cor do piso no 3D">🏠<input type="color" id="mVwFloorColor" value="#e9e3d5"></label>
+      </div>
+      <button class="btn" id="btnCloseView" title="Fechar (Esc)">✕ Fechar</button>
+    </div>
+    <div class="view-stack" id="viewStack">
+      <canvas id="c2dmod"></canvas>
+      <div id="view3dLayer"></div>
+    </div>
+    <div class="fusion-bar">
+      <b>Planta 2D</b>
+      <input type="range" id="fusionRange" min="0" max="100" value="58">
+      <b>3D</b>
+      <span class="note vhint">Deslize para sobrepor a planta na cena 3D · arraste para orbitar · role para zoom</span>
+    </div>
+  </div>
+</div>
 
 <!-- ------------------------------ galeria de desenhos -------------------- -->
 <div id="galleryOverlay" class="overlay hidden">
@@ -336,6 +402,9 @@
   </div>
 </div>
 
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
 <script type="module" src="main.js"></script>
 </body>
 </html>
