@@ -1734,7 +1734,6 @@ function syncViewModalOpts() {
   const s = (id, v) => { const el = $(id); if (el) el.checked = v; };
   s('mVwTeto', $('chkTeto').checked);
   s('mVwSombra', $('chkSombra').checked);
-  s('mVwEtq', $('chkEtq').checked);
   $('mVwWallColor').value = proj.colors.wall;
   $('mVwFloorColor').value = proj.colors.floor;
 }
@@ -1763,9 +1762,9 @@ function resize3dView() {
 
 function applyFusion() {
   const r = clamp(+$('fusionRange').value, 0, 100) / 100;
-  $('view3dLayer').style.opacity = r;
+  $('view3dLayer').style.opacity = '1';
   $('view3dLayer').style.pointerEvents = r > 0 ? 'auto' : 'none';
-  $('c2dmod').style.opacity = (1 - r * 0.45).toFixed(2);
+  $('c2dmod').style.opacity = (1 - r).toFixed(2);
 }
 
 function openView3d() {
@@ -1778,7 +1777,7 @@ function openView3d() {
   snapshot2d();
   resize3dView();
   requestAnimationFrame(() => { resize3dView(); startAnimation(); });
-  toast('Vista 3D — arraste para orbitar, role para zoom, deslize para misturar com a planta');
+  toast('Vista 3D — planta 2D sobre a cena · arraste para orbitar, role para zoom');
 }
 function closeView3d() { $('viewModal').classList.add('hidden'); }
 

@@ -161,6 +161,8 @@
   .view-stack{position:relative; width:100%; height:min(62vh,540px); border-radius:10px; overflow:hidden;
         border:1px solid var(--line); background:#dfe9f2; flex:1 1 auto; min-height:280px;}
   .view-stack > canvas{position:absolute; inset:0; width:100%; height:100%; display:block;}
+  .view-stack > #c2dmod{z-index:2; opacity:.6; pointer-events:none; background:transparent;}
+  .view-stack > #view3dLayer{z-index:1;}
   #view3dLayer{position:absolute; inset:0; width:100%; height:100%;}
   #view3dLayer > canvas{position:absolute; top:0; left:0; display:block;}
   #view3dLayer > div{position:absolute; top:0; left:0;}
@@ -303,11 +305,11 @@
 <div id="viewModal" class="overlay hidden">
   <div class="modal view-modal" id="viewModalBox">
     <div class="vw-head">
-      <h2>Visualização <span class="arrow">2D ⇄ 3D</span></h2>
+      <h2>Visualização <span class="arrow">2D sobre 3D</span></h2>
       <div class="vw-ctl">
         <label class="chk"><input type="checkbox" id="mVwTeto"> Teto</label>
         <label class="chk"><input type="checkbox" id="mVwSombra"> Sombras</label>
-        <label class="chk"><input type="checkbox" id="mVwEtq" checked> Etiquetas</label>
+        <label class="chk"><input type="checkbox" id="mVwEtq"> Etiquetas</label>
         <label class="clr" title="Cor das paredes no 3D">🎨<input type="color" id="mVwWallColor" value="#f4f1ea"></label>
         <label class="clr" title="Cor do piso no 3D">🏠<input type="color" id="mVwFloorColor" value="#e9e3d5"></label>
       </div>
@@ -319,9 +321,9 @@
     </div>
     <div class="fusion-bar">
       <b>Planta 2D</b>
-      <input type="range" id="fusionRange" min="0" max="100" value="58">
+      <input type="range" id="fusionRange" min="0" max="100" value="40">
       <b>3D</b>
-      <span class="note vhint">Deslize para sobrepor a planta na cena 3D · arraste para orbitar · role para zoom</span>
+      <span class="note vhint">Planta 2D sobre a cena 3D · deslize para escolher a mistura · arraste para orbitar · role para zoom</span>
     </div>
   </div>
 </div>
