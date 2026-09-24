@@ -224,6 +224,8 @@ function drawBg(ctx, W, H) {
   ctx.setLineDash([]);
 }
 
+const GRID_MINOR = 0.5;
+
 function drawGrid(ctx, W, H) {
   const [x0, y0] = s2w(0, 0);
   const [x1, y1] = s2w(W, H);
@@ -249,7 +251,6 @@ function drawGrid(ctx, W, H) {
     }
   }
 }
-const GRID_MINOR = 0.5;
 
 function drawWalls(ctx) {
   for (let i = 0; i < proj.walls.length; i++) {
@@ -558,7 +559,7 @@ function handleFurnClick(w) {
   } else {
     const it = addFurniture(selFurnType, gx, gy, 0);
     if (!it) { draw2d(); return; }
-    drag = { mode: 'dragItem', item: it };
+    drag = { mode: 'dragItem', item: it, pushed: true };
   }
   draw2d(); renderProps();
 }
@@ -652,6 +653,7 @@ c2.cn.addEventListener('pointermove', (e) => {
     } else if (drag.mode === 'dragItem' && drag.item) {
       const gx = $('chkSnap').checked ? snap(w[0]) : w[0];
       const gy = $('chkSnap').checked ? snap(w[1]) : w[1];
+      if (!drag.pushed && (gx !== drag.item.x || gy !== drag.item.y)) { drag.pushed = true; pushUndo(); }
       drag.item.x = round2(gx); drag.item.y = round2(gy); selId = drag.item.id;
     }
     updateStats();
@@ -696,6 +698,7 @@ window.addEventListener('keydown', (e) => {
     if (k === 'z' && e.shiftKey) { e.preventDefault(); redo(); return; }
     if (k === 'y') { e.preventDefault(); redo(); return; }
   }
+  if (e.key === 'Escape' && !$('upgradeOverlay').classList.contains('hidden')) { closeUpgrade(); return; }
   if (e.key === 'Escape' && !$('galleryOverlay').classList.contains('hidden')) { closeGallery(); return; }
   if (e.key === 'Escape' && !$('viewModal').classList.contains('hidden')) { closeView3d(); return; }
   if (e.key === 'Escape' && v3dOn) { hide3D(); return; }
@@ -1720,20 +1723,20 @@ function startAnimation() {
   if (animRunning) return;
   animRunning = true;
   const loop = () => {
+    if (!renderer3d || $('viewModal').classList.contains('hidden')) { animRunning = false; return; }
+    controls3d.update();
+    renderer3d.render(scene3d, camera3d);
+    if (cssRenderer3d) cssRenderer3d.render(scene3d, camera3d);
     requestAnimationFrame(loop);
-    if (renderer3d && !$('viewModal').classList.contains('hidden')) {
-      controls3d.update();
-      renderer3d.render(scene3d, camera3d);
-      if (cssRenderer3d) cssRenderer3d.render(scene3d, camera3d);
-    }
   };
-  loop();
+  requestAnimationFrame(loop);
 }
 
 function syncViewModalOpts() {
   const s = (id, v) => { const el = $(id); if (el) el.checked = v; };
   s('mVwTeto', $('chkTeto').checked);
   s('mVwSombra', $('chkSombra').checked);
+  s('mVwEtq', $('chkEtq').checked);
   $('mVwWallColor').value = proj.colors.wall;
   $('mVwFloorColor').value = proj.colors.floor;
 }
@@ -1821,7 +1824,7 @@ function loadExample() {
 /* --------------------------- importar/exportar ------------------------- */
 function exportProject() {
   if (!requirePro('export')) return;
-  const data = { v: 2, walls: proj.walls, furniture: proj.furniture, bg: bgMeta(), colors: proj.colors, layers };
+  const data = { v: 2, walls: proj.walls, furniture: proj.furniture, bg: bgMeta(), colors: proj.colors, layers, mats: proj.mats, lastId };
   saveAuto();
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -1839,15 +1842,16 @@ async function importProjectFile(f) {
     proj.furniture = data.furniture || [];
     proj.bg = data.bg || null;
     proj.colors = Object.assign({ wall: '#f4f1ea', floor: '#e9e3d5' }, data.colors || {});
+    proj.mats = Object.assign({ wall: 'massa' }, data.mats || {});
     if (data.layers) applyLayerState(data.layers);
     if (data.bg && data.bg.src && data.bg.width) {
       const img = new Image(proj.bg.width, proj.bg.height);
       img.src = proj.bg.src;
       bgImageCache[proj.bg.src] = img;
     }
-    lastId = Math.max(1, ...proj.furniture.map((f) => f.id || 0)) + 1;
+    lastId = Math.max(1, data.lastId || 0, ...proj.furniture.map((f) => f.id || 0)) + 1;
     selId = null; selWall = -1; wallChain = [];
-    scheduleSave(); updateStats(); draw2d(); renderProps();
+    scheduleSave(); updateStats(); draw2d(); renderProps(); syncColors();
     toast('Projeto importado');
   } catch (e) { toast('JSON inválido'); }
 }
@@ -1918,10 +1922,14 @@ function detectWalls() {
     found.push({ x1: round2(x1), y1: round2(y1), x2: round2(x2), y2: round2(y2) });
   }
   if (!found.length) { toast('Nenhuma parede detectada'); return; }
-  pushUndo();
-  for (const f of found) proj.walls.push(f);
+  let added = 0;
+  for (const f of found) {
+    if (!canAddWalls()) { openUpgrade('walls'); break; }
+    if (!added) pushUndo();
+    proj.walls.push(f); added++;
+  }
   scheduleSave(); updateStats(); draw2d();
-  toast(found.length + ' paredes detectadas');
+  toast(added ? added + ' paredes detectadas' : 'Limite de paredes do plano atingido');
 }
 
 function otsu(gray, min, max) {
@@ -2086,6 +2094,7 @@ function wireUI() {
   updateStats();
   updateNav();
   setTool('wall');
+  const y = $('yearNow'); if (y) y.textContent = new Date().getFullYear();
   if (!proj.walls.length && !proj.furniture.length) loadExample();
   const q = new URLSearchParams(location.search);
   if (q.get('pagamento_aprovado') === '1') {
