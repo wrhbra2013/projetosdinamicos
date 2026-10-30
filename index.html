@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Projetos Dinâmicos — ideias que viram projetos</title>
+  <meta name="description" content="Organize projetos, colete ideias da equipe e acompanhe a execução com auditoria completa e LGPD desde a primeira linha. Funciona no navegador, sem servidor.">
+  <meta name="theme-color" content="#123b32">
+  <meta name="color-scheme" content="light">
+  <meta property="og:title" content="Projetos Dinâmicos">
+  <meta property="og:description" content="Ideias que viram projetos — com privacidade e auditoria desde o primeiro clique.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/landing.css">
+</head>
+<body class="landing">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="index.html" aria-label="Projetos Dinâmicos">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>
+        </span>
+        <span class="brand-text">
+          <strong>Projetos <em>Dinâmicos</em></strong>
+          <small>ideias colaborativas</small>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="Navegação">
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#privacidade">Privacidade</a>
+        <a href="#tecnologia">Tecnologia</a>
+        <a class="btn primary sm" href="app.html">Abrir plataforma</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">Plataforma local-first · LGPD by design</p>
+          <h1>Ideias que viram <span>projetos.</span></h1>
+          <p class="lead">Reúna a equipe, registre ideias, vote no que importa e acompanhe a execução.
+            Tudo em uma página estática, com SQLite no seu navegador e uma trilha de auditoria que ninguém consegue alterar.</p>
+          <div class="hero-actions">
+            <a class="btn primary lg" href="app.html">Começar agora
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+            </a>
+            <a class="btn ghost lg" href="#como-funciona">Ver como funciona</a>
+          </div>
+          <ul class="hero-points">
+            <li><strong>Sem cadastro em servidor.</strong> A conta é criada no seu dispositivo.</li>
+            <li><strong>Funciona offline.</strong> Depois do primeiro acesso, nada depende da rede.</li>
+            <li><strong>Auditável.</strong> Cada ação tem hash, base legal e finalidade.</li>
+          </ul>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="art-card art-card-main">
+            <div class="art-card-head"><span class="dot ok"></span> Horta Comunitária</div>
+            <div class="art-idea">
+              <span class="art-vote">▲ 12</span>
+              <div>
+                <strong>Oficinas de compostagem</strong>
+                <small>aprovada · comunidade</small>
+              </div>
+            </div>
+            <div class="art-idea dim">
+              <span class="art-vote">▲ 8</span>
+              <div>
+                <strong>Irrigação com garrafa PET</strong>
+                <small>em discussão · tecnologia</small>
+              </div>
+            </div>
+            <div class="art-progress"><span></span></div>
+            <small class="art-foot">6 de 10 tarefas concluídas</small>
+          </div>
+          <div class="art-card art-card-float">
+            <span class="art-shield">✓</span>
+            <div><strong>Auditoria íntegra</strong><small>1.284 eventos verificados</small></div>
+          </div>
+          <div class="art-card art-card-small">
+            <strong>100% local</strong>
+            <small>SQLite + IndexedDB</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="logos-strip">
+      <div class="wrap">
+        <p>Feito para equipes pequenas, coletivos, associações e times de produto.</p>
+      </div>
+    </section>
+
+    <section class="section" id="como-funciona">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Fluxo de trabalho</p>
+          <h2>Do palpite à entrega, sem perder o contexto.</h2>
+          <p class="lead-sm">Um lugar só para a conversa, a decisão e a execução — com histórico completo de quem fez o quê.</p>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <span class="step-num">01</span>
+            <h3>Crie o projeto</h3>
+            <p>Defina objetivo, prazo, visibilidade e etiquetas. Convide pessoas por e-mail com papéis claros.</p>
+          </article>
+          <article class="step">
+            <span class="step-num">02</span>
+            <h3>Colete ideias</h3>
+            <p>Qualquer membro propõe, comenta e vota. Impacto e esforço ajudam a priorizar sem achismo.</p>
+          </article>
+          <article class="step">
+            <span class="step-num">03</span>
+            <h3>Decida junto</h3>
+            <p>Mova ideias para aprovada e em execução. As decisões ficam registradas com autor e data.</p>
+          </article>
+          <article class="step">
+            <span class="step-num">04</span>
+            <h3>Execute e acompanhe</h3>
+            <p>Transforme ideias em tarefas, arraste no quadro e veja o progresso no painel de cada pessoa.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section alt" id="privacidade">
+      <div class="wrap privacy-grid">
+        <div>
+          <p class="eyebrow">Privacidade e LGPD</p>
+          <h2>Conformidade não é um PDF no drive.</h2>
+          <p class="lead-sm">A plataforma foi construída com os princípios da Lei nº 13.709/2018 no centro:
+            finalidade, minimização, transparência e prestação de contas. E com evidências que você pode exportar.</p>
+          <ul class="feature-list">
+            <li><strong>Consentimentos versionados</strong> — cada concessão e revogação é um evento imutável.</li>
+            <li><strong>Direitos do titular</strong> — acesso, correção, portabilidade e eliminação com prazo de 15 dias.</li>
+            <li><strong>Inventário de tratamentos (ROPA)</strong> — base legal, retenção, compartilhamento e medidas de segurança.</li>
+            <li><strong>Retenção e descarte</strong> — exclusão lógica de 30 dias e rotina de eliminação definitiva.</li>
+            <li><strong>Incidentes</strong> — registro, contenção e comunicação, conforme a Resolução ANPD nº 15/2024.</li>
+            <li><strong>Auditoria à prova de alteração</strong> — hash SHA-256 encadeado e verificação a qualquer momento.</li>
+          </ul>
+          <a class="btn ghost" href="privacidade.html">Ler a Política de Privacidade</a>
+        </div>
+        <div class="score-card-art">
+          <div class="score-ring-art"><span>94<small>%</small></span></div>
+          <strong>Conformidade</strong>
+          <p>12 de 12 controles essenciais atendidos</p>
+          <ul class="mini-checks">
+            <li><span>✓</span> Encarregado designado</li>
+            <li><span>✓</span> Política versionada</li>
+            <li><span>✓</span> Trilha de auditoria íntegra</li>
+            <li><span>✓</span> Dados sensíveis redigidos</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="tecnologia">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">Tecnologia</p>
+          <h2>Simples por fora. Sólido por dentro.</h2>
+        </div>
+        <div class="tech-grid">
+          <article class="tech-card">
+            <div class="tech-icon">◈</div>
+            <h3>SQLite no navegador</h3>
+            <p>O mesmo banco relacional que roda em bilhões de dispositivos, compilado para WebAssembly e persistido no IndexedDB.</p>
+          </article>
+          <article class="tech-card">
+            <div class="tech-icon">⛨</div>
+            <h3>Segurança por padrão</h3>
+            <p>PBKDF2-SHA256 com 210 mil iterações, sessões de 12 horas com token hasheado e bloqueio por inatividade.</p>
+          </article>
+          <article class="tech-card">
+            <div class="tech-icon">⛓</div>
+            <h3>Auditoria encadeada</h3>
+            <p>Cada evento carrega o hash do anterior. Triggers no banco impedem edição ou exclusão de registros.</p>
+          </article>
+          <article class="tech-card">
+            <div class="tech-icon">⇄</div>
+            <h3>Sincronização opcional</h3>
+            <p>Precisa de várias pessoas em dispositivos diferentes? Instale o backend SQLite com um script e ative a sincronização.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="wrap cta-inner">
+        <div>
+          <h2>Pronto para tirar as ideias do papel?</h2>
+          <p>Abra a plataforma, crie a primeira conta e comece em menos de um minuto. Sem cartão, sem servidor, sem rastreamento.</p>
+        </div>
+        <a class="btn primary lg" href="app.html">Criar meu primeiro projeto</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-grid">
+      <div>
+        <a class="brand" href="index.html">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>
+          </span>
+          <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>ideias colaborativas</small></span>
+        </a>
+        <p class="muted small">Desenvolvimento colaborativo com privacidade desde a primeira linha.</p>
+      </div>
+      <div>
+        <h4>Plataforma</h4>
+        <a href="app.html">Abrir aplicativo</a>
+        <a href="app.html#/projetos">Projetos</a>
+        <a href="app.html#/ideias">Ideias</a>
+        <a href="app.html#/lgpd">Central de LGPD</a>
+      </div>
+      <div>
+        <h4>Documentos</h4>
+        <a href="privacidade.html">Política de Privacidade</a>
+        <a href="termos.html">Termos de Uso</a>
+        <a href="docs/LGPD.md">Guia de LGPD</a>
+        <a href="docs/ARQUITETURA.md">Arquitetura</a>
+      </div>
+      <div>
+        <h4>Contato</h4>
+        <a href="mailto:dpo@projetosdinamicos.com.br">dpo@projetosdinamicos.com.br</a>
+        <p class="muted small">Encarregado pelo tratamento de dados pessoais.</p>
+      </div>
+    </div>
+    <div class="wrap footer-bottom">
+      <span>© 2026 Projetos Dinâmicos. Feito no Brasil.</span>
+      <span>Sem cookies de rastreamento · Dados no seu dispositivo</span>
+    </div>
+  </footer>
+</body>
+</html>

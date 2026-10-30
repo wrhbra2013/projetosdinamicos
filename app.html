@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Projetos Dinâmicos</title>
+  <meta name="description" content="Plataforma colaborativa para transformar ideias em projetos, com SQLite no navegador e privacidade desde a primeira linha.">
+  <meta name="theme-color" content="#123b32">
+  <meta name="color-scheme" content="light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https:; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+  <a class="skip-link" href="#app">Ir para o conteúdo</a>
+  <div id="app" class="app-root"></div>
+  <noscript>
+    <div class="noscript">
+      <h1>JavaScript é necessário</h1>
+      <p>O Projetos Dinâmicos usa SQLite compilado para WebAssembly no seu navegador. Ative o JavaScript para continuar.</p>
+    </div>
+  </noscript>
+  <script src="vendor/sql.js/sql-wasm.js"></script>
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

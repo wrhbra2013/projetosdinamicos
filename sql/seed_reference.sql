@@ -1,0 +1,120 @@
+-- ============================================================================
+-- Projetos Dinâmicos — dados de referência (LGPD / ROPA / retenção)
+-- Executado em toda inicialização; INSERT OR IGNORE mantém edições do usuário.
+-- ============================================================================
+
+INSERT OR IGNORE INTO app_meta (key, value, updated_at) VALUES
+  ('schema_version',  '1',                          strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  ('policy_version',  '2026-10-28',                 strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  ('product_name',    'Projetos Dinâmicos',         strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  ('audit_algorithm', 'SHA-256 encadeado',          strftime('%Y-%m-%dT%H:%M:%fZ','now'));
+
+INSERT OR IGNORE INTO processing_activities
+  (id, name, purpose, legal_basis, data_categories, data_subjects, retention,
+   recipients, international_transfer, security_measures, created_at, updated_at)
+VALUES
+  ('ropa-cadastro',
+   'Cadastro e autenticação',
+   'Criar conta, autenticar e proteger o acesso à plataforma.',
+   'contrato',
+   '["identificacao","contato","credenciais"]',
+   'Usuários cadastrados',
+   'Enquanto a conta estiver ativa e por até 5 anos após o encerramento.',
+   'Nenhum compartilhamento com terceiros.',
+   0,
+   'Senha derivada com PBKDF2-SHA256 (210.000 iterações); sessão com token aleatório armazenado apenas como hash; expiração automática.',
+   strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+
+  ('ropa-projetos',
+   'Gestão de projetos e ideias colaborativas',
+   'Permitir que equipes registrem projetos, ideias, comentários, votos e tarefas.',
+   'contrato',
+   '["conteudo","metadados","identificacao"]',
+   'Usuários e membros de projetos',
+   'Enquanto o projeto existir; conteúdo excluído é removido definitivamente em até 30 dias.',
+   'Membros do mesmo projeto, conforme permissões definidas.',
+   0,
+   'Controle de acesso por papel (coordenador, colaborador, observador); validação de entrada; registro de auditoria em toda operação.',
+   strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+
+  ('ropa-auditoria',
+   'Auditoria e segurança da informação',
+   'Registrar operações de tratamento, prevenir fraude e atender obrigações legais.',
+   'obrigacao_legal',
+   '["metadados","identificacao"]',
+   'Usuários e titulares que interagem com a plataforma',
+   '5 anos, conforme prazos de prescrição e obrigações legais.',
+   'Autoridades públicas, quando legalmente requisitado.',
+   0,
+   'Registro append-only com encadeamento de hashes SHA-256; dados sensíveis removidos antes da gravação; acesso restrito a administradores.',
+   strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+
+  ('ropa-comunicacoes',
+   'Comunicações sobre projetos',
+   'Enviar avisos operacionais sobre projetos, convites e menções.',
+   'contrato',
+   '["contato","identificacao","conteudo"]',
+   'Usuários e convidados',
+   'Enquanto a conta estiver ativa.',
+   'Nenhum compartilhamento com terceiros.',
+   0,
+   'Conteúdo mínimo necessário; sem rastreamento de abertura.',
+   strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+
+  ('ropa-marketing',
+   'Comunicações de marketing',
+   'Enviar novidades, pesquisas e convites opcionais.',
+   'consentimento',
+   '["contato","identificacao"]',
+   'Titulares que deram consentimento explícito',
+   'Até a revogação do consentimento.',
+   'Nenhum compartilhamento com terceiros.',
+   0,
+   'Opt-in explícito e destacado; revogação em um clique; sem pré-marcação.',
+   strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+
+  ('ropa-titulares',
+   'Atendimento a titulares de dados',
+   'Receber, registrar e responder solicitações de acesso, correção, exclusão e portabilidade.',
+   'obrigacao_legal',
+   '["identificacao","contato","conteudo"]',
+   'Titulares de dados e seus representantes',
+   '5 anos após o encerramento da solicitação.',
+   'Nenhum compartilhamento com terceiros.',
+   0,
+   'Protocolo único; prazo de 15 dias; resposta registrada e auditada.',
+   strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+
+  ('ropa-backup',
+   'Backup, exportação e portabilidade',
+   'Gerar cópias de segurança e permitir que o titular leve seus dados.',
+   'consentimento',
+   '["conteudo","metadados","identificacao"]',
+   'Usuários que solicitam exportação ou backup',
+   'Arquivos de backup expiram em 30 dias.',
+   'Nenhum compartilhamento com terceiros.',
+   0,
+   'Exportação iniciada pelo próprio titular; arquivo gerado localmente no navegador.',
+   strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now'));
+
+INSERT OR IGNORE INTO retention_policies
+  (id, entity, description, retention_days, action, legal_basis)
+VALUES
+  ('ret-sessions', 'sessions',
+   'Sessões expiradas ou revogadas são eliminadas.',
+   30, 'excluir', 'seguranca'),
+  ('ret-conteudo', 'conteudo_excluido',
+   'Projetos, ideias, comentários e tarefas na lixeira são eliminados definitivamente.',
+   30, 'excluir', 'contrato'),
+  ('ret-audit', 'audit_log',
+   'Trilha de auditoria preservada pelo prazo legal e depois arquivada.',
+   1825, 'arquivar', 'obrigacao_legal'),
+  ('ret-consents', 'consents',
+   'Consentimentos revogados são mantidos como prova de conformidade.',
+   1825, 'arquivar', 'obrigacao_legal'),
+  ('ret-dsr', 'dsr_requests',
+   'Solicitações de titulares e respostas são mantidas como prova.',
+   1825, 'arquivar', 'obrigacao_legal'),
+  ('ret-incidents', 'incidents',
+   'Registros de incidentes de segurança são preservados.',
+   1825, 'arquivar', 'obrigacao_legal');
