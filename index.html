@@ -3,16 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Projetos Dinâmicos — ideias que viram projetos</title>
-  <meta name="description" content="Organize projetos, colete ideias da equipe e acompanhe a execução com auditoria completa e LGPD desde a primeira linha. Funciona no navegador, sem servidor.">
+  <title>Projetos Dinâmicos — Assistente IA</title>
+  <meta name="description" content="Plataforma de gestão de projetos com assistente de IA local e conformidade LGPD">
   <meta name="theme-color" content="#123b32">
   <meta name="color-scheme" content="light">
-  <meta property="og:title" content="Projetos Dinâmicos">
-  <meta property="og:description" content="Ideias que viram projetos — com privacidade e auditoria desde o primeiro clique.">
+  <meta property="og:title" content="Projetos Dinâmicos — IA">
+  <meta property="og:description" content="Ideias que viram projetos com assistente inteligente">
   <meta property="og:type" content="website">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <!-- LLM API Configuration -->
+  <script>
+    // Configuração da API LLM - adapte o endpoint conforme o domínio
+    // Em produção: "https://api.projetosdinamicos.com.br/llm"
+    // Em desenvolvimento local: "/llm"
+    window.LLM_API_BASE = "/llm";
+    // Para produção na nuvem, descomente:
+    // window.LLM_API_BASE = "https://api.projetosdinamicos.com.br/llm";
+  </script>
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/landing.css">
+  <link rel="stylesheet" href="assets/css/llm.css">
 </head>
 <body class="landing">
   <header class="site-header">
@@ -183,6 +193,11 @@
             <h3>Sincronização opcional</h3>
             <p>Precisa de várias pessoas em dispositivos diferentes? Instale o backend SQLite com um script e ative a sincronização.</p>
           </article>
+          <article class="tech-card">
+            <div class="tech-icon">🤖</div>
+            <h3>Assistente IA integrado</h3>
+            <p>Consultas ao modelo LLM via API /llm com prompts seguros. Resultados armazenados no histórico do projeto com auditoria completa.</p>
+          </article>
         </div>
       </div>
     </section>
@@ -215,6 +230,7 @@
         <a href="app.html#/projetos">Projetos</a>
         <a href="app.html#/ideias">Ideias</a>
         <a href="app.html#/lgpd">Central de LGPD</a>
+        <a href="app.html#/llm">Assistente IA</a>
       </div>
       <div>
         <h4>Documentos</h4>
@@ -234,5 +250,65 @@
       <span>Sem cookies de rastreamento · Dados no seu dispositivo</span>
     </div>
   </footer>
+
+  <!-- LLM API Client -->
+  <script>
+    // Cliente simplificado para chamada da API LLM
+    // Quando o domínio api.projetosdinamicos.com.br for configurado,
+    // o window.LLM_API_BASE será alterado para o endpoint remoto
+    
+    const LLM = {
+      // Historico local de conversas
+      history: [],
+      
+      // Enviar prompt para a API
+      async send(prompt, context = {}) {
+        const base = window.LLM_API_BASE || '/llm';
+        try {
+          const response = await fetch(`${base}/v1/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: [
+                ...(context.history || []).slice(-10), // Últimas 10 mensagens
+                { role: 'user', content: prompt }
+              ],
+              model: context.model || 'LFM2.5-230M-Q4_K_M'
+            }),
+            // Modo local não precisa de auth; produção pode adicionar headers
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          
+          const data = await response.json();
+          const assistantMessage = data.choices?.[0]?.message?.content || 'Sem resposta';
+          
+          // Adicionar ao historico local
+          this.history = [
+            ...(context.history || []),
+            { role: 'user', content: prompt },
+            { role: 'assistant', content: assistantMessage }
+          ].slice(0, 20); // Mantém apenas as últimas 20 mensagens
+          
+          return assistantMessage;
+        } catch (error) {
+          console.error('Erro ao chamar API LLM:', error);
+          return 'Desculpe, não foi possível conectar ao assistente IA. Verifique se o servidor está disponível.';
+        }
+      },
+      
+      // Limpar historico
+      clear() {
+        this.history = [];
+      }
+    };
+    
+    // Tornar disponível globalmente para uso nos templates
+    window.LLM = LLM;
+  </script>
 </body>
 </html>

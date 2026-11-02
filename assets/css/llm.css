@@ -1,0 +1,136 @@
+/* LLM Assistant Styles */
+.llm-chat {
+  max-width: 800px;
+  margin: 2rem auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.llm-messages {
+  height: 400px;
+  padding: 1rem;
+  overflow-y: auto;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.llm-message {
+  max-width: 80%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.llm-message.user {
+  margin-left: auto;
+  background: var(--panel-2);
+  color: var(--ink);
+}
+
+.llm-message.assistant {
+  margin-right: auto;
+  background: var(--panel);
+  color: var(--ink);
+  border-radius: 12px 12px 4px 12px;
+}
+
+.llm-input-area {
+  padding: 1rem;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 0.5rem;
+}
+
+.llm-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.llm-input:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
+.llm-send {
+  background: var(--brand);
+  color: white;
+  border: none;
+  padding: 0 1rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: bold;
+}
+
+.llm-send:hover {
+  background: var(--brand-2);
+}
+
+.llm-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.llm-typing {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  color: var(--muted);
+}
+
+.llm-typing-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--muted);
+  border-radius: 50%;
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+/* Botão de abrir IA no header */
+.llm-header-btn {
+  position: relative;
+  padding: 0.5rem 1rem;
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.llm-header-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.llm-header-btn .dot-status {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}

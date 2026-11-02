@@ -17,6 +17,7 @@ import { teamView } from './ui/views/team.js';
 import { auditView } from './ui/views/audit.js';
 import { lgpdView } from './ui/views/lgpd.js';
 import { settingsView } from './ui/views/settings.js';
+import { llmChatView } from './ui/views/llm-chat.js';
 import { toast } from './ui/components.js';
 import { icon } from './ui/icons.js';
 import { el } from './core/util.js';
@@ -37,6 +38,7 @@ register('/equipe', teamView);
 register('/auditoria', auditView);
 register('/lgpd', lgpdView);
 register('/configuracoes', settingsView);
+register('/llm', llmChatView);
 
 /* ------------------------------- Renderização ----------------------------- */
 function renderIntoShell(node) {
