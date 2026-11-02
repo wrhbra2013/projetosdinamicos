@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
@@ -14,11 +14,21 @@
   <!-- LLM API Configuration -->
   <script>
     // Configuração da API LLM - adapte o endpoint conforme o domínio
-    // Em produção: "https://api.projetosdinamicos.com.br/llm"
-    // Em desenvolvimento local: "/llm"
+    // Em produção com nginx reverso: "https://api.projetosdinamicos.com.br/llm"
+    // Em desenvolvimento local (após install_llm.sh): "/llm"
+    // O install_llm.sh configura nginx para proxy /llm -> 127.0.0.1:8080
     window.LLM_API_BASE = "/llm";
-    // Para produção na nuvem, descomente:
+    // Para produção na nuvem com domínio configurado, descomente:
     // window.LLM_API_BASE = "https://api.projetosdinamicos.com.br/llm";
+    
+    // Verificar se o API server está disponível ao carregar
+    document.addEventListener('DOMContentLoaded', checkLLMHealth);
+    
+    // Elementos de status da API
+    window.LLM_STATUS_ELEMENTS = {
+      indicator: null,
+      statusText: null
+    };
   </script>
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/landing.css">
@@ -42,6 +52,11 @@
         <a href="#tecnologia">Tecnologia</a>
         <a class="btn primary sm" href="app.html">Abrir plataforma</a>
       </nav>
+      <!-- LLM Status Indicator -->
+      <div class="llm-status-indicator" id="llm-status-indicator" aria-label="Status da API LLM">
+        <span class="llm-status-dot" id="llm-status-dot"></span>
+        <span class="llm-status-text" id="llm-status-text">Verificando...</span>
+      </div>
     </div>
   </header>
 
@@ -309,6 +324,74 @@
     
     // Tornar disponível globalmente para uso nos templates
     window.LLM = LLM;
+  </script>
+  
+  <script>
+    // Inicializar status da API LLM
+    function checkLLMHealth() {
+      const indicator = document.getElementById('llm-status-indicator');
+      const statusDot = document.getElementById('llm-status-dot');
+      const statusText = document.getElementById('llm-status-text');
+      
+      if (!indicator || !statusDot || !statusText) return;
+      
+      window.LLM_STATUS_ELEMENTS = {
+        indicator,
+        statusDot,
+        statusText
+      };
+      
+      const base = window.LLM_API_BASE || '/llm';
+      
+      fetch(`${base}/health`, {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store'
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw new Error('Network response was not ok');
+      })
+      .then(data => {
+        // API está saudável
+        statusDot.className = 'llm-status-dot dot ok';
+        statusText.textContent = 'API LLM ativa';
+        statusDot.setAttribute('title', 'API LLM responding');
+        indicator.className = 'llm-status-indicator';
+        // Esconder após 3 segundos se estiver saudável
+        setTimeout(() => {
+          indicator.style.display = 'none';
+        }, 3000);
+      })
+      .catch(error => {
+        // API não disponível - mostrar indicador
+        statusDot.className = 'llm-status-dot dot error';
+        statusText.textContent = 'API LLM indisponível';
+        statusDot.setAttribute('title', 'API LLM not responding');
+        indicator.className = 'llm-status-indicator visible';
+        indicator.style.display = 'flex';
+        // Manter visível mas não bloquear
+        console.warn('LLM API health check failed:', error);
+      });
+    }
+    
+    // Tornar LLM.send disponível com feedback UI
+    window.LLMWithStatus = {
+      send: async function(prompt, context = {}) {
+        const base = window.LLM_API_BASE || '/llm';
+        const btn = document.querySelector('.hero-actions .btn.primary.lg');
+        if (btn) btn.disabled = true;
+        
+        try {
+          const result = await LLM.send(prompt, context);
+          return result;
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+    };
   </script>
 </body>
 </html>
