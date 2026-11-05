@@ -1,0 +1,516 @@
+/* ============================================================================
+   OpenChat — interface estática para a API LLM (llamafile)
+   Usa os tokens de assets/css/base.css.
+   ========================================================================== */
+
+.oc-body {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background:
+    radial-gradient(1100px 520px at 50% -12%, #fffdf8 0%, rgba(255, 253, 248, 0) 62%),
+    var(--bg);
+}
+
+.oc-app {
+  width: min(920px, 100%);
+  height: min(calc(100dvh - 32px), 900px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ------------------------------- Header ---------------------------------- */
+.oc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+}
+
+.oc-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.oc-logo {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: linear-gradient(145deg, var(--brand-2), var(--brand));
+  color: #fff;
+  box-shadow: 0 8px 18px -10px rgba(18, 59, 50, .8);
+}
+
+.oc-title {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -.02em;
+  line-height: 1.1;
+}
+
+.oc-subtitle {
+  margin: 0;
+  font-size: .78rem;
+  color: var(--muted);
+}
+
+.oc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.oc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.oc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.oc-status[data-state="online"] {
+  color: var(--ok);
+  background: var(--ok-soft);
+  border-color: #bfdccb;
+}
+.oc-status[data-state="online"] .oc-dot {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px rgba(44, 122, 88, .14);
+}
+.oc-status[data-state="offline"] {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: #e8c3bf;
+}
+.oc-status[data-state="offline"] .oc-dot { background: var(--danger); }
+.oc-status[data-state="checking"] {
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-color: #ead6a9;
+}
+.oc-status[data-state="checking"] .oc-dot { background: var(--warn); animation: oc-blink 1.2s infinite; }
+
+/* ------------------------------- Botões ----------------------------------- */
+.oc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: .82rem;
+  font-weight: 600;
+  line-height: 1.2;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease;
+}
+.oc-btn:active { transform: translateY(1px); }
+
+.oc-btn-ghost {
+  background: var(--panel);
+  border-color: var(--line);
+}
+.oc-btn-ghost:hover { background: var(--panel-2); border-color: var(--line-strong); }
+
+.oc-btn-primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+.oc-btn-primary:hover { background: var(--brand-2); border-color: var(--brand-2); }
+
+.oc-btn-send {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 14px;
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+.oc-btn-send:hover { background: var(--brand-2); }
+.oc-btn-send:disabled { opacity: .45; cursor: not-allowed; }
+
+.oc-btn-stop {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 14px;
+  background: var(--danger-soft);
+  border-color: #e8c3bf;
+  color: var(--danger);
+}
+.oc-btn-stop:hover { background: #f3d3cf; }
+
+.oc-icon-btn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.oc-icon-btn:hover { background: var(--panel-2); color: var(--ink); }
+
+/* ------------------------------- Conversa --------------------------------- */
+.oc-messages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 18px 8px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.oc-empty {
+  margin: auto;
+  max-width: 560px;
+  padding: 24px 12px;
+  text-align: center;
+}
+
+.oc-empty-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.oc-empty h2 {
+  margin-bottom: .4rem;
+  font-size: 1.5rem;
+}
+
+.oc-empty p {
+  max-width: 46ch;
+  margin: 0 auto 18px;
+  color: var(--muted);
+}
+
+.oc-suggestions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.oc-suggestion {
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--ink-2);
+  font-size: .82rem;
+  line-height: 1.35;
+  text-align: left;
+  transition: border-color .15s ease, color .15s ease, background .15s ease;
+}
+.oc-suggestion:hover {
+  border-color: var(--brand-3);
+  background: #fff;
+  color: var(--brand);
+}
+
+.oc-msg {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  animation: oc-rise .18s ease-out;
+}
+
+.oc-msg-user { flex-direction: row-reverse; }
+
+.oc-avatar {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  margin-top: 2px;
+  border-radius: 10px;
+  background: var(--panel-3);
+  color: var(--ink-2);
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.oc-msg-assistant .oc-avatar {
+  background: var(--brand);
+  color: #fff;
+}
+
+.oc-bubble {
+  max-width: min(78%, 640px);
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: var(--panel-2);
+  color: var(--ink);
+  font-size: .92rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.oc-msg-user .oc-bubble {
+  background: var(--brand);
+  color: #fff;
+  border-bottom-right-radius: 5px;
+}
+.oc-msg-assistant .oc-bubble { border-bottom-left-radius: 5px; }
+
+.oc-bubble p { margin: 0 0 .55em; }
+.oc-bubble p:last-child { margin-bottom: 0; }
+.oc-bubble strong { font-weight: 700; }
+
+.oc-bubble pre {
+  margin: .55em 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border-radius: 10px;
+  background: #0f1e19;
+  color: #e7f0ea;
+  font-size: .8rem;
+  line-height: 1.5;
+}
+
+.oc-bubble code {
+  padding: .1em .35em;
+  border-radius: 5px;
+  background: rgba(0, 0, 0, .07);
+  font-family: var(--font-mono);
+  font-size: .85em;
+}
+
+.oc-bubble pre code {
+  padding: 0;
+  background: none;
+  color: inherit;
+}
+
+.oc-msg-user .oc-bubble code { background: rgba(255, 255, 255, .18); }
+.oc-msg-user .oc-bubble a { color: #fff; text-decoration: underline; }
+
+.oc-error {
+  margin: .5em 0 0;
+  color: var(--danger);
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+.oc-typing {
+  display: inline-flex;
+  gap: 5px;
+  padding: 3px 2px;
+}
+.oc-typing i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: oc-blink 1.2s infinite;
+}
+.oc-typing i:nth-child(2) { animation-delay: .15s; }
+.oc-typing i:nth-child(3) { animation-delay: .3s; }
+
+/* ------------------------------- Composer --------------------------------- */
+.oc-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 16px 6px;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.oc-composer textarea {
+  flex: 1;
+  min-height: 44px;
+  max-height: 160px;
+  padding: 11px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.4;
+  outline: none;
+  resize: none;
+}
+.oc-composer textarea:focus {
+  border-color: var(--brand-3);
+  box-shadow: 0 0 0 3px rgba(47, 122, 100, .14);
+}
+.oc-composer textarea:disabled { opacity: .7; }
+
+.oc-footnote {
+  margin: 0;
+  padding: 4px 16px 12px;
+  color: var(--muted);
+  font-size: .7rem;
+  text-align: center;
+}
+
+/* ------------------------------- Dialog ----------------------------------- */
+.oc-dialog {
+  width: min(460px, calc(100vw - 32px));
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: var(--shadow-lg);
+}
+.oc-dialog::backdrop { background: rgba(16, 32, 26, .45); }
+
+.oc-dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+}
+
+.oc-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.oc-dialog-head h2 { margin: 0; font-size: 1.2rem; }
+
+.oc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--ink-2);
+  font-size: .8rem;
+  font-weight: 600;
+}
+.oc-field input {
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 400;
+}
+.oc-field input:focus {
+  border-color: var(--brand-3);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(47, 122, 100, .14);
+}
+.oc-field small {
+  color: var(--muted);
+  font-size: .72rem;
+  font-weight: 400;
+}
+
+.oc-settings-msg {
+  min-height: 1.1em;
+  margin: 0;
+  color: var(--danger);
+  font-size: .76rem;
+}
+
+.oc-dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+/* ------------------------------- Utilidades ------------------------------- */
+.oc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes oc-blink {
+  0%, 100% { opacity: .25; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2px); }
+}
+
+@keyframes oc-rise {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ------------------------------- Responsivo ------------------------------- */
+@media (max-width: 640px) {
+  .oc-body { padding: 0; }
+  .oc-app {
+    width: 100%;
+    height: 100dvh;
+    border: none;
+    border-radius: 0;
+  }
+  .oc-header { padding: 12px 14px; gap: 8px; }
+  .oc-subtitle { display: none; }
+  .oc-title { font-size: 1.2rem; }
+  .oc-logo { width: 36px; height: 36px; border-radius: 11px; }
+  .oc-actions { gap: 6px; }
+  .oc-actions .oc-btn-ghost { padding: 7px 10px; font-size: .76rem; }
+  .oc-status { padding: 5px 9px; font-size: .72rem; }
+  .oc-messages { padding: 16px 12px 6px; gap: 13px; }
+  .oc-suggestions { grid-template-columns: 1fr; }
+  .oc-bubble { max-width: 86%; }
+  .oc-composer { padding: 10px 12px 4px; }
+  .oc-footnote { padding-bottom: 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
