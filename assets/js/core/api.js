@@ -337,24 +337,36 @@ export async function authMe() {
   return user;
 }
 
-/** Restaura a sessão remota por token e/ou cookie. Nunca lança por 401. */
+/**
+ * Restaura a sessão remota por token e/ou cookie. Nunca lança por 401.
+ * Consulta /status primeiro para evitar um 401 desnecessário em /me quando
+ * não há sessão, e só busca o perfil completo se o serviço confirmar login.
+ */
 export async function restoreApiUser() {
+  let status = null;
+  try {
+    status = await authStatus();
+  } catch { /* API offline: mantém o estado local */ }
+
+  if (!status) return cachedUser || null;
+
+  if (!status.authenticated) {
+    clearApiSession();
+    return null;
+  }
+
+  if (status.user) {
+    const user = normalizeUser(status.user) || normalizeUser({ user: status.user });
+    if (user) { setApiUser(user); return user; }
+  }
+
   try {
     const user = await authMe();
     if (user) return user;
   } catch (err) {
-    if (err?.status === 401) clearApiSession();
-    if (err?.status === 401 || err?.status === 403) return null;
+    if (err?.status === 401 || err?.status === 403) clearApiSession();
   }
-  try {
-    const status = await authStatus();
-    if (status?.authenticated && status.user) {
-      const user = normalizeUser(status.user) || normalizeUser({ user: status.user });
-      if (user) { setApiUser(user); return user; }
-    }
-    if (!status?.authenticated) clearApiSession();
-  } catch { /* API offline: mantém o estado local */ }
-  return null;
+  return cachedUser || null;
 }
 
 export async function authLogout() {

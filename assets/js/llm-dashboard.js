@@ -3,11 +3,10 @@
 import {
   AUTH_BASE,
   LLM_BASE,
-  authStatus,
   authLogin,
   authRegister,
   authLogout,
-  authMe,
+  restoreApiUser,
   getToken,
   setToken,
   apiUser,
@@ -62,7 +61,8 @@ function setAuthUi(user) {
   if (els.authUser) els.authUser.textContent = user ? `${user.display_name || user.email} <${user.email || ''}>` : '';
   if (els.authState) {
     els.authState.textContent = authenticated ? 'conta conectada' : 'visitante';
-    els.authState.dataset.state = authenticated ? 'online' : 'offline';
+    if (authenticated) els.authState.dataset.state = 'online';
+    else delete els.authState.dataset.state;
   }
   if (els.token && getToken()) els.token.value = getToken();
 }
@@ -86,25 +86,9 @@ function setBusy(button, busy, label = '') {
 }
 
 async function resolveAuth() {
-  try {
-    const user = await authMe();
-    if (user) { setAuthUi(user); return user; }
-  } catch { /* tenta status (cookie) */ }
-  try {
-    const status = await authStatus();
-    if (status?.authenticated && status.user) {
-      const raw = status.user;
-      const user = {
-        email: raw.email || '',
-        display_name: raw.display_name || raw.name || raw.nome || raw.email || 'Usuário',
-        id: raw.id || null,
-      };
-      setAuthUi(user);
-      return user;
-    }
-  } catch { /* API offline */ }
-  setAuthUi(apiUser());
-  return null;
+  const user = await restoreApiUser();
+  setAuthUi(user || null);
+  return user || null;
 }
 
 async function checkServices() {
