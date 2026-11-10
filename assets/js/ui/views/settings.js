@@ -310,7 +310,10 @@ function securityTab() {
   return el('div', { class: 'settings-grid two' },
     el('section', { class: 'card' },
       sectionTitle('Alterar senha'),
-      el('p', { class: 'muted small', text: 'As senhas são derivadas com PBKDF2-SHA256 (210.000 iterações) e nunca armazenadas em texto puro.' }),
+      el('p', { class: 'muted small', text: 'As senhas locais são derivadas com PBKDF2-SHA256 (210.000 iterações) e nunca armazenadas em texto puro.' }),
+      el('div', { class: 'info-box' },
+        icon('info', 17),
+        el('span', { text: 'Sua conta é autenticada pela API. Esta troca atualiza apenas a senha do espelho local; para alterar a senha da conta, use o serviço de autenticação da Projetos Dinâmicos.' })),
       el('div', { class: 'form-grid' },
         field('Senha atual', currentPass),
         field('Nova senha', newPass, 'Mínimo de 10 caracteres, com maiúsculas, minúsculas e números.'),
@@ -509,7 +512,7 @@ function syncTab() {
       el('strong', { text: config.url ? 'Servidor configurado' : 'Nenhum servidor configurado' }),
       el('small', { text: config.url
         ? `${config.url}${config.lastSyncAt ? ` · última sincronização ${relTime(config.lastSyncAt)}` : ''}`
-        : 'A plataforma funciona 100% offline. A sincronização é opcional.' })));
+        : 'Os dados de trabalho ficam neste navegador. A sincronização é opcional.' })));
 
   const save = el('button', {
     class: 'btn primary', type: 'button',

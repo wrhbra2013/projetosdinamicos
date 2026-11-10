@@ -18,7 +18,6 @@ import {
   setToken,
   clearApiSession,
   apiUser,
-  llmHealth,
 } from './core/api.js';
 
 (function () {

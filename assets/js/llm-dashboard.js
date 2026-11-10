@@ -3,6 +3,7 @@
 import {
   AUTH_BASE,
   LLM_BASE,
+  authStatus,
   authLogin,
   authRegister,
   authLogout,
@@ -89,6 +90,16 @@ async function resolveAuth() {
   const user = await restoreApiUser();
   setAuthUi(user || null);
   return user || null;
+}
+
+async function refreshRegistrationPolicy() {
+  try {
+    const status = await authStatus();
+    if (els.register && status && !status.registration_open) {
+      els.register.disabled = true;
+      els.register.title = 'O cadastro está fechado. Peça acesso ao administrador.';
+    }
+  } catch { /* API offline: mantém o botão para mostrar o erro ao tentar */ }
 }
 
 async function checkServices() {
@@ -261,7 +272,7 @@ els.tokenSave?.addEventListener('click', () => {
 
 (async function boot() {
   setAuthUi(apiUser());
-  await resolveAuth();
+  await Promise.all([resolveAuth(), refreshRegistrationPolicy()]);
   await checkServices();
   document.documentElement.dataset.api = LLM_BASE;
   console.info(`API LLM: ${LLM_BASE} · Auth: ${AUTH_BASE}`);

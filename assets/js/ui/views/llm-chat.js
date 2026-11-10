@@ -1,7 +1,8 @@
 /* Assistente IA — cliente do serviço LLM protegido (/llm). */
 
-import { el, fmtDate, setBusy, toast } from '../../core/util.js';
+import { el, fmtDate, setBusy } from '../../core/util.js';
 import { currentUser } from '../../core/auth.js';
+import { toast } from '../components.js';
 import {
   LLM_BASE, llmChat, llmModels, extractContent,
 } from '../../core/api.js';

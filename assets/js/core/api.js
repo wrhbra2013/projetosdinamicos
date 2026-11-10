@@ -82,7 +82,14 @@ export function apiModel() { return preferredModel; }
 export function hasApiSession() { return Boolean(token || cachedUser); }
 
 export function setApiUser(user) {
-  cachedUser = user || null;
+  cachedUser = user
+    ? {
+      id: user.id ?? null,
+      email: user.email || '',
+      display_name: user.display_name || '',
+      role: user.role || null,
+    }
+    : null;
   writeJson(USER_KEY, cachedUser);
   return cachedUser;
 }
@@ -282,7 +289,7 @@ export function normalizeUser(data) {
 /* ---------------------------------- Auth ---------------------------------- */
 
 export async function authStatus() {
-  return apiRequest(AUTH_BASE, '/status', { timeout: 12_000 });
+  return apiRequest(AUTH_BASE, '/status', { timeout: 6_000 });
 }
 
 export async function authRegister({ email, senha }) {
@@ -348,24 +355,37 @@ export async function restoreApiUser() {
     status = await authStatus();
   } catch { /* API offline: mantém o estado local */ }
 
-  if (!status) return cachedUser || null;
+  if (status?.authenticated) {
+    if (status.user) {
+      const user = normalizeUser(status.user) || normalizeUser({ user: status.user });
+      if (user) { setApiUser(user); return user; }
+    }
+    try {
+      const user = await authMe();
+      if (user) return user;
+    } catch (err) {
+      if (err?.status === 401 || err?.status === 403) clearApiSession();
+    }
+  }
 
-  if (!status.authenticated) {
-    clearApiSession();
+  // /status pode não enxergar o Bearer token; confirma com /me antes de limpar.
+  let tokenInvalid = false;
+  if (token) {
+    try {
+      const user = await authMe();
+      if (user) return user;
+    } catch (err) {
+      tokenInvalid = err?.status === 401 || err?.status === 403;
+      if (tokenInvalid) clearApiSession();
+    }
+  }
+
+  if (status && !status.authenticated) {
+    if (!token || tokenInvalid) clearApiSession();
     return null;
   }
 
-  if (status.user) {
-    const user = normalizeUser(status.user) || normalizeUser({ user: status.user });
-    if (user) { setApiUser(user); return user; }
-  }
-
-  try {
-    const user = await authMe();
-    if (user) return user;
-  } catch (err) {
-    if (err?.status === 401 || err?.status === 403) clearApiSession();
-  }
+  // API offline: mantém o último usuário conhecido para o modo local-first.
   return cachedUser || null;
 }
 

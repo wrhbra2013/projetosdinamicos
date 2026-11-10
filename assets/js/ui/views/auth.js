@@ -11,10 +11,11 @@ export async function renderAuth({ onSuccess }) {
   let remoteStatus = null;
   try { remoteStatus = await remoteAuthStatus(); } catch { /* API offline: decide localmente */ }
 
-  // Só oferece "primeiro acesso" se o serviço /auth ainda aceitar cadastro.
-  const registrationOpen = remoteStatus ? Boolean(remoteStatus.registration_open) : false;
+  // Online: respeita a política do serviço /auth. Offline: permite o cadastro local.
+  const remoteRegistrationOpen = Boolean(remoteStatus?.registration_open);
+  const registrationOpen = remoteStatus ? remoteRegistrationOpen : true;
   const firstRun = remoteStatus
-    ? registrationOpen && !remoteStatus.authenticated
+    ? remoteRegistrationOpen && !remoteStatus.authenticated
     : userCount() === 0;
   let mode = firstRun ? 'setup' : 'login';
 
@@ -50,6 +51,7 @@ export async function renderAuth({ onSuccess }) {
   }
 
   function render() {
+    if (mode === 'register' && !registrationOpen) mode = 'login';
     panel.replaceChildren();
     const isSetup = mode === 'setup';
     const isRegister = mode === 'register';
@@ -145,7 +147,7 @@ export async function renderAuth({ onSuccess }) {
       el('div', { class: 'auth-switch' },
         isSetup ? el('span', { class: 'muted', text: 'Já existe uma conta? ' }) : null,
         isSetup ? el('button', { class: 'link-btn', type: 'button', onclick: () => setMode('login') }, 'Entrar') : null,
-        !isSetup && !isRegister
+        !isSetup && !isRegister && registrationOpen
           ? el('span', {}, el('span', { class: 'muted', text: 'Ainda não tem conta? ' }),
             el('button', { class: 'link-btn', type: 'button', onclick: () => setMode('register') }, 'Criar agora'))
           : null,
@@ -158,7 +160,7 @@ export async function renderAuth({ onSuccess }) {
             ? `Serviço de autenticação online: ${AUTH_BASE}`
             : 'Serviço de autenticação indisponível. O acesso local continua funcionando.',
         })),
-      registrationOpen
+      remoteRegistrationOpen
         ? el('p', { class: 'muted small', text: 'O primeiro cadastro cria a conta proprietária da API. Depois disso, novos cadastros podem ser fechados pelo administrador.' })
         : null,
       el('div', { class: 'auth-links' },
