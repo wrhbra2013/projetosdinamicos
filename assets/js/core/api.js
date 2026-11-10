@@ -169,9 +169,9 @@ export function isTransportError(err) {
 
 /* ------------------------------- Requisições ------------------------------ */
 
-function authHeaders(extra = {}) {
+function authHeaders(extra = {}, includeAuth = true) {
   const headers = { Accept: 'application/json', ...extra };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (includeAuth && token) headers.Authorization = `Bearer ${token}`;
   return headers;
 }
 
@@ -202,7 +202,10 @@ export async function apiRequest(base, path, {
       method,
       credentials: 'include',
       cache: 'no-store',
-      headers: authHeaders(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      headers: authHeaders(
+        body !== undefined ? { 'Content-Type': 'application/json' } : {},
+        auth,
+      ),
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
