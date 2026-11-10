@@ -4,12 +4,27 @@
      GET  {base}/health
      GET  {base}/v1/models
      POST {base}/v1/chat/completions   (stream: true)
+     Auth: /auth/login, /auth/register, /auth/logout, /auth/status, /auth/me
    ========================================================================== */
+
+import {
+  LLM_BASE,
+  authLogin,
+  authRegister,
+  authLogout,
+  authStatus,
+  authMe,
+  getToken,
+  setToken,
+  clearApiSession,
+  apiUser,
+  llmHealth,
+} from './core/api.js';
 
 (function () {
   'use strict';
 
-  var DEFAULT_API_BASE = 'https://api.projetosdinamicos.com.br/llm';
+  var DEFAULT_API_BASE = LLM_BASE;
   var STORAGE_CONFIG = 'openchat:config';
   var STORAGE_HISTORY = 'openchat:history';
   var MAX_HISTORY = 200;
@@ -24,6 +39,10 @@
   var streaming = false;
   var detectedModel = '';
   var runId = 0;                      // descarta respostas de conversas já trocadas
+  var authUser = apiUser();
+  var authBusy = false;
+  var registrationOpen = false;
+  var accountMode = 'login';
 
   /* ----------------------------- DOM ------------------------------------- */
 
@@ -33,6 +52,8 @@
     status: $('oc-status'),
     statusText: $('oc-status-text'),
     newChat: $('oc-new'),
+    accountOpen: $('oc-account-open'),
+    registerOpen: $('oc-register-open'),
     settingsOpen: $('oc-settings-open'),
     messages: $('oc-messages'),
     empty: $('oc-empty'),
@@ -47,7 +68,23 @@
     apiBase: $('oc-api-base'),
     apiToken: $('oc-api-token'),
     model: $('oc-model'),
-    dialogMsg: $('oc-settings-msg')
+    dialogMsg: $('oc-settings-msg'),
+    accountDialog: $('oc-account'),
+    accountForm: $('oc-account-form'),
+    accountClose: $('oc-account-close'),
+    accountTitle: $('oc-account-title'),
+    accountState: $('oc-account-state'),
+    accountEmail: $('oc-account-email'),
+    accountPassword: $('oc-account-password'),
+    accountConfirm: $('oc-account-confirm'),
+    confirmField: $('oc-confirm-field'),
+    accountMsg: $('oc-account-msg'),
+    accountSubmit: $('oc-account-submit'),
+    accountLogout: $('oc-account-logout'),
+    tabLogin: $('oc-tab-login'),
+    tabRegister: $('oc-tab-register'),
+    registerNote: $('oc-register-note'),
+    termsNote: $('oc-terms-note')
   };
 
   if (!els.form || !els.messages) return;
@@ -93,13 +130,22 @@
 
   /* ----------------------------- HTTP ------------------------------------ */
 
+  function bearerToken() {
+    return getToken() || config.token || '';
+  }
+
   function headers(extra) {
     var h = { 'Accept': 'application/json' };
-    if (config.token) h['Authorization'] = 'Bearer ' + config.token;
+    var token = bearerToken();
+    if (token) h['Authorization'] = 'Bearer ' + token;
     if (extra) {
       Object.keys(extra).forEach(function (k) { h[k] = extra[k]; });
     }
     return h;
+  }
+
+  function credentials() {
+    return 'include';
   }
 
   function friendlyError(err) {
@@ -113,6 +159,12 @@
   }
 
   function readError(res) {
+    if (res.status === 401 || res.status === 403) {
+      setStatus('auth', 'entrar');
+      return Promise.reject(new Error(
+        'Faça login para usar a API. Abra “Entrar” no topo da página.'
+      ));
+    }
     if (res.status === 429) {
       return Promise.reject(new Error(
         'Muitas requisições (limite por IP). Aguarde alguns segundos e tente de novo.'
@@ -146,10 +198,16 @@
     fetch(config.apiBase + '/health', {
       method: 'GET',
       headers: headers(),
+      credentials: credentials(),
       signal: ctrl.signal,
       cache: 'no-store'
     }).then(function (res) {
       clearTimeout(timer);
+      if (res.status === 401 || res.status === 403) {
+        setStatus('auth', 'entrar');
+        resolveAuth();
+        return;
+      }
       if (!res.ok) throw new Error('HTTP ' + res.status);
       setStatus('online', 'online');
       detectModel();
@@ -163,6 +221,7 @@
     fetch(config.apiBase + '/v1/models', {
       method: 'GET',
       headers: headers(),
+      credentials: credentials(),
       cache: 'no-store'
     }).then(function (res) {
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -434,6 +493,7 @@
     fetch(config.apiBase + '/v1/chat/completions', {
       method: 'POST',
       headers: headers({ 'Content-Type': 'application/json' }),
+      credentials: credentials(),
       body: JSON.stringify(payload),
       signal: controller.signal
     }).then(function (res) {
@@ -599,12 +659,278 @@
       });
     });
 
+  /* ------------------------------ Conta ---------------------------------- */
+
+  function setAuthMessage(text, tone) {
+    if (!els.accountMsg) return;
+    els.accountMsg.textContent = text || '';
+    els.accountMsg.classList.toggle('is-ok', tone === 'ok');
+  }
+
+  function setAccountMode(mode) {
+    accountMode = mode === 'register' ? 'register' : 'login';
+    var isRegister = accountMode === 'register';
+
+    if (els.tabLogin) {
+      els.tabLogin.classList.toggle('active', !isRegister);
+      els.tabLogin.setAttribute('aria-selected', String(!isRegister));
+    }
+    if (els.tabRegister) {
+      els.tabRegister.classList.toggle('active', isRegister);
+      els.tabRegister.setAttribute('aria-selected', String(isRegister));
+      els.tabRegister.disabled = !registrationOpen;
+      els.tabRegister.title = registrationOpen ? '' : 'Cadastro fechado';
+    }
+    if (els.confirmField) els.confirmField.classList.toggle('hidden', !isRegister);
+    if (els.termsNote) els.termsNote.classList.toggle('hidden', !isRegister);
+    if (els.accountSubmit) {
+      els.accountSubmit.textContent = isRegister ? 'Criar conta' : 'Entrar';
+      els.accountSubmit.disabled = authBusy || (isRegister && !registrationOpen);
+    }
+    if (els.accountPassword) {
+      els.accountPassword.setAttribute('autocomplete', isRegister ? 'new-password' : 'current-password');
+    }
+    if (els.accountTitle) {
+      els.accountTitle.textContent = isRegister ? 'Criar conta na API' : 'Conta da API';
+    }
+    if (els.registerNote) {
+      els.registerNote.classList.toggle('hidden', !isRegister);
+      els.registerNote.classList.toggle('is-warn', isRegister && !registrationOpen);
+      els.registerNote.textContent = isRegister
+        ? (registrationOpen
+          ? 'O primeiro cadastro cria a conta administradora da API. Depois disso, novos cadastros podem ser fechados.'
+          : 'O cadastro está fechado porque a conta administradora já foi criada. Entre com sua conta ou peça acesso ao administrador.')
+        : '';
+    }
+    setAuthMessage('', '');
+  }
+
+  function setAuthUi(user) {
+    authUser = user || null;
+    if (els.accountOpen) {
+      els.accountOpen.textContent = authUser
+        ? (authUser.display_name || authUser.email || 'Conta')
+        : 'Entrar';
+      els.accountOpen.title = authUser ? (authUser.email || 'Conta da API') : 'Entrar na conta da API';
+    }
+    if (els.registerOpen) {
+      els.registerOpen.classList.toggle('hidden', Boolean(authUser) || !registrationOpen);
+    }
+    if (els.accountLogout) els.accountLogout.classList.toggle('hidden', !authUser);
+    if (els.accountEmail && authUser && authUser.email && !els.accountEmail.value) {
+      els.accountEmail.value = authUser.email;
+    }
+    if (els.accountState) {
+      els.accountState.textContent = authUser
+        ? 'Conectado como ' + (authUser.email || 'usuário da API')
+        : (getToken() ? 'Token salvo, mas a sessão não foi validada.' : 'Nenhuma conta conectada.');
+      els.accountState.classList.toggle('is-online', Boolean(authUser));
+      els.accountState.classList.toggle('is-offline', !authUser);
+    }
+  }
+
+  function applyRegistrationState(status) {
+    registrationOpen = Boolean(status && status.registration_open);
+    if (!registrationOpen && accountMode === 'register') setAccountMode('login');
+    else setAccountMode(accountMode);
+    if (els.registerOpen) {
+      els.registerOpen.classList.toggle('hidden', Boolean(authUser) || !registrationOpen);
+    }
+  }
+
+  function refreshRegistrationState() {
+    return authStatus().then(function (status) {
+      applyRegistrationState(status);
+      return status;
+    }).catch(function () {
+      applyRegistrationState(null);
+      return null;
+    });
+  }
+
+  function resolveAuth() {
+    return authMe()
+      .then(function (user) { setAuthUi(user); return user; })
+      .catch(function () {
+        return authStatus().then(function (status) {
+          applyRegistrationState(status);
+          if (status && status.authenticated) {
+            return authMe().then(function (user) {
+              setAuthUi(user);
+              return user;
+            }).catch(function () { setAuthUi(null); return null; });
+          }
+          setAuthUi(null);
+          return null;
+        }).catch(function () { setAuthUi(null); return null; });
+      });
+  }
+
+  function authError(err) {
+    if (err && err.status === 403 && /cadastro|registration/i.test(err.message || '')) {
+      return 'O cadastro está fechado. A conta administradora já foi criada — entre com sua conta ou peça acesso ao administrador.';
+    }
+    return (err && err.message) ? err.message : 'Não foi possível concluir a operação.';
+  }
+
+  function setAuthBusy(busy) {
+    authBusy = busy;
+    if (els.accountSubmit) {
+      els.accountSubmit.disabled = busy || (accountMode === 'register' && !registrationOpen);
+    }
+    if (els.accountLogout) els.accountLogout.disabled = busy;
+  }
+
+  function doLogin() {
+    var email = els.accountEmail ? els.accountEmail.value.trim() : '';
+    var senha = els.accountPassword ? els.accountPassword.value : '';
+    if (!email || !senha) {
+      setAuthMessage('Informe e-mail e senha.', 'error');
+      return;
+    }
+    setAuthBusy(true);
+    setAuthMessage('Entrando…', '');
+    authLogin(email, senha).then(function (user) {
+      setAuthUi(user);
+      config.token = getToken() || config.token;
+      if (els.apiToken) els.apiToken.value = getToken() || '';
+      saveConfig(config);
+      if (els.accountPassword) els.accountPassword.value = '';
+      setAuthMessage('Sessão iniciada como ' + (user.email || email) + '.', 'ok');
+      closeAccount();
+      checkHealth();
+    }).catch(function (err) {
+      setAuthMessage(authError(err), 'error');
+      setStatus('auth', 'entrar');
+    }).finally(function () { setAuthBusy(false); });
+  }
+
+  function doRegister() {
+    var email = els.accountEmail ? els.accountEmail.value.trim() : '';
+    var senha = els.accountPassword ? els.accountPassword.value : '';
+    var confirm = els.accountConfirm ? els.accountConfirm.value : '';
+
+    if (!registrationOpen) {
+      setAuthMessage('O cadastro está fechado. Entre com sua conta ou peça acesso ao administrador.', 'error');
+      return;
+    }
+    if (!email || !senha) {
+      setAuthMessage('Informe e-mail e senha para criar a conta.', 'error');
+      return;
+    }
+    if (senha.length < 8) {
+      setAuthMessage('A senha deve ter ao menos 8 caracteres.', 'error');
+      return;
+    }
+    if (senha !== confirm) {
+      setAuthMessage('As senhas não coincidem.', 'error');
+      return;
+    }
+
+    setAuthBusy(true);
+    setAuthMessage('Criando conta…', '');
+    authRegister({ email: email, senha: senha }).then(function () {
+      if (getToken()) return resolveAuth();
+      return authLogin(email, senha);
+    }).then(function (user) {
+      setAuthUi(user);
+      registrationOpen = false;
+      config.token = getToken() || config.token;
+      if (els.apiToken) els.apiToken.value = getToken() || '';
+      saveConfig(config);
+      if (els.accountPassword) els.accountPassword.value = '';
+      if (els.accountConfirm) els.accountConfirm.value = '';
+      setAuthMessage('Conta criada e sessão iniciada.', 'ok');
+      closeAccount();
+      checkHealth();
+    }).catch(function (err) {
+      setAuthMessage(authError(err), 'error');
+    }).finally(function () { setAuthBusy(false); });
+  }
+
+  function doLogout() {
+    setAuthBusy(true);
+    authLogout().finally(function () {
+      clearApiSession();
+      config.token = '';
+      if (els.apiToken) els.apiToken.value = '';
+      saveConfig(config);
+      setAuthUi(null);
+      setAuthMessage('Sessão encerrada.', 'ok');
+      setStatus('auth', 'entrar');
+      setAuthBusy(false);
+      refreshRegistrationState();
+    });
+  }
+
+  function openAccount(mode) {
+    if (!els.accountDialog) return;
+    var requested = mode === 'register' ? 'register' : 'login';
+
+    if (els.accountEmail && authUser && authUser.email) els.accountEmail.value = authUser.email;
+    if (els.accountPassword) els.accountPassword.value = '';
+    if (els.accountConfirm) els.accountConfirm.value = '';
+    setAccountMode(requested);
+    setAuthUi(authUser);
+
+    if (typeof els.accountDialog.showModal === 'function') els.accountDialog.showModal();
+    else els.accountDialog.setAttribute('open', '');
+
+    setTimeout(function () {
+      if (els.accountEmail) els.accountEmail.focus();
+    }, 60);
+
+    refreshRegistrationState().then(function () {
+      setAccountMode(requested);
+      if (els.accountPassword) els.accountPassword.value = '';
+      if (els.accountConfirm) els.accountConfirm.value = '';
+    });
+  }
+
+  function closeAccount() {
+    if (!els.accountDialog) return;
+    if (typeof els.accountDialog.close === 'function') els.accountDialog.close();
+    else els.accountDialog.removeAttribute('open');
+  }
+
+  if (els.accountOpen) {
+    els.accountOpen.addEventListener('click', function () { openAccount('login'); });
+  }
+  if (els.registerOpen) {
+    els.registerOpen.addEventListener('click', function () { openAccount('register'); });
+  }
+  if (els.tabLogin) els.tabLogin.addEventListener('click', function () { setAccountMode('login'); });
+  if (els.tabRegister) {
+    els.tabRegister.addEventListener('click', function () {
+      if (!registrationOpen) {
+        setAuthMessage('O cadastro está fechado. Entre com sua conta ou peça acesso ao administrador.', 'error');
+        return;
+      }
+      setAccountMode('register');
+    });
+  }
+  if (els.accountClose) els.accountClose.addEventListener('click', closeAccount);
+  if (els.accountLogout) els.accountLogout.addEventListener('click', doLogout);
+  if (els.accountForm) {
+    els.accountForm.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      if (authBusy) return;
+      if (accountMode === 'register') doRegister();
+      else doLogin();
+    });
+  }
+  if (els.accountDialog) {
+    els.accountDialog.addEventListener('click', function (ev) {
+      if (ev.target === els.accountDialog) closeAccount();
+    });
+  }
+
   /* ----------------------------- Dialog ---------------------------------- */
 
   function openSettings() {
     if (!els.dialog) return;
     els.apiBase.value = config.apiBase;
-    els.apiToken.value = config.token;
+    els.apiToken.value = getToken() || config.token;
     els.model.value = config.model;
     els.dialogMsg.textContent = '';
     if (typeof els.dialog.showModal === 'function') els.dialog.showModal();
@@ -634,9 +960,11 @@
         els.dialogMsg.textContent = 'Informe uma URL começando com http:// ou https://.';
         return;
       }
+      var tokenValue = els.apiToken.value.trim();
+      if (tokenValue) setToken(tokenValue);
       saveConfig({
         apiBase: base,
-        token: els.apiToken.value.trim(),
+        token: tokenValue,
         model: els.model.value.trim()
       });
       els.dialogMsg.textContent = '';
@@ -656,6 +984,9 @@
 
   renderAll();
   if (els.empty) showEmpty();
-  checkHealth();
+  setAuthUi(authUser);
+  setAccountMode('login');
+  refreshRegistrationState();
+  resolveAuth().then(function () { checkHealth(); });
   setInterval(checkHealth, 60000);
 })();

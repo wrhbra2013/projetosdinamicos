@@ -44,8 +44,8 @@ export function mountShell(root) {
       el('div', { class: 'local-badge' },
         el('span', { class: 'dot' }),
         el('div', {},
-          el('strong', { text: 'SQLite local' }),
-          el('small', { text: 'sem servidor · sem cookies' }))),
+          el('strong', { text: 'API + SQLite' }),
+          el('small', { text: 'auth/llm online · dados locais' }))),
       el('div', { class: 'storage-line', id: 'storageLine', text: '—' }),
       el('div', { class: 'storage-line muted', id: 'persistLine', text: '—' })));
 
@@ -76,8 +76,8 @@ export function mountShell(root) {
     }, icon('menu', 20)),
     titleSlot,
     el('div', { class: 'topbar-actions' },
-      el('span', { class: 'local-chip', title: 'Os dados ficam neste navegador' },
-        el('span', { class: 'dot' }), 'Local-first'),
+      el('span', { class: 'local-chip', title: 'Autenticação pela API; dados de trabalho neste navegador' },
+        el('span', { class: 'dot' }), 'API ativa'),
       el('button', {
         class: 'btn primary sm', type: 'button',
         onclick: () => navigate('/projetos?novo=1'),

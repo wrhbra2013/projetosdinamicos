@@ -2,114 +2,15 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>OpenChat — Projetos Dinâmicos</title>
-  <meta name="description" content="OpenChat: interface aberta para conversar com o modelo LFM2.5 hospedado na API de Projetos Dinâmicos.">
-  <meta name="theme-color" content="#123b32">
-  <meta name="color-scheme" content="light">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https: http://localhost:8080; font-src 'self'; base-uri 'self'; form-action 'self'">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="refresh" content="0; url=index.html">
+  <link rel="canonical" href="index.html">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/css/base.css">
-  <link rel="stylesheet" href="assets/css/openchat.css">
+  <script>location.replace('index.html' + location.search + location.hash);</script>
 </head>
-<body class="oc-body">
-  <a class="skip-link" href="#oc-messages">Ir para a conversa</a>
-
-  <div class="oc-app">
-    <header class="oc-header">
-      <div class="oc-brand">
-        <span class="oc-logo" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            <path d="M8 9h8"/><path d="M8 13h5"/>
-          </svg>
-        </span>
-        <div class="oc-brand-text">
-          <h1 class="oc-title">OpenChat</h1>
-          <p class="oc-subtitle">LFM2.5 via API Projetos Dinâmicos</p>
-        </div>
-      </div>
-
-      <div class="oc-actions">
-        <span id="oc-status" class="oc-status" data-state="checking" title="Estado da API">
-          <span class="oc-dot" aria-hidden="true"></span>
-          <span id="oc-status-text">verificando…</span>
-        </span>
-        <button id="oc-new" class="oc-btn oc-btn-ghost" type="button">Nova conversa</button>
-        <button id="oc-settings-open" class="oc-btn oc-btn-ghost" type="button" aria-haspopup="dialog">Config</button>
-      </div>
-    </header>
-
-    <main id="oc-messages" class="oc-messages" role="log" aria-live="polite" aria-label="Conversa">
-      <div class="oc-empty" id="oc-empty">
-        <span class="oc-empty-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>
-            <path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/>
-          </svg>
-        </span>
-        <h2>Como posso ajudar?</h2>
-        <p>Pergunte sobre projetos, ideias, textos ou código. O modelo roda na infraestrutura da Projetos Dinâmicos.</p>
-        <div class="oc-suggestions">
-          <button type="button" class="oc-suggestion" data-prompt="Explique em 3 tópicos o que é a plataforma Projetos Dinâmicos.">O que é a Projetos Dinâmicos?</button>
-          <button type="button" class="oc-suggestion" data-prompt="Me ajude a escrever um README curto para um projeto de software.">Escrever um README</button>
-          <button type="button" class="oc-suggestion" data-prompt="Crie uma lista de 5 tarefas para organizar um projeto novo.">Lista de tarefas</button>
-          <button type="button" class="oc-suggestion" data-prompt="Resuma o texto a seguir em 3 frases: ">Resumir um texto</button>
-        </div>
-      </div>
-    </main>
-
-    <form id="oc-form" class="oc-composer" autocomplete="off">
-      <label class="oc-sr-only" for="oc-input">Mensagem</label>
-      <textarea id="oc-input" rows="1" placeholder="Escreva uma mensagem… (Enter envia, Shift+Enter quebra linha)"></textarea>
-      <button id="oc-send" class="oc-btn oc-btn-send" type="submit" aria-label="Enviar mensagem">
-        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>
-        </svg>
-      </button>
-      <button id="oc-stop" class="oc-btn oc-btn-stop hidden" type="button" aria-label="Parar resposta">
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true">
-          <rect x="6" y="6" width="12" height="12" rx="2"/>
-        </svg>
-      </button>
-    </form>
-    <p class="oc-footnote">Respostas geradas por IA podem conter erros. Verifique informações importantes.</p>
-  </div>
-
-  <dialog id="oc-settings" class="oc-dialog" aria-labelledby="oc-settings-title">
-    <form id="oc-settings-form" class="oc-dialog-form" novalidate>
-      <header class="oc-dialog-head">
-        <h2 id="oc-settings-title">Configurações</h2>
-        <button id="oc-settings-close" class="oc-icon-btn" type="button" aria-label="Fechar">×</button>
-      </header>
-
-      <label class="oc-field">
-        <span>URL da API</span>
-        <input id="oc-api-base" type="url" spellcheck="false" placeholder="https://api.projetosdinamicos.com.br/llm">
-        <small>Base do llamafile, sem barra no final.</small>
-      </label>
-
-      <label class="oc-field">
-        <span>Token (opcional)</span>
-        <input id="oc-api-token" type="password" autocomplete="off" placeholder="Bearer token, se a API exigir">
-        <small>Salvo apenas neste navegador (localStorage).</small>
-      </label>
-
-      <label class="oc-field">
-        <span>Modelo</span>
-        <input id="oc-model" type="text" spellcheck="false" placeholder="detectado automaticamente">
-        <small>Deixe vazio para usar o modelo informado por /v1/models.</small>
-      </label>
-
-      <p id="oc-settings-msg" class="oc-settings-msg" role="status"></p>
-
-      <footer class="oc-dialog-foot">
-        <button type="button" id="oc-settings-cancel" class="oc-btn oc-btn-ghost">Cancelar</button>
-        <button type="submit" class="oc-btn oc-btn-primary">Salvar</button>
-      </footer>
-    </form>
-  </dialog>
-
-  <script src="assets/js/openchat.js" defer></script>
+<body>
+  <p>O OpenChat agora é a página inicial do site. <a href="index.html">Continuar para o OpenChat</a>.</p>
 </body>
 </html>

@@ -1,13 +1,21 @@
 /* Tela de entrada, criação da primeira conta e cadastro. */
 
 import { el, passwordStrength, setBusy } from '../../core/util.js';
-import { login, register, userCount } from '../../core/auth.js';
+import { login, register, userCount, remoteAuthStatus } from '../../core/auth.js';
+import { AUTH_BASE } from '../../core/api.js';
 import { loadDemoData } from '../../core/seed.js';
 import { icon } from '../icons.js';
 import { field, inputEl, checkbox, toast } from '../components.js';
 
-export function renderAuth({ onSuccess }) {
-  const firstRun = userCount() === 0;
+export async function renderAuth({ onSuccess }) {
+  let remoteStatus = null;
+  try { remoteStatus = await remoteAuthStatus(); } catch { /* API offline: decide localmente */ }
+
+  // Só oferece "primeiro acesso" se o serviço /auth ainda aceitar cadastro.
+  const registrationOpen = remoteStatus ? Boolean(remoteStatus.registration_open) : false;
+  const firstRun = remoteStatus
+    ? registrationOpen && !remoteStatus.authenticated
+    : userCount() === 0;
   let mode = firstRun ? 'setup' : 'login';
 
   const root = el('div', { class: 'auth-layout' });
@@ -23,8 +31,8 @@ export function renderAuth({ onSuccess }) {
       el('p', { text: 'Organize projetos, colete ideias da equipe e acompanhe a execução — '
         + 'com auditoria completa e privacidade desde a primeira linha de código.' }),
       el('ul', { class: 'auth-points' },
-        el('li', {}, icon('database', 17), el('span', {}, el('b', {}, 'SQLite no navegador'), ' — seus dados ficam com você.')),
-        el('li', {}, icon('shield', 17), el('span', {}, el('b', {}, 'LGPD by design'), ' — consentimento, retenção e direitos do titular.')),
+        el('li', {}, icon('shield', 17), el('span', {}, el('b', {}, 'Conta protegida pela API'), ' — login, sessão e token Bearer.')),
+        el('li', {}, icon('database', 17), el('span', {}, el('b', {}, 'SQLite no navegador'), ' — seus projetos ficam com você.')),
         el('li', {}, icon('activity', 17), el('span', {}, el('b', {}, 'Auditoria imutável'), ' — cada ação registrada com hash encadeado.')))),
     el('div', { class: 'auth-aside-foot', text: 'www.projetosdinamicos.com.br' }));
 
@@ -129,10 +137,10 @@ export function renderAuth({ onSuccess }) {
         el('div', { class: 'eyebrow', text: isSetup ? 'Primeiro acesso' : isRegister ? 'Nova conta' : 'Bem-vindo de volta' }),
         el('h2', { text: isSetup ? 'Crie a conta do proprietário' : isRegister ? 'Crie sua conta' : 'Entrar na plataforma' }),
         el('p', { text: isSetup
-          ? 'A primeira conta administra esta instalação. Tudo fica salvo apenas neste navegador.'
+          ? 'A primeira conta administra esta instalação. A autenticação é feita pelo serviço da Projetos Dinâmicos.'
           : isRegister
-            ? 'Sua conta e seus dados ficam neste dispositivo. Nada é enviado para servidores.'
-            : 'Acesse seus projetos, ideias e tarefas.' })),
+            ? 'Sua conta é criada na API de serviços. Os dados de trabalho continuam no SQLite deste navegador.'
+            : 'Acesse seus projetos, ideias e tarefas com a conta da API.' })),
       form,
       el('div', { class: 'auth-switch' },
         isSetup ? el('span', { class: 'muted', text: 'Já existe uma conta? ' }) : null,
@@ -144,8 +152,15 @@ export function renderAuth({ onSuccess }) {
         isRegister ? el('span', {}, el('span', { class: 'muted', text: 'Já tem conta? ' }),
           el('button', { class: 'link-btn', type: 'button', onclick: () => setMode('login') }, 'Entrar')) : null),
       el('div', { class: 'auth-local-note' },
-        icon('lock', 15),
-        el('span', { text: 'Sem cookies de rastreamento. Sem analytics de terceiros. Funciona offline após o primeiro acesso.' })),
+        icon(remoteStatus ? 'shield' : 'info', 15),
+        el('span', {
+          text: remoteStatus
+            ? `Serviço de autenticação online: ${AUTH_BASE}`
+            : 'Serviço de autenticação indisponível. O acesso local continua funcionando.',
+        })),
+      registrationOpen
+        ? el('p', { class: 'muted small', text: 'O primeiro cadastro cria a conta proprietária da API. Depois disso, novos cadastros podem ser fechados pelo administrador.' })
+        : null,
       el('div', { class: 'auth-links' },
         el('a', { href: 'privacidade.html' }, 'Privacidade'),
         el('span', { text: '·' }),

@@ -57,8 +57,8 @@ function bootShell() {
 }
 
 /* ------------------------------ Tela de entrada --------------------------- */
-function bootAuth() {
-  const screen = renderAuth({
+async function bootAuth() {
+  const screen = await renderAuth({
     onSuccess: () => {
       location.hash = '#/painel';
       location.reload();
@@ -128,7 +128,7 @@ async function main() {
   try {
     const user = await restoreSession();
     if (user) bootShell();
-    else bootAuth();
+    else await bootAuth();
   } catch (error) {
     console.error(error);
     fatal('Falha ao restaurar a sessão', error.message || String(error));

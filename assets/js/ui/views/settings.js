@@ -12,6 +12,9 @@ import {
 import {
   serverConfig, setServerConfig, clearServerConfig, testServer, push, pull, syncNow,
 } from '../../core/sync.js';
+import {
+  AUTH_BASE, LLM_BASE, apiDiagnostics, apiUser, getToken, setToken, clearApiSession,
+} from '../../core/api.js';
 import { demoLoaded, loadDemoData, removeDemoData } from '../../core/seed.js';
 import { databaseSize, resetDatabase } from '../../core/db.js';
 import { allMeta } from '../../core/meta.js';
@@ -28,6 +31,7 @@ import { refresh } from '../router.js';
 const TABS = [
   { id: 'perfil', label: 'Perfil' },
   { id: 'seguranca', label: 'Segurança' },
+  { id: 'api', label: 'API e serviços' },
   { id: 'dados', label: 'Dados e backup' },
   { id: 'sincronizacao', label: 'Sincronização' },
   { id: 'sobre', label: 'Sobre' },
@@ -60,11 +64,92 @@ export function settingsView(params, ctx) {
 function buildTab(active) {
   switch (active) {
     case 'seguranca': return securityTab();
+    case 'api': return apiTab();
     case 'dados': return dataTab();
     case 'sincronizacao': return syncTab();
     case 'sobre': return aboutTab();
     default: return profileTab();
   }
+}
+
+/* ------------------------------ API e serviços --------------------------- */
+function apiTab() {
+  const user = apiUser();
+  const tokenField = inputEl({
+    type: 'password',
+    value: getToken(),
+    placeholder: 'Token Bearer retornado por /auth/login',
+    autocomplete: 'off',
+  });
+  const resultBox = el('div', { class: 'sync-status' },
+    icon('activity', 17),
+    el('div', {},
+      el('strong', { text: 'Serviços da API' }),
+      el('small', { text: 'Clique em verificar para consultar /auth e /llm.' })));
+
+  async function verify() {
+    resultBox.replaceChildren(
+      icon('activity', 17),
+      el('div', {}, el('strong', { text: 'Consultando…' }), el('small', { text: 'Aguarde.' })));
+    const result = await apiDiagnostics();
+    const authOk = result.auth.ok;
+    const llmStatus = result.llm.ok ? 'online' : result.llm.status === 401 ? 'protegido' : 'indisponível';
+    resultBox.replaceChildren(
+      icon(authOk && result.llm.ok ? 'check' : 'alert', 17),
+      el('div', {},
+        el('strong', { text: authOk ? 'Serviço de autenticação online' : 'Serviço de autenticação indisponível' }),
+        el('small', { text: `Auth: ${authOk ? 'ok' : result.auth.error} · LLM: ${llmStatus}${result.llm.error ? ` (${result.llm.error})` : ''}` })));
+  }
+
+  const saveToken = el('button', {
+    class: 'btn primary sm', type: 'button',
+    onclick: async (event) => {
+      const button = event.currentTarget;
+      const value = tokenField.value.trim();
+      if (!value) { toast('Informe um token Bearer.', 'danger'); return; }
+      setBusy(button, true, 'Salvando…');
+      try {
+        setToken(value);
+        toast('Token da API salvo neste navegador.', 'ok');
+        await verify();
+      } finally { setBusy(button, false); }
+    },
+  }, icon('key', 14), 'Salvar token');
+
+  const logoutApi = el('button', {
+    class: 'btn danger-text sm', type: 'button',
+    onclick: async () => {
+      clearApiSession();
+      tokenField.value = '';
+      toast('Sessão da API removida deste navegador.', 'ok');
+      await verify();
+    },
+  }, icon('logout', 14), 'Sair da API');
+
+  verify();
+
+  return el('div', { class: 'settings-grid two' },
+    el('section', { class: 'card' },
+      sectionTitle('Serviços ativos'),
+      el('p', { class: 'muted small', text: 'O site usa a API ativa para autenticação e para o assistente de IA. Os projetos continuam no SQLite deste navegador.' }),
+      resultBox,
+      el('div', { class: 'meta-grid' },
+        kv('Auth', AUTH_BASE),
+        kv('LLM', LLM_BASE),
+        kv('Conta na API', user?.email || 'não conectada'),
+        kv('Token', getToken() ? 'salvo neste navegador' : 'nenhum')),
+      el('div', { class: 'row wrap' },
+        el('button', { class: 'btn sm', type: 'button', onclick: verify }, icon('refresh', 14), 'Verificar novamente'))),
+
+    el('section', { class: 'card' },
+      sectionTitle('Sessão da API'),
+      el('p', { class: 'muted small', text: 'O token Bearer é usado em /llm. O cookie llm_session também é enviado quando o navegador permite. Não compartilhe seu token.' }),
+      el('div', { class: 'form-grid' },
+        field('Token Bearer', tokenField, 'Salvo apenas neste navegador. Sai da conta para removê-lo.'),
+        el('div', { class: 'row wrap' }, saveToken, logoutApi)),
+      el('div', { class: 'info-box' },
+        icon('shield', 17),
+        el('span', { text: 'A API protege /llm/ e exige autenticação. Em caso de 401, saia e entre novamente.' }))));
 }
 
 /* --------------------------------- Perfil --------------------------------- */
@@ -449,8 +534,8 @@ function syncTab() {
   return el('div', { class: 'settings-grid two' },
     el('section', { class: 'card' },
       sectionTitle('Backend opcional'),
-      el('p', { class: 'muted small', text: 'Instale o backend SQLite com o script install_api.sh para compartilhar dados entre dispositivos. '
-        + 'Sem ele, tudo continua funcionando localmente neste navegador.' }),
+      el('p', { class: 'muted small', text: 'Os serviços ativos lfm-auth/llm não expõem endpoints de sincronização. '
+        + 'Use esta aba apenas se você também instalou o backend SQLite (install_api.sh); caso contrário, os dados de trabalho continuam locais.' }),
       status,
       el('div', { class: 'form-grid' },
         field('URL da API', url, 'Endereço HTTPS do servidor instalado.'),
@@ -548,11 +633,11 @@ function aboutTab() {
       sectionTitle('Tecnologia e privacidade'),
       el('ul', { class: 'bullets' },
         el('li', {}, 'SQLite compilado para WebAssembly (sql.js), persistido no IndexedDB.'),
-        el('li', {}, 'Sem cookies de rastreamento, sem analytics de terceiros e sem chamadas externas.'),
-        el('li', {}, 'Senhas com PBKDF2-SHA256 e 210.000 iterações; sessões com token hasheado e expiração de 12 horas.'),
+        el('li', {}, 'Autenticação e assistente de IA usam a API ativa da Projetos Dinâmicos (/auth e /llm).'),
+        el('li', {}, 'Sem cookies de rastreamento e sem analytics de terceiros.'),
         el('li', {}, 'Auditoria append-only com encadeamento SHA-256, protegida por triggers no banco.'),
         el('li', {}, 'Consentimentos versionados, portabilidade em JSON e eliminação com anonimização.')),
       el('div', { class: 'info-box' },
         icon('info', 17),
-        el('span', { text: 'Este é um ambiente local-first. Os dados existem apenas neste navegador até que você gere um backup ou configure a sincronização.' }))));
+        el('span', { text: 'Modelo híbrido: a conta e o token vêm da API; projetos, ideias e tarefas continuam apenas neste navegador até você gerar um backup.' }))));
 }

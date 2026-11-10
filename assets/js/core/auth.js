@@ -7,6 +7,17 @@ import { hashPassword, verifyPassword, randomToken, sha256Hex } from './crypto.j
 import { nowISO, uid, isEmail, passwordStrength, addDays } from './util.js';
 import { audit, maskEmail, setActorProvider } from './audit.js';
 import { recordConsent, revokeConsent, POLICY_VERSION } from './lgpd.js';
+import {
+  authLogin as apiLogin,
+  authRegister as apiRegister,
+  authLogout as apiLogout,
+  authMe as apiMe,
+  authStatus as apiStatus,
+  restoreApiUser,
+  getToken as apiToken,
+  isTransportError,
+  AUTH_BASE,
+} from './api.js';
 
 const SESSION_KEY = 'pd.session';
 const ATTEMPTS_KEY = 'pd.login_attempts';
@@ -68,7 +79,14 @@ async function createSession(user, deviceLabel = '') {
 export async function restoreSession() {
   let token = null;
   try { token = sessionStorage.getItem(SESSION_KEY); } catch { /* ignore */ }
-  if (!token) { setActor(); return null; }
+  if (token) {
+    const restored = await restoreLocalSession(token);
+    if (restored) return restored;
+  }
+  return restoreRemoteSession();
+}
+
+async function restoreLocalSession(token) {
   const tokenHash = await sha256Hex(token);
   const row = queryOne(
     `SELECT s.*, u.display_name, u.email, u.role, u.status, u.locale, u.timezone,
@@ -79,7 +97,6 @@ export async function restoreSession() {
   );
   if (!row || row.revoked_at || new Date(row.expires_at) <= new Date() || row.status !== 'active') {
     try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
-    setActor();
     return null;
   }
   current = {
@@ -91,6 +108,77 @@ export async function restoreSession() {
   run('UPDATE sessions SET last_seen_at = ? WHERE id = ?', [nowISO(), row.id]);
   setActor();
   return current;
+}
+
+/**
+ * Sem sessão local (outro dispositivo ou primeiro acesso), tenta reaproveitar
+ * o token Bearer ou o cookie llm_session emitido pelo serviço /auth.
+ */
+async function restoreRemoteSession() {
+  try {
+    const remote = await restoreApiUser();
+    if (!remote) { setActor(); return null; }
+    const user = upsertRemoteUser(remote);
+    current = user;
+    await createSession(user, 'sessão remota');
+    await audit({
+      action: 'auth.login',
+      entityType: 'session',
+      entityId: session.id,
+      legalBasis: 'contrato',
+      purpose: 'autenticacao',
+      dataCategories: ['credenciais', 'metadados'],
+      detail: { metodo: 'api', servico: AUTH_BASE },
+    });
+    return current;
+  } catch (error) {
+    // API indisponível não deve impedir o uso offline da base local.
+    console.warn('Sessão remota indisponível:', error?.message || error);
+    setActor();
+    return null;
+  }
+}
+
+/**
+ * Cria/atualiza a conta espelho local a partir do usuário devolvido pela API.
+ * Os dados de trabalho continuam no SQLite do navegador; a API é a autoridade
+ * de autenticação. A primeira conta espelho desta instalação vira owner.
+ */
+function upsertRemoteUser(remote, { displayName = '' } = {}) {
+  const email = String(remote?.email || '').trim().toLowerCase();
+  if (!isEmail(email)) throw new Error('A API não retornou um e-mail válido para a sessão.');
+  const name = String(displayName || remote?.display_name || email.split('@')[0]).trim().slice(0, 120);
+  const now = nowISO();
+  let user = findUserByEmail(email);
+
+  if (user) {
+    run(
+      `UPDATE users
+          SET display_name = ?, status = 'active', last_login_at = ?, updated_at = ?
+        WHERE id = ?`,
+      [name || user.display_name, now, now, user.id],
+    );
+    return getUser(user.id);
+  }
+
+  const first = userCount() === 0;
+  const id = uid();
+  run(
+    `INSERT INTO users (id, email, display_name, password_hash, role, status, marketing_opt_in,
+                        created_at, updated_at, last_login_at)
+     VALUES (?,?,?,?,?,'active',0,?,?,?)`,
+    [id, email, name || email.split('@')[0], 'remoto$sem-login', first ? 'owner' : 'member', now, now, now],
+  );
+  return getUser(id);
+}
+
+/** Consulta o serviço /auth sem exigir sessão local. */
+export async function remoteAuthStatus() {
+  return apiStatus();
+}
+
+export function hasRemoteToken() {
+  return Boolean(apiToken());
 }
 
 function clearLocalSession() {
@@ -143,9 +231,68 @@ export async function register({
   if (!passwordStrength(password).ok) {
     throw new Error('A senha deve ter ao menos 10 caracteres, com letras maiúsculas, minúsculas e números.');
   }
-  if (findUserByEmail(cleanEmail)) throw new Error('Já existe uma conta com este e-mail.');
 
   const first = userCount() === 0;
+  const existingLocal = findUserByEmail(cleanEmail);
+
+  /* 1) Tenta criar a conta no serviço de autenticação ativo. */
+  let remoteUser = null;
+  try {
+    const result = await apiRegister({ email: cleanEmail, senha: password });
+    remoteUser = result.user;
+    if (!remoteUser) {
+      try { remoteUser = await apiMe(); } catch { /* cookie ainda pode estar válido */ }
+    }
+    if (!remoteUser) {
+      try { remoteUser = await apiLogin(cleanEmail, password); } catch { /* sem sessão */ }
+    }
+    if (!remoteUser) {
+      throw new Error('Conta criada na API, mas não foi possível iniciar a sessão. Entre novamente.');
+    }
+  } catch (error) {
+    if (!isTransportError(error)) {
+      throw new Error(error.message || 'Não foi possível criar a conta na API.');
+    }
+    // API indisponível: mantém o modo local-first e cria a conta só neste navegador.
+    console.warn('Cadastro remoto indisponível, usando cadastro local:', error?.message || error);
+  }
+
+  if (remoteUser) {
+    const user = upsertRemoteUser(remoteUser, { displayName: cleanName });
+    if (marketing) {
+      run('UPDATE users SET marketing_opt_in = 1, updated_at = ? WHERE id = ?', [nowISO(), user.id]);
+    }
+    await recordConsent({ userId: user.id, purpose: 'termos_de_uso', granted: true, legalBasis: 'contrato', source: 'cadastro', actor: { id: user.id, label: cleanName, role: user.role } });
+    await recordConsent({ userId: user.id, purpose: 'politica_privacidade', granted: true, legalBasis: 'contrato', source: 'cadastro', actor: { id: user.id, label: cleanName, role: user.role } });
+    if (marketing) {
+      await recordConsent({ userId: user.id, purpose: 'marketing', granted: true, legalBasis: 'consentimento', source: 'cadastro', actor: { id: user.id, label: cleanName, role: user.role } });
+    }
+    await audit({
+      action: 'auth.register',
+      entityType: 'user',
+      entityId: user.id,
+      legalBasis: 'contrato',
+      purpose: 'autenticacao',
+      dataCategories: ['identificacao', 'contato', 'credenciais'],
+      detail: { email: maskEmail(cleanEmail), role: user.role, primeiro_usuario: first, servico: AUTH_BASE },
+      actor: { id: user.id, label: cleanName, role: user.role },
+    });
+    current = user;
+    await createSession(user, deviceLabel);
+    await audit({
+      action: 'auth.login',
+      entityType: 'session',
+      entityId: session.id,
+      legalBasis: 'contrato',
+      purpose: 'autenticacao',
+      dataCategories: ['credenciais', 'metadados'],
+      detail: { metodo: 'cadastro_api' },
+    });
+    return user;
+  }
+
+  /* 2) Fallback local quando a API está fora do ar. */
+  if (existingLocal) throw new Error('Já existe uma conta com este e-mail.');
   const passwordHash = await hashPassword(password);
   const id = uid();
   const now = nowISO();
@@ -196,6 +343,49 @@ export async function register({
 export async function login(email, password, deviceLabel = '') {
   const cleanEmail = String(email || '').trim().toLowerCase();
   checkAttempts(cleanEmail);
+
+  /* 1) Serviço de autenticação ativo. Falhas de rede caem no modo local. */
+  let remoteUser = null;
+  try {
+    remoteUser = await apiLogin(cleanEmail, password);
+  } catch (error) {
+    if (!isTransportError(error)) {
+      registerFailure(cleanEmail);
+      await audit({
+        action: 'auth.login_failed',
+        entityType: 'user',
+        entityId: null,
+        outcome: 'falha',
+        legalBasis: 'legitimo_interesse',
+        purpose: 'seguranca',
+        dataCategories: ['credenciais', 'metadados'],
+        detail: { email: maskEmail(cleanEmail), motivo: error.code || 'api_recusou', servico: AUTH_BASE },
+        actor: { id: null, label: maskEmail(cleanEmail), role: null },
+      });
+      throw new Error(error.message || 'E-mail ou senha incorretos.');
+    }
+    console.warn('Login remoto indisponível, usando login local:', error?.message || error);
+  }
+
+  if (remoteUser) {
+    const user = upsertRemoteUser(remoteUser);
+    clearFailures(cleanEmail);
+    current = user;
+    run('UPDATE users SET last_login_at = ?, updated_at = ? WHERE id = ?', [nowISO(), nowISO(), user.id]);
+    await createSession(user, deviceLabel);
+    await audit({
+      action: 'auth.login',
+      entityType: 'session',
+      entityId: session.id,
+      legalBasis: 'contrato',
+      purpose: 'autenticacao',
+      dataCategories: ['credenciais', 'metadados'],
+      detail: { email: maskEmail(cleanEmail), metodo: 'api', servico: AUTH_BASE },
+    });
+    return user;
+  }
+
+  /* 2) Fallback local quando a API está fora do ar. */
   const user = findUserByEmail(cleanEmail);
   const ok = user && user.status === 'active' && await verifyPassword(password, user.password_hash);
 
@@ -232,6 +422,7 @@ export async function login(email, password, deviceLabel = '') {
 }
 
 export async function logout(reason = 'manual') {
+  try { await apiLogout(); } catch { /* encerra a sessão local mesmo assim */ }
   if (session) {
     run('UPDATE sessions SET revoked_at = ? WHERE id = ?', [nowISO(), session.id]);
     await audit({

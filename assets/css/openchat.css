@@ -121,6 +121,12 @@
   border-color: #ead6a9;
 }
 .oc-status[data-state="checking"] .oc-dot { background: var(--warn); animation: oc-blink 1.2s infinite; }
+.oc-status[data-state="auth"] {
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-color: #ead6a9;
+}
+.oc-status[data-state="auth"] .oc-dot { background: var(--warn); }
 
 /* ------------------------------- Botões ----------------------------------- */
 .oc-btn {
@@ -419,6 +425,44 @@
 }
 .oc-dialog-head h2 { margin: 0; font-size: 1.2rem; }
 
+.oc-auth-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2, #f6f8f7);
+}
+.oc-auth-box h3 {
+  margin: 0;
+  font-size: .9rem;
+}
+.oc-auth-state {
+  margin: 0;
+  color: var(--muted);
+  font-size: .76rem;
+}
+.oc-auth-state.is-online { color: var(--ok); }
+.oc-auth-state.is-offline { color: var(--danger); }
+.oc-auth-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.oc-auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.oc-auth-msg {
+  min-height: 1.1em;
+  margin: 0;
+  color: var(--danger);
+  font-size: .76rem;
+}
+.oc-auth-msg.is-ok { color: var(--ok); }
+
 .oc-field {
   display: flex;
   flex-direction: column;
@@ -460,6 +504,61 @@
   gap: 8px;
   margin-top: 2px;
 }
+.oc-dialog-foot.split { justify-content: space-between; }
+
+/* ------------------------------- Conta ------------------------------------ */
+.oc-dialog-account { width: min(430px, calc(100vw - 32px)); }
+
+.oc-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.oc-tab {
+  flex: 1;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: .82rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.oc-tab:hover { color: var(--ink); }
+.oc-tab.active {
+  background: var(--panel);
+  color: var(--brand);
+  box-shadow: var(--shadow-sm);
+}
+.oc-tab:disabled { opacity: .45; cursor: not-allowed; }
+
+.oc-note {
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel-2);
+  color: var(--ink-2);
+  font-size: .76rem;
+  line-height: 1.45;
+}
+.oc-note.is-warn {
+  background: var(--warn-soft);
+  border-color: #ead6a9;
+  color: #6f4c0e;
+}
+
+.oc-terms-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: .72rem;
+  line-height: 1.45;
+}
+.oc-terms-note a { color: var(--brand-2); text-decoration: underline; text-underline-offset: 2px; }
 
 /* ------------------------------- Utilidades ------------------------------- */
 .oc-sr-only {

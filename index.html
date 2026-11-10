@@ -1,137 +1,128 @@
- <!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard LLM - Local com Análise de Arquivos</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .chat-container { width: 100%; max-width: 650px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .config-box { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #ddd; }
-        .config-box input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        #chat-box { height: 380px; border: 1px solid #ddd; border-radius: 4px; padding: 10px; overflow-y: scroll; margin-bottom: 15px; background: #fafafa; }
-        .message { margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; max-width: 85%; line-height: 1.4; word-break: break-word; }
-        .user { background: #d1e7dd; margin-left: auto; text-align: right; }
-        .assistant { background: #cfe2ff; margin-right: auto; }
-        .file-info { font-size: 0.85em; color: #555; margin-bottom: 5px; font-style: italic; }
-        .input-group { display: flex; flex-direction: column; gap: 10px; }
-        .input-row { display: flex; gap: 10px; }
-        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 10px 20px; background: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #0b5ed7; }
-        .file-upload-row { display: flex; align-items: center; gap: 10px; font-size: 0.9em; }
-        .top-link { margin: -6px 0 14px; font-size: 0.9em; }
-        .top-link a { color: #0d6efd; font-weight: 600; text-decoration: none; }
-        .top-link a:hover { text-decoration: underline; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel LLM — Projetos Dinâmicos</title>
+  <meta name="description" content="Painel de teste da API LLM da Projetos Dinâmicos, com conta autenticada e análise de arquivos.">
+  <meta name="theme-color" content="#123b32">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https: http://localhost:3004 http://127.0.0.1:3004 http://localhost:8090 http://127.0.0.1:8090; font-src 'self'; base-uri 'self'; form-action 'self'">
+  <meta name="llm-api-base" content="https://api.projetosdinamicos.com.br/llm">
+  <meta name="auth-api-base" content="https://api.projetosdinamicos.com.br/auth">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; background: #f4f4f9; color: #17231f; margin: 0; padding: 24px 16px; }
+    .wrap { width: 100%; max-width: 760px; margin: 0 auto; display: grid; gap: 16px; }
+    .card { background: #fff; border: 1px solid #dfe7e2; border-radius: 12px; padding: 18px; box-shadow: 0 8px 24px rgba(18, 59, 50, .06); }
+    header.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    header.top h1 { margin: 0; font-size: 1.35rem; }
+    .top-links { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: .88rem; }
+    .top-links a { color: #0d6efd; text-decoration: none; font-weight: 600; }
+    .top-links a:hover { text-decoration: underline; }
+    .status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; background: #eef4f1; color: #52635d; font-size: .78rem; font-weight: 600; }
+    .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #8a9a94; }
+    .status[data-state="online"] { background: #e7f5ee; color: #1f7a4d; }
+    .status[data-state="online"]::before { background: #2c7a58; }
+    .status[data-state="offline"] { background: #fdecea; color: #b42318; }
+    .status[data-state="offline"]::before { background: #b42318; }
+    .status[data-state="auth"] { background: #fff6e5; color: #9a5b00; }
+    .status[data-state="auth"]::before { background: #b54708; }
+    h2 { margin: 0 0 12px; font-size: 1rem; }
+    .auth-grid { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 8px; align-items: end; }
+    .auth-grid label, .field { display: grid; gap: 5px; font-size: .8rem; font-weight: 600; color: #52635d; }
+    input[type="email"], input[type="password"], input[type="text"], input[type="url"] { width: 100%; padding: 9px 10px; border: 1px solid #cbd8d2; border-radius: 8px; font: inherit; background: #fff; }
+    button { padding: 9px 14px; border: 1px solid transparent; border-radius: 8px; background: #123b32; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+    button:hover { background: #0d2c25; }
+    button.ghost { background: #fff; color: #123b32; border-color: #cbd8d2; }
+    button.ghost:hover { background: #f2f7f4; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .hidden { display: none !important; }
+    .auth-logged { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    #auth-user { font-weight: 600; }
+    .msg { min-height: 1.1em; margin: 8px 0 0; font-size: .82rem; color: #52635d; }
+    .msg[data-tone="ok"] { color: #1f7a4d; }
+    .msg[data-tone="error"] { color: #b42318; }
+    details { margin-top: 12px; font-size: .82rem; color: #52635d; }
+    details summary { cursor: pointer; font-weight: 600; }
+    .token-row { display: flex; gap: 8px; margin-top: 8px; }
+    .token-row input { flex: 1; }
+    #chat-box { min-height: 260px; max-height: 420px; overflow-y: auto; border: 1px solid #dfe7e2; border-radius: 10px; padding: 12px; background: #fafcfb; display: flex; flex-direction: column; gap: 10px; }
+    .message { margin: 0; padding: 9px 12px; border-radius: 10px; max-width: 88%; line-height: 1.45; word-break: break-word; white-space: pre-wrap; }
+    .message.user { align-self: flex-end; background: #dff2e7; }
+    .message.assistant { align-self: flex-start; background: #eaf1ff; }
+    .message.error { align-self: flex-start; background: #fdecea; color: #b42318; }
+    .message strong { display: block; font-size: .74rem; opacity: .75; margin-bottom: 3px; }
+    .message-meta { margin-top: 4px; font-size: .7rem; opacity: .65; }
+    .input-group { display: grid; gap: 10px; margin-top: 12px; }
+    .file-row { display: flex; align-items: center; gap: 10px; font-size: .85rem; color: #52635d; flex-wrap: wrap; }
+    .input-row { display: flex; gap: 10px; }
+    .input-row input { flex: 1; }
+    @media (max-width: 640px) {
+      .auth-grid { grid-template-columns: 1fr; }
+      .input-row { flex-direction: column; }
+    }
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <h1>Painel LLM</h1>
+        <p class="msg" style="margin-top:4px">API ativa: <code>api.projetosdinamicos.com.br/llm</code></p>
+      </div>
+      <div class="top-links">
+        <span id="api-status" class="status" data-state="checking">verificando…</span>
+        <span id="auth-state" class="status" data-state="offline">visitante</span>
+        <a href="openchat.html">OpenChat →</a>
+        <a href="app.html">App →</a>
+      </div>
+    </header>
 
-<div class="chat-container">
-    <h2>Painel LLM Local (Com Arquivos)</h2>
-    <p class="top-link"><a href="openchat.html">Abrir OpenChat →</a></p>
-    
-    <div class="config-box">
-        <label for="token"><strong>Token da API:</strong></label>
-        <input type="password" id="token" value="1533484f10d532fff376ad51f296f43c" placeholder="Cole seu token Bearer aqui">
-    </div>
+    <section class="card">
+      <h2>Conta da API</h2>
+      <div id="auth-logged" class="auth-logged hidden">
+        <span id="auth-user"></span>
+        <button id="logout" class="ghost" type="button">Sair</button>
+      </div>
+      <form id="login-form" class="auth-grid" novalidate>
+        <label>E-mail
+          <input id="email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required>
+        </label>
+        <label>Senha
+          <input id="password" type="password" autocomplete="current-password" placeholder="Sua senha" required>
+        </label>
+        <button id="login" type="submit">Entrar</button>
+        <button id="register" class="ghost" type="button">Criar conta</button>
+      </form>
+      <p id="auth-msg" class="msg" role="status"></p>
+      <details>
+        <summary>Usar token Bearer manualmente</summary>
+        <div class="token-row">
+          <input id="token" type="password" autocomplete="off" placeholder="Cole o token retornado por /auth/login">
+          <button id="token-save" class="ghost" type="button">Salvar</button>
+        </div>
+      </details>
+    </section>
 
-    <div id="chat-box"></div>
-
-    <div class="input-group">
-        <div class="file-upload-row">
-            <label for="file-input">📎 Anexar arquivo (.txt, .js, .json, .log):</label>
-            <input type="file" id="file-input" accept=".txt,.json,.js,.py,.md,.log,.csv">
+    <section class="card">
+      <h2>Conversar com o modelo</h2>
+      <div id="chat-box" role="log" aria-live="polite"></div>
+      <div class="input-group">
+        <div class="file-row">
+          <label for="file-input">📎 Anexar arquivo (.txt, .md, .json, .js, .py, .log, .csv):</label>
+          <input type="file" id="file-input" accept=".txt,.json,.js,.py,.md,.log,.csv">
         </div>
         <div class="input-row">
-            <input type="text" id="user-input" placeholder="Digite sua mensagem ou instrução sobre o arquivo..." onkeypress="handleKeyPress(event)">
-            <button onclick="sendMessage()">Enviar</button>
+          <input type="text" id="user-input" placeholder="Digite sua mensagem ou instrução sobre o arquivo…" autocomplete="off">
+          <button id="send" type="button">Enviar</button>
         </div>
-    </div>
-</div>
+        <p id="chat-msg" class="msg" role="status"></p>
+      </div>
+    </section>
+  </div>
 
-<script>
-    const API_URL = "https://api.projetosdinamicos.com.br/llm/v1/chat/completions";
-
-    async function sendMessage() {
-        const inputField = document.getElementById('user-input');
-        const fileInput = document.getElementById('file-input');
-        const token = document.getElementById('token').value;
-        const text = inputField.value.trim();
-        const file = fileInput.files[0];
-
-        if (!text && !file) return;
-
-        let fullContent = text;
-        let displayMessage = text;
-
-        // Se houver um arquivo anexado, ler o conteúdo e juntar ao prompt
-        if (file) {
-            try {
-                const fileContent = await readFileAsText(file);
-                displayMessage = `${text ? text + '<br>' : ''}<span class="file-info">📄 Arquivo anexado: ${file.name}</span>`;
-                fullContent = `${text}\n\n[Conteúdo do arquivo ${file.name}]:\n${fileContent}`;
-            } catch (err) {
-                alert("Erro ao ler o arquivo.");
-                console.error(err);
-                return;
-            }
-        }
-
-        // Exibir mensagem do usuário no chat
-        appendMessage('Você', displayMessage, 'user');
-        inputField.value = '';
-        fileInput.value = ''; // Limpar input de arquivo após envio
-
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    model: "LFM2.5-230M-Q4_K_M.llamafile",
-                    messages: [{ role: "user", content: fullContent }]
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.choices && data.choices.length > 0) {
-                const reply = data.choices[0].message.content;
-                appendMessage('IA', reply, 'assistant');
-            } else {
-                appendMessage('Erro', data.error || 'Resposta inválida do servidor', 'assistant');
-            }
-        } catch (error) {
-            appendMessage('Erro', 'Falha ao comunicar com a API.', 'assistant');
-            console.error(error);
-        }
-    }
-
-    function readFileAsText(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.onerror = (e) => reject(e);
-            reader.readAsText(file);
-        });
-    }
-
-    function appendMessage(sender, htmlContent, className) {
-        const chatBox = document.getElementById('chat-box');
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `message ${className}`;
-        msgDiv.innerHTML = `<strong>${sender}:</strong><br>${htmlContent}`;
-        chatBox.appendChild(msgDiv);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    function handleKeyPress(event) {
-        if (event.key === 'Enter') sendMessage();
-    }
-</script>
-
+  <script type="module" src="assets/js/llm-dashboard.js"></script>
 </body>
 </html>
