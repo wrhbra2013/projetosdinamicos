@@ -1,38 +1,27 @@
-/* Painel LLM — teste rápido da API ativa com arquivos e conta autenticada. */
+/* Painel OpenCode — teste rápido da API OpenAI-compatible do install_opencode.sh.
+   Sem login/cadastro: a credencial é o Bearer token informado pelo usuário. */
 
 import {
-  AUTH_BASE,
-  LLM_BASE,
-  authStatus,
-  authLogin,
-  authRegister,
-  authLogout,
-  restoreApiUser,
-  getToken,
-  setToken,
-  apiUser,
-  llmChat,
-  llmModels,
-  llmHealth,
+  OPENCODE_BASE,
+  chat,
+  clearToken,
   extractContent,
-} from './core/api.js';
+  getToken,
+  health,
+  models,
+  setToken,
+} from './core/opencode.js';
 
 const $ = (id) => document.getElementById(id);
 
 const els = {
   status: $('api-status'),
-  authState: $('auth-state'),
-  authUser: $('auth-user'),
-  authLogged: $('auth-logged'),
-  loginForm: $('login-form'),
-  email: $('email'),
-  password: $('password'),
-  login: $('login'),
-  register: $('register'),
-  logout: $('logout'),
-  authMsg: $('auth-msg'),
+  tokenState: $('token-state'),
+  tokenForm: $('token-form'),
   token: $('token'),
-  tokenSave: $('token-save'),
+  tokenClear: $('token-clear'),
+  tokenMsg: $('token-msg'),
+  modelBadge: $('model-badge'),
   chatBox: $('chat-box'),
   file: $('file-input'),
   input: $('user-input'),
@@ -41,7 +30,9 @@ const els = {
 };
 
 let chatMessages = [];
-let model = '';
+let modelCount = 0;
+
+/* --------------------------------- UI ------------------------------------- */
 
 function setStatus(state, text) {
   if (!els.status) return;
@@ -49,29 +40,25 @@ function setStatus(state, text) {
   els.status.textContent = text;
 }
 
-function setAuthMessage(text, tone = '') {
-  if (!els.authMsg) return;
-  els.authMsg.textContent = text || '';
-  els.authMsg.dataset.tone = tone;
+function setTokenState(state, text) {
+  if (!els.tokenState) return;
+  if (state) els.tokenState.dataset.state = state;
+  else delete els.tokenState.dataset.state;
+  els.tokenState.textContent = text;
 }
 
-function setAuthUi(user) {
-  const authenticated = Boolean(user);
-  els.authLogged?.classList.toggle('hidden', !authenticated);
-  els.loginForm?.classList.toggle('hidden', authenticated);
-  if (els.authUser) els.authUser.textContent = user ? `${user.display_name || user.email} <${user.email || ''}>` : '';
-  if (els.authState) {
-    els.authState.textContent = authenticated ? 'conta conectada' : 'visitante';
-    if (authenticated) els.authState.dataset.state = 'online';
-    else delete els.authState.dataset.state;
-  }
-  if (els.token && getToken()) els.token.value = getToken();
+function setMessage(node, text, tone = '') {
+  if (!node) return;
+  node.textContent = text || '';
+  node.dataset.tone = tone;
 }
 
-function setChatMessage(text, tone = '') {
-  if (!els.chatMsg) return;
-  els.chatMsg.textContent = text || '';
-  els.chatMsg.dataset.tone = tone;
+function updateModelBadge() {
+  if (!els.modelBadge) return;
+  els.modelBadge.classList.toggle('hidden', modelCount <= 0);
+  els.modelBadge.textContent = modelCount > 0
+    ? `${modelCount} modelo${modelCount === 1 ? '' : 's'} disponível${modelCount === 1 ? '' : 'is'}`
+    : '';
 }
 
 function setBusy(button, busy, label = '') {
@@ -86,89 +73,75 @@ function setBusy(button, busy, label = '') {
   }
 }
 
-async function resolveAuth() {
-  const user = await restoreApiUser();
-  setAuthUi(user || null);
-  return user || null;
-}
+/* ----------------------------- Conexão ------------------------------------ */
 
-async function refreshRegistrationPolicy() {
-  try {
-    const status = await authStatus();
-    if (els.register && status && !status.registration_open) {
-      els.register.disabled = true;
-      els.register.title = 'O cadastro está fechado. Peça acesso ao administrador.';
-    }
-  } catch { /* API offline: mantém o botão para mostrar o erro ao tentar */ }
-}
-
-async function checkServices() {
+async function refreshConnection() {
   setStatus('checking', 'verificando…');
-  const results = await Promise.allSettled([llmHealth(), llmModels()]);
-  const health = results[0];
-  const models = results[1];
+  setMessage(els.tokenMsg, '');
 
-  if (health.status === 'fulfilled') {
+  try {
+    await health();
     setStatus('online', 'API online');
-  } else if (health.reason?.status === 401 || health.reason?.status === 403) {
-    setStatus('auth', 'login necessário');
-  } else {
+  } catch {
     setStatus('offline', 'API offline');
-    setChatMessage(health.reason?.message || 'Não foi possível alcançar a API.', 'error');
+    setTokenState('', getToken() ? 'token salvo' : 'sem token');
+    setMessage(els.tokenMsg, 'Não foi possível alcançar /llm/health.', 'error');
     return;
   }
 
-  if (models.status === 'fulfilled') {
-    const first = models.value?.data?.[0] || models.value?.models?.[0];
-    if (first?.id) model = String(first.id);
+  if (!getToken()) {
+    setTokenState('auth', 'sem token');
+    setMessage(els.tokenMsg, 'Informe o Bearer token para liberar /v1/models e o chat.');
+    return;
+  }
+
+  setTokenState('', 'validando token…');
+  try {
+    const data = await models();
+    const list = data?.data || data?.models || [];
+    modelCount = Array.isArray(list) ? list.length : 0;
+    updateModelBadge();
+    setTokenState('online', 'token válido');
+  } catch (error) {
+    modelCount = 0;
+    updateModelBadge();
+    if (error?.status === 401 || error?.status === 403) {
+      setTokenState('auth', 'token inválido');
+      setMessage(els.tokenMsg, 'O token foi recusado pela API. Confira o valor gerado na instalação.', 'error');
+    } else {
+      setTokenState('', 'token salvo');
+      setMessage(els.tokenMsg, error?.message || 'Falha ao listar os modelos.', 'error');
+    }
   }
 }
 
-async function doLogin(event) {
+/* ------------------------------- Token ------------------------------------ */
+
+async function saveToken(event) {
   event?.preventDefault();
-  const email = els.email?.value.trim() || '';
-  const senha = els.password?.value || '';
-  if (!email || !senha) { setAuthMessage('Informe e-mail e senha.', 'error'); return; }
-  setBusy(els.login, true, 'Entrando…');
-  setAuthMessage('');
-  try {
-    const user = await authLogin(email, senha);
-    setAuthUi(user);
-    if (els.password) els.password.value = '';
-    setAuthMessage('Sessão iniciada.', 'ok');
-    await checkServices();
-  } catch (error) {
-    setAuthMessage(error.message || 'Não foi possível entrar.', 'error');
-  } finally {
-    setBusy(els.login, false);
+  const value = els.token?.value.trim() || '';
+  if (!value) {
+    setMessage(els.tokenMsg, 'Informe um Bearer token.', 'error');
+    els.token?.focus();
+    return;
+  }
+  setToken(value);
+  await refreshConnection();
+  if (els.tokenState?.dataset.state === 'online') {
+    setMessage(els.tokenMsg, 'Token salvo e validado.', 'ok');
   }
 }
 
-async function doRegister() {
-  const email = els.email?.value.trim() || '';
-  const senha = els.password?.value || '';
-  if (!email || !senha) { setAuthMessage('Informe e-mail e senha para criar a conta.', 'error'); return; }
-  setBusy(els.register, true, 'Criando…');
-  setAuthMessage('');
-  try {
-    await authRegister({ email, senha });
-    if (!getToken()) await authLogin(email, senha);
-    const user = await resolveAuth();
-    setAuthMessage(user ? 'Conta criada e sessão iniciada.' : 'Conta criada. Entre com sua senha.', 'ok');
-    await checkServices();
-  } catch (error) {
-    setAuthMessage(error.message || 'Não foi possível criar a conta.', 'error');
-  } finally {
-    setBusy(els.register, false);
-  }
+async function removeToken() {
+  clearToken();
+  if (els.token) els.token.value = '';
+  modelCount = 0;
+  updateModelBadge();
+  setMessage(els.tokenMsg, 'Token removido.', 'ok');
+  await refreshConnection();
 }
 
-async function doLogout() {
-  await authLogout();
-  setAuthUi(null);
-  setAuthMessage('Sessão encerrada.', 'ok');
-  setStatus('auth', 'login necessário');
-}
+/* --------------------------------- Chat ----------------------------------- */
 
 function appendMessage(role, text, meta = '') {
   const row = document.createElement('div');
@@ -198,10 +171,26 @@ function readFileAsText(file) {
   });
 }
 
+function chatErrorMessage(error) {
+  if (error?.status === 401 || error?.status === 403) {
+    return 'Token inválido ou ausente. Salve o Bearer token gerado pelo install_opencode.sh.';
+  }
+  if (error?.status === 429) {
+    return 'Limite ou cota do modelo atingido. Aguarde alguns instantes e tente de novo.';
+  }
+  return error?.message || 'Falha ao comunicar com a API.';
+}
+
 async function sendMessage() {
   const text = els.input?.value.trim() || '';
   const file = els.file?.files?.[0] || null;
   if (!text && !file) return;
+
+  if (!getToken()) {
+    setMessage(els.chatMsg, 'Informe o Bearer token antes de conversar.', 'error');
+    els.token?.focus();
+    return;
+  }
 
   let fullContent = text;
   let display = text;
@@ -211,7 +200,7 @@ async function sendMessage() {
       display = `${text ? `${text}\n` : ''}📄 ${file.name}`;
       fullContent = `${text}\n\n[Conteúdo do arquivo ${file.name}]:\n${content}`;
     } catch {
-      setChatMessage('Não foi possível ler o arquivo.', 'error');
+      setMessage(els.chatMsg, 'Não foi possível ler o arquivo.', 'error');
       return;
     }
   }
@@ -221,38 +210,39 @@ async function sendMessage() {
   if (els.input) els.input.value = '';
   if (els.file) els.file.value = '';
   setBusy(els.send, true, 'Enviando…');
-  setChatMessage('');
+  setMessage(els.chatMsg, '');
 
   try {
-    const data = await llmChat({
+    const data = await chat({
       messages: [
         { role: 'system', content: 'Você é um assistente útil. Responda em português do Brasil.' },
         ...chatMessages.slice(-20),
       ],
-      model,
     });
     const content = extractContent(data) || data?.message || 'Sem resposta do modelo.';
     chatMessages.push({ role: 'assistant', content });
     appendMessage('assistant', content);
     setStatus('online', 'API online');
+    setTokenState('online', 'token válido');
   } catch (error) {
-    const detail = error?.status === 401 || error?.status === 403
-      ? 'Sua sessão na API expirou. Entre novamente para continuar.'
-      : error?.status === 429
-        ? 'Limite de requisições atingido. Aguarde alguns segundos.'
-        : error?.message || 'Falha ao comunicar com a API.';
+    const detail = chatErrorMessage(error);
     appendMessage('error', detail);
-    setChatMessage(detail, 'error');
-    if (error?.status === 401 || error?.status === 403) setStatus('auth', 'login necessário');
-    else setStatus('offline', 'API offline');
+    setMessage(els.chatMsg, detail, 'error');
+    if (error?.status === 401 || error?.status === 403) {
+      setTokenState('auth', 'token inválido');
+      setStatus('auth', 'token necessário');
+    } else if (error?.network) {
+      setStatus('offline', 'API offline');
+    }
   } finally {
     setBusy(els.send, false);
   }
 }
 
-els.loginForm?.addEventListener('submit', doLogin);
-els.register?.addEventListener('click', doRegister);
-els.logout?.addEventListener('click', doLogout);
+/* -------------------------------- Eventos --------------------------------- */
+
+els.tokenForm?.addEventListener('submit', saveToken);
+els.tokenClear?.addEventListener('click', removeToken);
 els.send?.addEventListener('click', sendMessage);
 els.input?.addEventListener('keydown', (event) => {
   if (event.key === 'Enter' && !event.isComposing) {
@@ -260,20 +250,12 @@ els.input?.addEventListener('keydown', (event) => {
     sendMessage();
   }
 });
-els.tokenSave?.addEventListener('click', () => {
-  const value = els.token?.value.trim() || '';
-  if (!value) setAuthMessage('Informe um token Bearer.', 'error');
-  else {
-    setToken(value);
-    setAuthMessage('Token salvo neste navegador.', 'ok');
-    resolveAuth().then(checkServices);
-  }
-});
 
 (async function boot() {
-  setAuthUi(apiUser());
-  await Promise.all([resolveAuth(), refreshRegistrationPolicy()]);
-  await checkServices();
-  document.documentElement.dataset.api = LLM_BASE;
-  console.info(`API LLM: ${LLM_BASE} · Auth: ${AUTH_BASE}`);
+  if (getToken() && els.token) els.token.value = getToken();
+  setTokenState(getToken() ? 'online' : '', getToken() ? 'token salvo' : 'sem token');
+  updateModelBadge();
+  await refreshConnection();
+  document.documentElement.dataset.api = OPENCODE_BASE;
+  console.info(`API OpenCode: ${OPENCODE_BASE}`);
 })();

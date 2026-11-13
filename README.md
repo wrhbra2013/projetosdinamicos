@@ -1,110 +1,119 @@
-# Projetos Dinâmicos — site estático + API ativa
+# OpenChat — Projetos Dinâmicos
 
-Frontend estático que usa os serviços ativos da Projetos Dinâmicos para
-autenticação e para o assistente de IA, mantendo projetos, ideias e tarefas no
-SQLite do próprio navegador.
+Site estático do **OpenChat**, uma interface de chat que consome a API
+OpenAI-compatible publicada pelo `install_opencode.sh`. Não há login nem
+cadastro: o usuário informa o **Bearer token** gerado na instalação e ele fica
+salvo apenas no navegador.
 
 ## Páginas
 
 | Arquivo | Função |
 | --- | --- |
-| `index.html` | Painel LLM: login, cadastro, token Bearer e chat com anexos. |
-| `app.html` | Aplicação completa (painel, projetos, ideias, tarefas, LGPD, configurações e Assistente IA). |
-| `openchat.html` | Redireciona para `index.html` (o chat passou a ser a página inicial). |
+| `index.html` | OpenChat: token, status da API, modelos e chat com anexos. |
+| `openchat.html` | Redireciona para `index.html` (compatibilidade com links antigos). |
+| `termos.html` | Termos de Uso. |
+| `privacidade.html` | Política de Privacidade. |
 
-## Serviços usados
+## API usada
 
 | Serviço | Base padrão | Uso |
 | --- | --- | --- |
-| Auth | `https://api.projetosdinamicos.com.br/auth` | login, cadastro, sessão e perfil |
-| LLM | `https://api.projetosdinamicos.com.br/llm` | assistente de IA (llamafile atrás do nginx) |
-
-### Endpoints
+| OpenCode | `https://api.projetosdinamicos.com.br/llm` | ponte OpenAI-compatible do `install_opencode.sh` |
 
 ```text
-GET  {auth}/status            -> { registration_open, authenticated, user }
-POST {auth}/register          { email, senha }
-POST {auth}/login             { email, senha } -> token Bearer + cookie llm_session
-GET  {auth}/me                (Authorization: Bearer ... ou cookie)
-POST {auth}/logout
-
-GET  {llm}/health             (protegido)
-GET  {llm}/v1/models          (protegido)
-POST {llm}/v1/chat/completions (protegido, compatível com OpenAI)
+GET  {llm}/health               -> { status: "ok" }            (público)
+GET  {llm}/v1/models            -> lista de modelos            (Bearer)
+POST {llm}/v1/chat/completions  -> resposta OpenAI-compatible  (Bearer)
 ```
 
-O login usa o campo **`senha`** (não `password`). O token devolvido pelo login é
-guardado em `localStorage` (`pd.api_token`), e o cookie `llm_session` também é
-enviado em todas as requisições (`credentials: 'include'`).
+O `install_opencode.sh` publica a ponte atrás do nginx em `/llm/` e imprime no
+fim da instalação uma linha como:
+
+```text
+Bearer token: <token>
+```
+
+Esse é o valor pedido pelo OpenChat. Ele é enviado como
+`Authorization: Bearer <token>` em `/v1/models` e `/v1/chat/completions`.
+
+O modelo é definido no servidor (`OPENCODE_PROVIDER` / `OPENCODE_MODEL`, por
+padrão `opencode/big-pickle`). O campo `model` enviado pelo navegador é aceito
+pela ponte, mas ignorado.
+
+### Como o token é guardado
+
+O token fica em `localStorage`, na chave `pd.opencode_token`. Ele nunca é
+embutido no HTML e pode ser removido pelo botão **Limpar**.
+
+As chamadas usam `credentials: 'omit'`: a ponte responde CORS com `*` e não usa
+cookie de sessão, então o Bearer token é a única credencial.
 
 ## Configuração
 
-As bases podem ser trocadas sem alterar o JavaScript, via meta tags no `<head>`:
+A base pode ser trocada sem alterar o JavaScript, via meta tag no `<head>` de
+`index.html`:
 
 ```html
-<meta name="auth-api-base" content="https://api.projetosdinamicos.com.br/auth">
 <meta name="llm-api-base" content="https://api.projetosdinamicos.com.br/llm">
 ```
 
-Para desenvolvimento local, aponte para os serviços locais e ajuste o CSP:
+Para desenvolvimento local, aponte para a ponte do instalador (porta 8095):
 
 ```html
-<meta name="auth-api-base" content="http://127.0.0.1:8090/auth">
-<meta name="llm-api-base" content="http://127.0.0.1:3004">
+<meta name="llm-api-base" content="http://127.0.0.1:8095">
 ```
 
-O CSP já libera `http://localhost:3004`, `http://127.0.0.1:3004`,
-`http://localhost:8090` e `http://127.0.0.1:8090`.
-
-## Como a autenticação funciona
-
-1. Ao abrir, o app tenta restaurar a sessão local (`sessionStorage`).
-2. Sem sessão local, consulta `GET {auth}/status`; se `authenticated` for
-   verdadeiro (cookie ou token salvo), busca o perfil em `GET {auth}/me`.
-3. A API é a autoridade de login. O usuário remoto é espelhado na tabela
-   `users` do SQLite local para que projetos e auditoria continuem
-   funcionando. A primeira conta espelhada de uma instalação vira `owner`.
-4. **API fora do ar (erro de rede ou HTTP 5xx):** o app usa o login local
-   existente (modo local-first). Erros de credencial (401/403) **não** caem no
-   fallback.
-5. O cadastro respeita `registration_open` do serviço. Atualmente a produção
-   informa `registration_open: false`, então novas contas precisam ser
-   liberadas pelo administrador do serviço.
-
-O token nunca fica embutido no HTML. Ele é digitado/salvo pelo usuário ou
-obtido no login.
+O CSP já libera `https:` e `http://127.0.0.1:8095` / `http://localhost:8095`.
 
 ## Desenvolvimento
 
-Não há build: os arquivos são servidos como estão. Use qualquer servidor
-estático (não abra via `file://`, por causa de módulos ES e WebCrypto):
+Não há build: os arquivos são servidos como estão. Use um servidor estático
+(não abra via `file://`, por causa de módulos ES):
 
 ```bash
 python3 -m http.server 8080
-# abra http://localhost:8080/index.html
+# abra http://localhost:8080/
 ```
-
-Para usar a API de produção, o navegador precisa estar na origem permitida
-(`https://www.projetosdinamicos.com.br`) ou o serviço de auth precisa liberar
-a origem local no CORS.
 
 ## Diagnóstico
 
-- `index.html` mostra o estado de `/llm` e da conta no topo.
-- `app.html` → **Configurações → API e serviços** permite verificar
-  `/auth/status` e `/llm/health`, salvar um token manualmente e sair da API.
-- Em caso de `401`, faça login novamente ou cole um token válido.
-- Se o LLM responder `401 unauthorized`, o problema é sessão/credencial, não o
-  modelo.
+- **API online / sem token**: a API responde, mas falta informar o Bearer token.
+- **token inválido**: `/v1/models` respondeu 401/403; confira o token impresso
+  no fim da instalação.
+- **API offline**: falha de rede ou `/llm/health` fora do ar; verifique o nginx
+  e os serviços `opencode-serve` / `opencode-bridge`.
+- **429**: cota gratuita do modelo esgotada; aguarde e tente novamente.
 
-## Estrutura relevante
+Comandos úteis no servidor:
+
+```bash
+sudo bash install_opencode.sh status
+sudo bash install_opencode.sh logs
+sudo bash install_opencode.sh restart
+```
+
+## Estrutura
 
 ```text
-assets/js/core/api.js          cliente único de auth + LLM (bases, token, erros, SSE)
-assets/js/core/auth.js         login local/remoto, espelho do usuário, sessões
-assets/js/ui/views/auth.js     tela de entrada/cadastro
-assets/js/ui/views/llm-chat.js Assistente IA dentro do app
-assets/js/ui/views/settings.js aba "API e serviços"
-assets/js/llm-dashboard.js     comportamento de index.html
-assets/css/llm.css             estilos do assistente
+index.html                     página do OpenChat
+openchat.html                  redirect para index.html
+termos.html                    Termos de Uso
+privacidade.html               Política de Privacidade
+CNAME                          domínio publicado
+favicon.svg                    ícone
+assets/css/base.css            tokens, reset, tipografia, botões e componentes
+assets/css/landing.css         header, menu e footer compartilhados
+assets/css/dashboard.css       layout e componentes do OpenChat
+assets/css/legal.css           estilos das páginas legais
+assets/js/core/opencode.js     cliente da ponte OpenCode (base, token, erros)
+assets/js/llm-dashboard.js     comportamento do index.html
 ```
+
+## Segurança
+
+O CORS `*` permite que qualquer site chame a API **se tiver o token**. Portanto:
+
+- não embuta o token no HTML/JS público;
+- trate o Bearer token como segredo e revogue-o se vazar;
+- se o site precisar oferecer o chat a visitantes sem token, use um proxy no
+  servidor que guarde o token — não exponha o token no navegador.

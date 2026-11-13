@@ -3,125 +3,144 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Painel LLM — Projetos Dinâmicos</title>
-  <meta name="description" content="Painel de teste da API LLM da Projetos Dinâmicos, com conta autenticada e análise de arquivos.">
+  <title>OpenChat — Projetos Dinâmicos</title>
+  <meta name="description" content="OpenChat da Projetos Dinâmicos: assistente de IA com a API OpenAI-compatible do OpenCode (Big Pickle).">
   <meta name="theme-color" content="#123b32">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https: http://localhost:3004 http://127.0.0.1:3004 http://localhost:8090 http://127.0.0.1:8090; font-src 'self'; base-uri 'self'; form-action 'self'">
+  <meta name="color-scheme" content="light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https: http://localhost:8095 http://127.0.0.1:8095; font-src 'self'; base-uri 'self'; form-action 'self'">
   <meta name="llm-api-base" content="https://api.projetosdinamicos.com.br/llm">
-  <meta name="auth-api-base" content="https://api.projetosdinamicos.com.br/auth">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <style>
-    :root { color-scheme: light; }
-    * { box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif; background: #f4f4f9; color: #17231f; margin: 0; padding: 24px 16px; }
-    .wrap { width: 100%; max-width: 760px; margin: 0 auto; display: grid; gap: 16px; }
-    .card { background: #fff; border: 1px solid #dfe7e2; border-radius: 12px; padding: 18px; box-shadow: 0 8px 24px rgba(18, 59, 50, .06); }
-    header.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    header.top h1 { margin: 0; font-size: 1.35rem; }
-    .top-links { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: .88rem; }
-    .top-links a { color: #0d6efd; text-decoration: none; font-weight: 600; }
-    .top-links a:hover { text-decoration: underline; }
-    .status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; background: #eef4f1; color: #52635d; font-size: .78rem; font-weight: 600; }
-    .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #8a9a94; }
-    .status[data-state="online"] { background: #e7f5ee; color: #1f7a4d; }
-    .status[data-state="online"]::before { background: #2c7a58; }
-    .status[data-state="offline"] { background: #fdecea; color: #b42318; }
-    .status[data-state="offline"]::before { background: #b42318; }
-    .status[data-state="auth"] { background: #fff6e5; color: #9a5b00; }
-    .status[data-state="auth"]::before { background: #b54708; }
-    h2 { margin: 0 0 12px; font-size: 1rem; }
-    .auth-grid { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 8px; align-items: end; }
-    .auth-grid label, .field { display: grid; gap: 5px; font-size: .8rem; font-weight: 600; color: #52635d; }
-    input[type="email"], input[type="password"], input[type="text"], input[type="url"] { width: 100%; padding: 9px 10px; border: 1px solid #cbd8d2; border-radius: 8px; font: inherit; background: #fff; }
-    button { padding: 9px 14px; border: 1px solid transparent; border-radius: 8px; background: #123b32; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
-    button:hover { background: #0d2c25; }
-    button.ghost { background: #fff; color: #123b32; border-color: #cbd8d2; }
-    button.ghost:hover { background: #f2f7f4; }
-    button:disabled { opacity: .55; cursor: not-allowed; }
-    .hidden { display: none !important; }
-    .auth-logged { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    #auth-user { font-weight: 600; }
-    .msg { min-height: 1.1em; margin: 8px 0 0; font-size: .82rem; color: #52635d; }
-    .msg[data-tone="ok"] { color: #1f7a4d; }
-    .msg[data-tone="error"] { color: #b42318; }
-    details { margin-top: 12px; font-size: .82rem; color: #52635d; }
-    details summary { cursor: pointer; font-weight: 600; }
-    .token-row { display: flex; gap: 8px; margin-top: 8px; }
-    .token-row input { flex: 1; }
-    #chat-box { min-height: 260px; max-height: 420px; overflow-y: auto; border: 1px solid #dfe7e2; border-radius: 10px; padding: 12px; background: #fafcfb; display: flex; flex-direction: column; gap: 10px; }
-    .message { margin: 0; padding: 9px 12px; border-radius: 10px; max-width: 88%; line-height: 1.45; word-break: break-word; white-space: pre-wrap; }
-    .message.user { align-self: flex-end; background: #dff2e7; }
-    .message.assistant { align-self: flex-start; background: #eaf1ff; }
-    .message.error { align-self: flex-start; background: #fdecea; color: #b42318; }
-    .message strong { display: block; font-size: .74rem; opacity: .75; margin-bottom: 3px; }
-    .message-meta { margin-top: 4px; font-size: .7rem; opacity: .65; }
-    .input-group { display: grid; gap: 10px; margin-top: 12px; }
-    .file-row { display: flex; align-items: center; gap: 10px; font-size: .85rem; color: #52635d; flex-wrap: wrap; }
-    .input-row { display: flex; gap: 10px; }
-    .input-row input { flex: 1; }
-    @media (max-width: 640px) {
-      .auth-grid { grid-template-columns: 1fr; }
-      .input-row { flex-direction: column; }
-    }
-  </style>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/landing.css">
+  <link rel="stylesheet" href="assets/css/dashboard.css">
 </head>
-<body>
-  <div class="wrap">
-    <header class="top">
-      <div>
-        <h1>Painel LLM</h1>
-        <p class="msg" style="margin-top:4px">API ativa: <code>api.projetosdinamicos.com.br/llm</code></p>
-      </div>
-      <div class="top-links">
-        <span id="api-status" class="status" data-state="checking">verificando…</span>
-        <span id="auth-state" class="status">visitante</span>
-        <a href="openchat.html">OpenChat →</a>
-        <a href="app.html">App →</a>
-      </div>
-    </header>
+<body class="oc-page">
+  <a class="skip-link" href="#chat">Ir para o chat</a>
 
-    <section class="card">
-      <h2>Conta da API</h2>
-      <div id="auth-logged" class="auth-logged hidden">
-        <span id="auth-user"></span>
-        <button id="logout" class="ghost" type="button">Sair</button>
-      </div>
-      <form id="login-form" class="auth-grid" novalidate>
-        <label>E-mail
-          <input id="email" type="email" autocomplete="email" placeholder="voce@exemplo.com" required>
-        </label>
-        <label>Senha
-          <input id="password" type="password" autocomplete="current-password" placeholder="Sua senha" required>
-        </label>
-        <button id="login" type="submit">Entrar</button>
-        <button id="register" class="ghost" type="button">Criar conta</button>
-      </form>
-      <p id="auth-msg" class="msg" role="status"></p>
-      <details>
-        <summary>Usar token Bearer manualmente</summary>
-        <div class="token-row">
-          <input id="token" type="password" autocomplete="off" placeholder="Cole o token retornado por /auth/login">
-          <button id="token-save" class="ghost" type="button">Salvar</button>
-        </div>
-      </details>
-    </section>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="index.html" aria-label="OpenChat — Projetos Dinâmicos">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>
+        </span>
+        <span class="brand-text"><strong>Open<em>Chat</em></strong><small>Projetos Dinâmicos</small></span>
+      </a>
+      <nav class="site-nav" aria-label="Principal">
+        <a href="index.html" aria-current="page">OpenChat</a>
+        <a href="termos.html">Termos</a>
+        <a href="privacidade.html">Privacidade</a>
+        <a class="btn primary sm" href="#chat">Conversar</a>
+      </nav>
+    </div>
+  </header>
 
-    <section class="card">
-      <h2>Conversar com o modelo</h2>
-      <div id="chat-box" role="log" aria-live="polite"></div>
-      <div class="input-group">
-        <div class="file-row">
-          <label for="file-input">📎 Anexar arquivo (.txt, .md, .json, .js, .py, .log, .csv):</label>
-          <input type="file" id="file-input" accept=".txt,.json,.js,.py,.md,.log,.csv">
+  <main>
+    <div class="wrap">
+      <section class="oc-hero" aria-labelledby="oc-title">
+        <p class="eyebrow">Assistente de IA · API OpenAI-compatible</p>
+        <h1 id="oc-title">Converse com o <em>OpenChat</em></h1>
+        <p class="lead">
+          Uma interface direta para o modelo <strong>opencode/big-pickle</strong>, servido pela
+          ponte <code>api.projetosdinamicos.com.br/llm</code>. Sem login e sem cadastro:
+          informe o Bearer token uma vez e ele fica salvo apenas neste navegador.
+        </p>
+        <div class="oc-hero-status">
+          <span id="api-status" class="status" data-state="checking">verificando API…</span>
+          <span id="token-state" class="status">sem token</span>
         </div>
-        <div class="input-row">
-          <input type="text" id="user-input" placeholder="Digite sua mensagem ou instrução sobre o arquivo…" autocomplete="off">
-          <button id="send" type="button">Enviar</button>
+      </section>
+    </div>
+
+    <div class="wrap oc-layout">
+      <section class="card oc-chat-card" id="chat" aria-labelledby="chat-title">
+        <div class="card-head">
+          <h2 id="chat-title">Conversar</h2>
+          <span id="model-badge" class="badge hidden"></span>
         </div>
-        <p id="chat-msg" class="msg" role="status"></p>
+
+        <div id="chat-box" class="oc-chat" role="log" aria-live="polite"></div>
+
+        <div class="oc-composer">
+          <div class="oc-file-row">
+            <label for="file-input">📎 Anexar arquivo (.txt, .md, .json, .js, .py, .log, .csv)</label>
+            <input type="file" id="file-input" accept=".txt,.json,.js,.py,.md,.log,.csv">
+          </div>
+          <div class="oc-input-row">
+            <input class="input" type="text" id="user-input" placeholder="Digite sua mensagem ou instrução sobre o arquivo…" autocomplete="off">
+            <button id="send" class="btn primary" type="button">Enviar</button>
+          </div>
+          <p id="chat-msg" class="msg" role="status"></p>
+        </div>
+      </section>
+
+      <aside class="card oc-token-card" aria-labelledby="token-title">
+        <div class="card-head">
+          <h2 id="token-title">Token de acesso</h2>
+        </div>
+        <p class="hint">
+          O <strong>OpenChat</strong> não usa conta. Informe o <strong>Bearer token</strong>
+          exibido no fim da instalação do <code>install_opencode.sh</code>. O valor fica salvo
+          apenas neste navegador e pode ser removido a qualquer momento.
+        </p>
+        <form id="token-form" class="oc-token-form" novalidate>
+          <label class="field">
+            <span class="field-label">Bearer token</span>
+            <input class="input" id="token" type="password" autocomplete="off" placeholder="Cole o token gerado pela instalação" required>
+          </label>
+          <div class="oc-token-actions">
+            <button id="token-save" class="btn primary" type="submit">Salvar</button>
+            <button id="token-clear" class="btn" type="button">Limpar</button>
+          </div>
+        </form>
+        <p id="token-msg" class="msg" role="status"></p>
+        <details class="oc-details">
+          <summary>Testar a API por curl</summary>
+          <pre><code>curl -H "Authorization: Bearer $TOKEN" \
+  https://api.projetosdinamicos.com.br/llm/v1/models
+
+curl -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"Olá"}]}' \
+  https://api.projetosdinamicos.com.br/llm/v1/chat/completions</code></pre>
+        </details>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>
+          <a class="brand" href="index.html" aria-label="OpenChat — Projetos Dinâmicos">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>
+            </span>
+            <span class="brand-text"><strong>Open<em>Chat</em></strong><small>Projetos Dinâmicos</small></span>
+          </a>
+          <p class="muted">Assistente de IA conectado à API OpenAI-compatible do OpenCode, com o modelo opencode/big-pickle.</p>
+        </div>
+        <div>
+          <h4>OpenChat</h4>
+          <a href="#chat">Conversar</a>
+          <a href="index.html">Token de acesso</a>
+        </div>
+        <div>
+          <h4>Documentos</h4>
+          <a href="termos.html">Termos de Uso</a>
+          <a href="privacidade.html">Política de Privacidade</a>
+        </div>
+        <div>
+          <h4>API</h4>
+          <a href="https://api.projetosdinamicos.com.br/llm/health" target="_blank" rel="noopener noreferrer">Status do serviço</a>
+          <a href="https://api.projetosdinamicos.com.br/llm/v1/models" target="_blank" rel="noopener noreferrer">Modelos disponíveis</a>
+        </div>
       </div>
-    </section>
-  </div>
+      <div class="footer-bottom">
+        <span>© 2026 Projetos Dinâmicos · OpenChat</span>
+        <span>API <code>api.projetosdinamicos.com.br/llm</code></span>
+      </div>
+    </div>
+  </footer>
 
   <script type="module" src="assets/js/llm-dashboard.js"></script>
 </body>

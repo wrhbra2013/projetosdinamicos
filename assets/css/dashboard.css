@@ -1,0 +1,520 @@
+/* ============================================================================
+   OpenChat — painel da API OpenAI-compatible do OpenCode.
+   Usa os tokens de assets/css/base.css e o chrome de landing.css.
+   ========================================================================== */
+
+.oc-page {
+  --oc-max: 1120px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 420px at 78% -8%, rgba(255, 253, 248, .9), transparent 68%),
+    radial-gradient(720px 380px at 8% 4%, rgba(47, 122, 100, .07), transparent 70%),
+    var(--bg);
+}
+
+.oc-page .wrap {
+  width: min(var(--oc-max), calc(100% - 2.5rem));
+}
+
+.oc-page > main {
+  flex: 1;
+}
+
+/* -------------------------------- Header ---------------------------------- */
+
+.oc-page .site-header {
+  background: rgba(245, 242, 234, .82);
+  backdrop-filter: blur(14px) saturate(1.15);
+}
+
+.oc-page .site-nav a {
+  position: relative;
+  transition: color .16s ease;
+}
+
+.oc-page .site-nav a[aria-current="page"] {
+  color: var(--brand);
+}
+
+.oc-page .site-nav a[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -.42rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand-3);
+}
+
+/* --------------------------------- Hero ----------------------------------- */
+
+.oc-hero {
+  display: grid;
+  gap: .55rem;
+  max-width: 74ch;
+  padding-block: clamp(2.2rem, 5vw, 3.8rem) clamp(1.3rem, 3vw, 2rem);
+}
+
+.oc-hero .eyebrow {
+  margin: 0;
+}
+
+.oc-hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4.6vw, 3.15rem);
+  line-height: 1.03;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+
+.oc-hero h1 em {
+  color: var(--brand-3);
+  font-style: italic;
+}
+
+.oc-hero .lead {
+  margin: .15rem 0 0;
+  max-width: 62ch;
+  color: var(--ink-2);
+  font-size: clamp(.94rem, 1.4vw, 1.04rem);
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.oc-hero .lead code {
+  font-size: .88em;
+}
+
+.oc-hero-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin-top: .7rem;
+}
+
+/* -------------------------------- Status ---------------------------------- */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .38rem .7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: .76rem;
+  font-weight: 650;
+  white-space: nowrap;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
+}
+
+.status::before {
+  content: "";
+  width: .48rem;
+  height: .48rem;
+  border-radius: 50%;
+  background: var(--muted);
+  box-shadow: 0 0 0 3px rgba(119, 130, 123, .12);
+}
+
+.status[data-state="online"] {
+  background: var(--ok-soft);
+  border-color: #c6e0d1;
+  color: #1f5c42;
+}
+
+.status[data-state="online"]::before {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px rgba(44, 122, 88, .14);
+}
+
+.status[data-state="auth"],
+.status[data-state="checking"] {
+  background: var(--warn-soft);
+  border-color: #ecd7a9;
+  color: #7d560f;
+}
+
+.status[data-state="auth"]::before,
+.status[data-state="checking"]::before {
+  background: var(--warn);
+  box-shadow: 0 0 0 3px rgba(169, 117, 28, .14);
+}
+
+.status[data-state="offline"] {
+  background: var(--danger-soft);
+  border-color: #edc6c0;
+  color: #872d2d;
+}
+
+.status[data-state="offline"]::before {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px rgba(176, 58, 58, .14);
+}
+
+/* -------------------------------- Layout ---------------------------------- */
+
+.oc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  grid-template-areas: "chat token";
+  gap: clamp(1rem, 2vw, 1.4rem);
+  align-items: start;
+  padding-bottom: clamp(2rem, 6vw, 4.5rem);
+}
+
+.oc-token-card { grid-area: token; }
+.oc-chat-card { grid-area: chat; }
+
+.oc-page .card {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.oc-page .card-head {
+  margin-bottom: .75rem;
+}
+
+.oc-page .card-head h2 {
+  margin: 0;
+  font-size: 1.08rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+/* ------------------------------ Token card -------------------------------- */
+
+.oc-token-card .hint {
+  margin: .25rem 0 0;
+  color: var(--muted);
+  font-size: .8rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.oc-token-form {
+  display: grid;
+  gap: .55rem;
+  margin-top: .9rem;
+}
+
+.oc-token-form .field-label {
+  display: block;
+}
+
+.oc-token-actions {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.oc-token-actions .btn {
+  flex: 1 1 110px;
+  justify-content: center;
+}
+
+.oc-details {
+  margin-top: 1rem;
+  padding-top: .85rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.oc-details summary {
+  cursor: pointer;
+  color: var(--ink-2);
+  font-weight: 650;
+}
+
+.oc-details summary:hover {
+  color: var(--brand);
+}
+
+.oc-details pre {
+  margin: .65rem 0 0;
+  padding: .7rem .8rem;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  font-size: .7rem;
+  line-height: 1.6;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.oc-page code {
+  font-family: var(--font-mono);
+  font-size: .86em;
+}
+
+/* -------------------------------- Chat ------------------------------------ */
+
+.oc-chat-card {
+  display: flex;
+  flex-direction: column;
+  min-height: min(620px, calc(100dvh - 240px));
+}
+
+.oc-chat-card .badge {
+  align-self: center;
+}
+
+.oc-chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: .65rem;
+  min-height: 260px;
+  max-height: min(54vh, 540px);
+  padding: .9rem;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, .75), rgba(240, 236, 225, .45)),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(224, 218, 205, .24) 31px 32px);
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.oc-chat:empty {
+  display: grid;
+  place-items: center;
+}
+
+.oc-chat:empty::before {
+  content: "Envie uma mensagem para começar a conversar.";
+  max-width: 34ch;
+  color: var(--muted);
+  font-size: .84rem;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.message {
+  margin: 0;
+  max-width: min(88%, 62ch);
+  padding: .62rem .82rem;
+  border-radius: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-shadow: var(--shadow-sm);
+}
+
+.message strong {
+  display: block;
+  margin-bottom: .18rem;
+  font-size: .66rem;
+  font-weight: 750;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  opacity: .62;
+}
+
+.message.user {
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+  background: var(--brand);
+  color: #f8f3e7;
+}
+
+.message.assistant {
+  align-self: flex-start;
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+  background: var(--panel);
+}
+
+.message.error {
+  align-self: flex-start;
+  border: 1px solid #edc6c0;
+  border-bottom-left-radius: 4px;
+  background: var(--danger-soft);
+  color: #872d2d;
+}
+
+.message-meta {
+  margin-top: .3rem;
+  font-size: .68rem;
+  opacity: .62;
+}
+
+/* ------------------------------- Composer --------------------------------- */
+
+.oc-composer {
+  display: grid;
+  gap: .55rem;
+  margin-top: .85rem;
+}
+
+.oc-file-row {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: .76rem;
+}
+
+.oc-file-row input[type="file"] {
+  max-width: 100%;
+  color: var(--ink-2);
+  font-size: .76rem;
+}
+
+.oc-file-row input[type="file"]::file-selector-button {
+  margin-right: .5rem;
+  padding: .35rem .6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.oc-file-row input[type="file"]::file-selector-button:hover {
+  border-color: var(--brand-3);
+  color: var(--brand);
+}
+
+.oc-input-row {
+  display: flex;
+  align-items: stretch;
+  gap: .5rem;
+}
+
+.oc-input-row .input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --------------------------------- Msg ------------------------------------ */
+
+.msg {
+  min-height: 1.1em;
+  margin: .25rem 0 0;
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.msg[data-tone="ok"] { color: var(--ok); }
+.msg[data-tone="error"] { color: var(--danger); }
+
+/* ------------------------------- Footer ----------------------------------- */
+
+.oc-page .site-footer {
+  margin-top: auto;
+}
+
+.oc-page .site-footer .brand {
+  color: #f4efe2;
+}
+
+.oc-page .site-footer p {
+  color: rgba(233, 228, 214, .62);
+  font-size: .8rem;
+  line-height: 1.6;
+}
+
+.oc-page .site-footer code {
+  color: rgba(233, 228, 214, .72);
+}
+
+/* ------------------------------ Responsivo -------------------------------- */
+
+@media (min-width: 901px) {
+  .oc-token-card {
+    position: sticky;
+    top: calc(72px + 1rem);
+  }
+}
+
+@media (max-width: 980px) {
+  .oc-page .header-inner {
+    height: auto;
+    padding-block: .7rem;
+    flex-wrap: wrap;
+    row-gap: .5rem;
+  }
+
+  .oc-page .site-nav {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: .35rem 1rem;
+  }
+
+  /* Sobrescreve o menu compacto de landing.css: os links continuam visíveis. */
+  .oc-page .site-nav a:not(.btn) {
+    display: inline-flex;
+  }
+
+  .oc-page .site-nav .btn {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .oc-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "token"
+      "chat";
+  }
+
+  .oc-token-card {
+    position: static;
+  }
+
+  .oc-chat-card {
+    min-height: auto;
+  }
+
+  .oc-chat {
+    max-height: min(50vh, 420px);
+  }
+}
+
+@media (max-width: 620px) {
+  .oc-page .wrap {
+    width: calc(100% - 1.75rem);
+  }
+
+  .oc-hero {
+    padding-block: 1.7rem 1.2rem;
+  }
+
+  .oc-input-row {
+    flex-direction: column;
+  }
+
+  .oc-input-row .btn {
+    justify-content: center;
+  }
+
+  .message {
+    max-width: 94%;
+  }
+
+  .oc-page .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
