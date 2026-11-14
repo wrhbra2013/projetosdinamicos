@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ativo — OpenFinancial</title>
+  <meta name="description" content="Análise probabilística de um ativo da B3: preço, médias, projeção, probabilidades de alta, lateralidade e baixa, indicadores e fontes.">
+  <meta name="theme-color" content="#123b32">
+  <meta name="color-scheme" content="light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.projetosdinamicos.com.br https://cdn.projetosdinamicos.com.br http://127.0.0.1:8096 http://localhost:8096; font-src 'self'; base-uri 'self'; form-action 'self'">
+  <meta name="of-cdn-base" content="https://cdn.projetosdinamicos.com.br/b3">
+  <meta name="of-api-base" content="https://api.projetosdinamicos.com.br">
+  <meta name="of-timeout" content="4500">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/landing.css">
+  <link rel="stylesheet" href="assets/css/openfinancial.css">
+</head>
+<body class="of-page">
+  <a class="skip-link" href="#analise">Ir para a análise</a>
+
+  <header class="site-header of-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="index.html" aria-label="OpenFinancial — página inicial">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-4 3 2 5-6"/><path d="M16 7h3v3"/></svg>
+        </span>
+        <span class="brand-text"><strong>Open<em>Financial</em></strong><small>B3 · probabilidades</small></span>
+      </a>
+      <nav class="site-nav" aria-label="Principal">
+        <a href="index.html">Panorama</a>
+        <a href="metodologia.html">Metodologia</a>
+        <a href="termos.html">Termos</a>
+        <a href="privacidade.html">Privacidade</a>
+        <a class="btn primary sm" href="index.html#ativos">Explorar ativos</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="analise">
+    <div class="wrap">
+      <nav class="of-breadcrumb" aria-label="Você está aqui">
+        <a href="index.html">Panorama</a>
+        <span aria-hidden="true">/</span>
+        <a href="index.html#ativos">Ativos</a>
+        <span aria-hidden="true">/</span>
+        <span id="crumb-ticker">Carregando</span>
+      </nav>
+
+      <section class="of-asset-hero" aria-labelledby="asset-title">
+        <div class="of-asset-head">
+          <div class="of-asset-title">
+            <p class="eyebrow" id="asset-sector">Ativo da B3</p>
+            <h1 id="asset-title"><span id="asset-ticker">—</span> <small id="asset-name"></small></h1>
+            <div class="of-asset-meta">
+              <span class="badge tag" id="asset-segment">—</span>
+              <span class="trend-tag lateral" id="asset-trend"><i aria-hidden="true"></i>—</span>
+              <span id="asset-confidence">—</span>
+            </div>
+          </div>
+          <div class="of-asset-price">
+            <strong id="asset-price">—</strong>
+            <span id="asset-change">—</span>
+            <small id="asset-period-change">variação no período</small>
+          </div>
+        </div>
+        <div class="of-kpis" id="asset-kpis" aria-label="Indicadores principais">
+          <div class="of-kpi"><span>Retorno no período</span><strong id="kpi-retorno">—</strong></div>
+          <div class="of-kpi"><span>Volatilidade anual</span><strong id="kpi-vol">—</strong></div>
+          <div class="of-kpi"><span>Suporte (60d)</span><strong id="kpi-suporte">—</strong></div>
+          <div class="of-kpi"><span>Resistência (60d)</span><strong id="kpi-resistencia">—</strong></div>
+        </div>
+      </section>
+
+      <div id="asset-alert" aria-live="polite"></div>
+
+      <section class="of-toolbar card" aria-label="Filtro de período">
+        <div class="of-toolbar-main">
+          <span class="field-label" id="periodo-label">Horizonte</span>
+          <div class="of-periods" role="group" aria-labelledby="periodo-label">
+            <button class="of-period" type="button" data-period="1m" aria-pressed="false">1 mês</button>
+            <button class="of-period" type="button" data-period="3m" aria-pressed="false">3 meses</button>
+            <button class="of-period" type="button" data-period="6m" aria-pressed="true">6 meses</button>
+            <button class="of-period" type="button" data-period="1a" aria-pressed="false">1 ano</button>
+            <button class="of-period" type="button" data-period="5a" aria-pressed="false">5 anos</button>
+          </div>
+        </div>
+        <div class="of-toolbar-side">
+          <span class="src-chip" id="status-analise" data-source="loading"><span class="dot" aria-hidden="true"></span>análise: carregando</span>
+          <span class="src-chip" id="status-serie" data-source="loading"><span class="dot" aria-hidden="true"></span>série: carregando</span>
+          <span class="of-updated" id="asset-updated">consultando fontes…</span>
+        </div>
+      </section>
+
+      <div class="of-asset-grid">
+        <section class="card of-chart-card" aria-labelledby="preco-title">
+          <div class="card-head">
+            <div>
+              <h2 id="preco-title">Preço, médias e projeção</h2>
+              <p class="small muted" id="preco-sub">Histórico do período com banda probabilística à frente.</p>
+            </div>
+            <div class="of-legend-line" aria-label="Legenda">
+              <span><i aria-hidden="true"></i>preço</span>
+              <span><i class="dash" aria-hidden="true"></i>médias</span>
+              <span><i class="band" aria-hidden="true"></i>projeção 10–90%</span>
+            </div>
+          </div>
+          <svg class="of-chart" id="grafico-preco" viewBox="0 0 820 380" role="img" aria-label="Gráfico de preço histórico com médias móveis e projeção probabilística"></svg>
+        </section>
+
+        <aside class="card of-prob-panel" aria-labelledby="prob-title">
+          <div class="card-head">
+            <h2 id="prob-title">Probabilidades</h2>
+            <span class="badge tag" id="prob-periodo">6 meses</span>
+          </div>
+          <div class="of-prob-big">
+            <div class="alta"><small>Alta</small><strong id="prob-alta">—</strong></div>
+            <div class="lateral"><small>Lateral</small><strong id="prob-lateral">—</strong></div>
+            <div class="baixa"><small>Baixa</small><strong id="prob-baixa">—</strong></div>
+          </div>
+          <div class="of-prob-track" id="prob-track" aria-hidden="true"></div>
+          <div class="of-scenarios" id="cenarios"></div>
+          <p class="small muted" id="prob-nota">O cenário lateral existe e pode ser o mais provável.</p>
+        </aside>
+      </div>
+
+      <div class="of-asset-grid">
+        <section class="card" aria-labelledby="leitura-title">
+          <div class="card-head">
+            <h2 id="leitura-title">Leitura do modelo</h2>
+            <span class="badge tag" id="leitura-modelo">OpenFinancial</span>
+          </div>
+          <p class="of-summary" id="asset-resumo">Carregando a leitura probabilística…</p>
+          <div class="section-title"><h2>Sinais observados</h2></div>
+          <div class="of-signals" id="asset-sinais"></div>
+        </section>
+
+        <aside class="card" aria-labelledby="ind-title">
+          <div class="card-head">
+            <h2 id="ind-title">Indicadores</h2>
+          </div>
+          <div class="of-indicators" id="asset-indicadores"></div>
+          <hr>
+          <div class="section-title"><h2>Fontes da análise</h2></div>
+          <ul class="of-sources" id="asset-fontes">
+            <li>Consultando fontes oficiais…</li>
+          </ul>
+          <p class="small muted" id="asset-demo" hidden>
+            Esta página usa dados sintéticos de demonstração porque a CDN ou a API não responderam.
+          </p>
+        </aside>
+      </div>
+
+      <p class="of-disclaimer" role="note">
+        <strong>Conteúdo informativo e probabilístico.</strong>
+        Esta análise descreve cenários condicionados aos dados disponíveis e não constitui
+        recomendação de investimento. Rentabilidade passada não garante rentabilidade futura.
+        Consulte os canais oficiais da B3, CVM, BCB e da companhia.
+      </p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>
+          <a class="brand" href="index.html" aria-label="OpenFinancial — página inicial">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-4 3 2 5-6"/><path d="M16 7h3v3"/></svg>
+            </span>
+            <span class="brand-text"><strong>Open<em>Financial</em></strong><small>B3 · probabilidades</small></span>
+          </a>
+          <p class="muted">Panorama probabilístico da B3 com dados de mercado via CDN e análises servidas pela API OpenFinancial.</p>
+        </div>
+        <div>
+          <h4>Plataforma</h4>
+          <a href="index.html">Panorama</a>
+          <a href="index.html#ativos">Ativos acompanhados</a>
+          <a href="metodologia.html">Metodologia</a>
+        </div>
+        <div>
+          <h4>Dados</h4>
+          <a href="metodologia.html#fontes">Fontes e atualização</a>
+          <a href="metodologia.html#api">API de referência</a>
+          <a href="metodologia.html#limites">Limites do modelo</a>
+        </div>
+        <div>
+          <h4>Documentos</h4>
+          <a href="termos.html">Termos de Uso</a>
+          <a href="privacidade.html">Política de Privacidade</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 Projetos Dinâmicos · OpenFinancial</span>
+        <span>Dados de demonstração quando a fonte oficial não responde</span>
+      </div>
+    </div>
+  </footer>
+
+  <script type="module" src="assets/js/ativo.js"></script>
+</body>
+</html>

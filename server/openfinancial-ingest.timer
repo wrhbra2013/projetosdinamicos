@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenFinancial — recálculo periódico do panorama
+Documentation=https://github.com/wrhbra2013/projetosdinamicos
+
+[Timer]
+# Após o fechamento da B3 (18h40 em Brasília) e antes da abertura (9h).
+OnCalendar=Mon..Fri 18:40 America/Sao_Paulo
+OnCalendar=Mon..Fri 08:40 America/Sao_Paulo
+# Se a máquina estava desligada no horário, roda na próxima inicialização.
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,26 @@
+[Unit]
+Description=OpenFinancial — recalculo do panorama
+Documentation=https://github.com/wrhbra2013/projetosdinamicos
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=openfinancial
+Group=openfinancial
+WorkingDirectory=/srv/openfinancial
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /srv/openfinancial/server/ingest.py \
+    --series-dir /var/lib/openfinancial/series \
+    --out /var/www/openfinancial/data \
+    --fonte b3 \
+    --modelo opencode/big-pickle
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/var/lib/openfinancial/series
+ReadWritePaths=/var/www/openfinancial/data
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,32 @@
+[Unit]
+Description=OpenFinancial API (panorama probabilistico da B3)
+Documentation=https://github.com/wrhbra2013/projetosdinamicos
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=openfinancial
+Group=openfinancial
+WorkingDirectory=/srv/openfinancial
+Environment=PYTHONUNBUFFERED=1
+Environment=OPENFIN_CORS_ORIGIN=https://www.projetosdinamicos.com.br
+# Token do LLM: arquivo com permissoes 600, somente leitura pelo servico.
+EnvironmentFile=-/etc/openfinancial/api.env
+ExecStart=/usr/bin/python3 /srv/openfinancial/server/openfinancial_api.py \
+    --host 127.0.0.1 \
+    --port 8096 \
+    --data /var/www/openfinancial/data \
+    --cache 60
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/var/www/openfinancial/data
+ReadWritePaths=/var/lib/openfinancial
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

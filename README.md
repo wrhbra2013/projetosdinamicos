@@ -1,119 +1,174 @@
-# OpenChat — Projetos Dinâmicos
+# OpenFinancial
 
-Site estático do **OpenChat**, uma interface de chat que consome a API
-OpenAI-compatible publicada pelo `install_opencode.sh`. Não há login nem
-cadastro: o usuário informa o **Bearer token** gerado na instalação e ele fica
-salvo apenas no navegador.
+Panorama probabilístico dos ativos da B3. Em vez de um palpite de alta ou baixa,
+cada ativo recebe **três probabilidades que somam 100%** — alta, lateral e baixa —
+por cinco horizontes (1 mês, 3 meses, 6 meses, 1 ano e 5 anos).
+
+O site é estático, sem etapa de build, sem cadastro e sem bibliotecas de gráfico
+externas. Os dados de mercado chegam por CDN; as análises, por API.
+
+```text
+                         ┌─────────────────────────────────────────┐
+  visitante ── HTTPS ──► │  site estático (GitHub Pages)           │
+                         │  index.html · ativo.html · metodologia  │
+                         └───────────────┬─────────────────────────┘
+                                         │
+              ┌──────────────────────────┴──────────────────────────┐
+              ▼                                                     ▼
+  cdn.projetosdinamicos.com.br/b3                    api.projetosdinamicos.com.br
+  ativos.json · mercado.json · panorama.json          /v1/panorama · /v1/analises/...
+  series/<TICKER>.json                                (motor + LLM server-side)
+              │                                                     │
+              └────────────────► assets/data/ (fallback demo) ◄──────┘
+```
+
+A ordem de tentativa é **API → CDN → demo** para análises e **CDN → demo** para
+ativos e séries. Os selos no topo da página mostram qual fonte respondeu em cada
+camada.
 
 ## Páginas
 
 | Arquivo | Função |
 | --- | --- |
-| `index.html` | OpenChat: token, status da API, modelos e chat com anexos. |
-| `openchat.html` | Redireciona para `index.html` (compatibilidade com links antigos). |
+| `index.html` | panorama: indicadores, probabilidade agregada, amplitude, mapa de tendências, tabela e eventos. |
+| `ativo.html` | detalhe do ativo: preço com médias e projeção, probabilidades, cenários, indicadores e fontes. |
+| `metodologia.html` | fontes, fórmula do score, controle de viés, períodos, contrato da API e limites. |
 | `termos.html` | Termos de Uso. |
-| `privacidade.html` | Política de Privacidade. |
+| `privacidade.html` | Política de Privacidade (LGPD). |
+| `openchat.html` | Redireciona para `index.html` (links antigos do OpenChat). |
 
-## API usada
+## Como a probabilidade é calculada
 
-| Serviço | Base padrão | Uso |
+O motor parte de um **score técnico** `S` entre −1 e +1, combinando momentum
+ajustado por volatilidade, MM20 × MM50, RSI 14, MACD, volume e preço × MM200.
+O score vira distribuição por uma softmax de três classes com âncora neutra:
+
+```text
+Z = e^(2,2·S) + e^(−2,2·S) + 1,4
+p_alta    = e^(2,2·S) / Z
+p_baixa   = e^(−2,2·S) / Z
+p_lateral = 1,4 / Z
+```
+
+Com `S = 0`, a leitura é aproximadamente **29,4% alta / 41,2% lateral / 29,4%
+baixa**. A classe lateral não é resíduo: ela tem peso próprio e domina quando os
+sinais são fracos. Alta e baixa são simétricas em módulo — não existe penalidade
+assimétrica para o otimismo. Esse é o controle explícito do viés pessimista
+comum em análises econômicas, descrito em `metodologia.html#vies`.
+
+A **confiança** exibida ao lado da leitura combina a magnitude do score com o
+tamanho da amostra; não é probabilidade de acerto.
+
+## Dados
+
+| Camada | Fonte padrão | Conteúdo |
 | --- | --- | --- |
-| OpenCode | `https://api.projetosdinamicos.com.br/llm` | ponte OpenAI-compatible do `install_opencode.sh` |
+| Mercado | `https://cdn.projetosdinamicos.com.br/b3` | `ativos.json`, `mercado.json`, `series/<TICKER>.json` |
+| Análises | `https://api.projetosdinamicos.com.br` | `/v1/panorama`, `/v1/analises/<TICKER>`, `/v1/eventos` |
+| Fallback | `assets/data/` | cópia local marcada com `fonte: "demo"` |
 
-```text
-GET  {llm}/health               -> { status: "ok" }            (público)
-GET  {llm}/v1/models            -> lista de modelos            (Bearer)
-POST {llm}/v1/chat/completions  -> resposta OpenAI-compatible  (Bearer)
-```
-
-O `install_opencode.sh` publica a ponte atrás do nginx em `/llm/` e imprime no
-fim da instalação uma linha como:
-
-```text
-Bearer token: <token>
-```
-
-Esse é o valor pedido pelo OpenChat. Ele é enviado como
-`Authorization: Bearer <token>` em `/v1/models` e `/v1/chat/completions`.
-
-O modelo é definido no servidor (`OPENCODE_PROVIDER` / `OPENCODE_MODEL`, por
-padrão `opencode/big-pickle`). O campo `model` enviado pelo navegador é aceito
-pela ponte, mas ignorado.
-
-### Como o token é guardado
-
-O token fica em `localStorage`, na chave `pd.opencode_token`. Ele nunca é
-embutido no HTML e pode ser removido pelo botão **Limpar**.
-
-As chamadas usam `credentials: 'omit'`: a ponte responde CORS com `*` e não usa
-cookie de sessão, então o Bearer token é a única credencial.
-
-## Configuração
-
-A base pode ser trocada sem alterar o JavaScript, via meta tag no `<head>` de
-`index.html`:
-
-```html
-<meta name="llm-api-base" content="https://api.projetosdinamicos.com.br/llm">
-```
-
-Para desenvolvimento local, aponte para a ponte do instalador (porta 8095):
-
-```html
-<meta name="llm-api-base" content="http://127.0.0.1:8095">
-```
-
-O CSP já libera `https:` e `http://127.0.0.1:8095` / `http://localhost:8095`.
-
-## Desenvolvimento
-
-Não há build: os arquivos são servidos como estão. Use um servidor estático
-(não abra via `file://`, por causa de módulos ES):
+A CDN e a API de produção ainda não estão publicadas. Por isso o repositório
+inclui uma cesta sintética de **16 ativos da B3**, gerada com semente fixa
+`20261113` e data-base `2026-11-13`, além de cinco anos de sessões diárias,
+projeções e eventos. Todos os payloads de demonstração carregam
+`fonte: "demo"` e a interface sinaliza isso.
 
 ```bash
-python3 -m http.server 8080
-# abra http://localhost:8080/
+python3 tools/gerar_dados_demo.py     # regenera assets/data/
+python3 server/ingest.py              # recalcula as análises sobre as séries
 ```
 
-## Diagnóstico
+## Rodando localmente
 
-- **API online / sem token**: a API responde, mas falta informar o Bearer token.
-- **token inválido**: `/v1/models` respondeu 401/403; confira o token impresso
-  no fim da instalação.
-- **API offline**: falha de rede ou `/llm/health` fora do ar; verifique o nginx
-  e os serviços `opencode-serve` / `opencode-bridge`.
-- **429**: cota gratuita do modelo esgotada; aguarde e tente novamente.
-
-Comandos úteis no servidor:
+Requisitos: Python 3.10+. Não há `npm`, bundler ou dependências externas.
 
 ```bash
-sudo bash install_opencode.sh status
-sudo bash install_opencode.sh logs
-sudo bash install_opencode.sh restart
+# terminal 1 — site estático
+python3 -m http.server 8080 --bind 127.0.0.1
+
+# terminal 2 — API de referência (opcional)
+python3 server/openfinancial_api.py --host 127.0.0.1 --port 8096
 ```
+
+Abra `http://localhost:8080/`. Em `localhost` ou `127.0.0.1`, o cliente usa
+automaticamente a API em `http://127.0.0.1:8096` — a CSP já libera esse
+endereço. Sem a API, ele usa o fallback local e mostra `demo local` nos selos.
+
+> Módulos ES não funcionam em `file://`. Sirva a pasta por HTTP.
+
+## API de referência
+
+| Endpoint | Parâmetros | Retorno |
+| --- | --- | --- |
+| `GET /health` | — | status, versão, períodos, fonte e horário |
+| `GET /v1/panorama` | `periodo` | resumo, distribuição, série de probabilidades, eventos e ativos |
+| `GET /v1/ativos` | `setor`, `busca` | lista de ativos com preço e variações |
+| `GET /v1/ativos/{ticker}` | `periodo` | metadados e análise do ativo |
+| `GET /v1/ativos/{ticker}/serie` | `periodo`, `todos` | série OHLC simplificada |
+| `GET /v1/mercado` | `periodo` | índices, câmbio, juros, inflação e amplitude |
+| `GET /v1/eventos` | `periodo`, `ticker` | eventos com fonte e impacto |
+| `GET /v1/analises/{ticker}` | `periodo` | probabilidades, cenários, indicadores e projeção |
+| `GET /v1/analises/{ticker}/narrativa` | `periodo` | narrativa por LLM (server-side) ou texto do motor |
+
+Períodos: `1m`, `3m`, `6m`, `1a`, `5a` (padrão `6m`). O contrato completo,
+exemplos de `curl`, variáveis de ambiente e implantação com nginx/systemd estão
+em [`server/README.md`](server/README.md).
+
+A narrativa por LLM é opcional e acontece **no servidor**: o token fica em
+variável de ambiente e nunca chega ao navegador. Sem token, a API devolve o
+texto determinístico do motor e o site continua funcionando.
 
 ## Estrutura
 
 ```text
-index.html                     página do OpenChat
-openchat.html                  redirect para index.html
-termos.html                    Termos de Uso
-privacidade.html               Política de Privacidade
-CNAME                          domínio publicado
-favicon.svg                    ícone
-assets/css/base.css            tokens, reset, tipografia, botões e componentes
-assets/css/landing.css         header, menu e footer compartilhados
-assets/css/dashboard.css       layout e componentes do OpenChat
-assets/css/legal.css           estilos das páginas legais
-assets/js/core/opencode.js     cliente da ponte OpenCode (base, token, erros)
-assets/js/llm-dashboard.js     comportamento do index.html
+index.html, ativo.html, metodologia.html, termos.html, privacidade.html
+assets/
+  css/base.css, landing.css, openfinancial.css, legal.css
+  js/
+    core/config.js        bases de CDN/API, timeout e metadados
+    core/b3-client.js     carregamento API → CDN → demo e normalização
+    core/charts.js        SVG: preço, área empilhada, sparkline
+    core/format.js        números, percentuais, datas e classes
+    panorama.js           comportamento do panorama
+    ativo.js              comportamento da página do ativo
+  data/                   dados demo + séries históricas
+server/
+  motor_probabilidades.py modelo compartilhado
+  ingest.py               ingestão e recálculo
+  openfinancial_api.py    servidor HTTP de referência
+  README.md, nginx, systemd
+tools/
+  gerar_dados_demo.py     gerador determinístico
 ```
 
-## Segurança
+## Implantação
 
-O CORS `*` permite que qualquer site chame a API **se tiver o token**. Portanto:
+1. O site é publicado no GitHub Pages a partir da branch `main` (há um `CNAME`
+   para `www.projetosdinamicos.com.br`).
+2. A API roda atrás do nginx em `api.projetosdinamicos.com.br`, com o serviço
+   `openfinancial-api` e o recálculo periódico `openfinancial-ingest.timer`.
+3. A CDN publica os JSON de `/var/www/openfinancial/data` em
+   `https://cdn.projetosdinamicos.com.br/b3/`.
 
-- não embuta o token no HTML/JS público;
-- trate o Bearer token como segredo e revogue-o se vazar;
-- se o site precisar oferecer o chat a visitantes sem token, use um proxy no
-  servidor que guarde o token — não exponha o token no navegador.
+Passo a passo, checklist e configurações: [`server/README.md`](server/README.md).
+
+## Limitações
+
+- Modelo estatístico, não causal: não lê fundamentos, governança ou valuation.
+- Projeções são faixas de incerteza calibradas pelo passado recente, não previsões.
+- Cenários de alta e baixa usam ±1 desvio-padrão do horizonte; suporte e resistência
+  são apenas níveis de referência e não definem esses retornos.
+- Dados demo são sintéticos; use os selos de fonte para saber o que está na tela.
+- Eventos corporativos (desdobramentos, dividendos, mudanças de índice) exigem
+  ajuste da série antes da ingestão.
+- Nada aqui é recomendação de investimento. Confirme informações nos canais
+  oficiais da B3, CVM, BCB e das companhias.
+
+## Licença e contato
+
+Código e textos do projeto pertencem aos responsáveis pelo OpenFinancial. Dados
+de mercado podem pertencer à B3, às companhias ou aos órgãos que os publicam e
+seguem suas próprias condições de uso.
+
+- Conteúdo e correções: <contato@projetosdinamicos.com.br>
+- Privacidade e LGPD: <dpo@projetosdinamicos.com.br>

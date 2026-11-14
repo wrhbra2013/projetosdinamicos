@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Metodologia — OpenFinancial</title>
+  <meta name="description" content="Como o OpenFinancial calcula probabilidades de alta, lateralidade e baixa para ativos da B3, de onde vêm os dados e como o viés pessimista é controlado.">
+  <meta name="theme-color" content="#123b32">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/legal.css">
+  <link rel="stylesheet" href="assets/css/openfinancial.css">
+</head>
+<body class="legal-page">
+  <header class="legal-header">
+    <div class="wrap">
+      <a class="brand" href="index.html" aria-label="OpenFinancial — página inicial">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-4 3 2 5-6"/><path d="M16 7h3v3"/></svg>
+        </span>
+        <span class="brand-text"><strong>Open<em>Financial</em></strong><small>B3 · probabilidades</small></span>
+      </a>
+      <nav aria-label="Principal">
+        <a href="index.html">Panorama</a>
+        <a href="metodologia.html" aria-current="page">Metodologia</a>
+        <a href="termos.html">Termos</a>
+        <a href="privacidade.html">Privacidade</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="legal-hero">
+      <div class="wrap">
+        <p class="eyebrow">Transparência do modelo</p>
+        <h1>Metodologia</h1>
+        <p>
+          O OpenFinancial transforma séries de preço, volume, notícias e relatórios oficiais em
+          três probabilidades: alta, lateral e baixa. Esta página explica a conta, as fontes,
+          os limites e o controle explícito de viés.
+        </p>
+        <div class="legal-meta">
+          <span>Versão 2026-11-13</span>
+          <span>Modelo de referência: opencode/big-pickle</span>
+          <span>Dados de demonstração quando a fonte oficial não responde</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap legal-layout">
+      <aside class="legal-toc" aria-label="Sumário">
+        <strong>Nesta página</strong>
+        <a href="#objetivo">1. O que é o OpenFinancial</a>
+        <a href="#fontes">2. De onde vêm os dados</a>
+        <a href="#calculo">3. Como a probabilidade é calculada</a>
+        <a href="#vies">4. Controle de viés</a>
+        <a href="#periodos">5. Períodos e projeções</a>
+        <a href="#noticias">6. Notícias e relatórios</a>
+        <a href="#api">7. API de referência</a>
+        <a href="#limites">8. Limites do modelo</a>
+        <a href="#reprodutibilidade">9. Atualização e reprodutibilidade</a>
+        <a href="#contato">10. Contato</a>
+      </aside>
+
+      <article class="legal-body">
+        <div class="legal-callout">
+          <strong>Em resumo:</strong>
+          <span>cada ativo recebe três probabilidades que somam 100%. A classe lateral é explícita e o modelo não escolhe uma direção quando os sinais são fracos. Nenhuma leitura é recomendação de investimento.</span>
+        </div>
+
+        <section id="objetivo">
+          <h2>1. O que é o OpenFinancial</h2>
+          <p>
+            O OpenFinancial é um panorama estático e aberto dos ativos acompanhados da B3. Ele
+            combina duas camadas: <strong>dados de mercado</strong> (preço, volume, índices e
+            indicadores) e <strong>análises probabilísticas</strong> (probabilidades por período,
+            cenários, projeções e leitura textual).
+          </p>
+          <p>
+            A interface não exige cadastro, não usa cookies de rastreamento e não envia dados
+            pessoais para a API. Toda a renderização dos gráficos acontece no navegador, em SVG,
+            sem bibliotecas externas.
+          </p>
+          <p>
+            O produto é informativo. Ele ajuda a organizar cenários e a comparar ativos; não
+            decide por você e não substitui a leitura dos documentos oficiais das companhias.
+          </p>
+        </section>
+
+        <section id="fontes">
+          <h2>2. De onde vêm os dados</h2>
+          <table class="legal-table">
+            <thead>
+              <tr><th>Camada</th><th>Fonte padrão</th><th>Conteúdo</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Mercado</td>
+                <td><code>cdn.projetosdinamicos.com.br/b3</code></td>
+                <td><code>ativos.json</code>, <code>mercado.json</code> e <code>series/&lt;TICKER&gt;.json</code></td>
+              </tr>
+              <tr>
+                <td>Análises</td>
+                <td><code>api.projetosdinamicos.com.br</code></td>
+                <td><code>/v1/panorama</code>, <code>/v1/analises/&lt;TICKER&gt;</code>, <code>/v1/eventos</code></td>
+              </tr>
+              <tr>
+                <td>Fallback</td>
+                <td><code>assets/data/</code></td>
+                <td>cópia local marcada com <code>fonte: "demo"</code> para o site não quebrar</td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            A ordem de tentativa é <strong>API → CDN → demo</strong> para análises e
+            <strong>CDN → demo</strong> para ativos e séries. Os selos no topo do panorama mostram
+            qual fonte respondeu em cada camada. Quando o selo diz <em>demo local</em>, os números
+            são sintéticos e servem apenas para validar a interface.
+          </p>
+          <p>
+            A CDN entrega JSON estático e cacheável; a API entrega o panorama já calculado por
+            período. Separar as duas camadas permite atualizar preço com frequência e recalcular
+            análises em outro ritmo, sem acoplar o site ao servidor de análise.
+          </p>
+        </section>
+
+        <section id="calculo">
+          <h2>3. Como a probabilidade é calculada</h2>
+          <p>
+            O modelo parte de um <strong>score técnico</strong> <code>S</code> entre −1 e +1,
+            combinando seis famílias de sinal. Cada família é normalizada com <code>tanh</code>
+            para evitar que um único indicador domine a leitura.
+          </p>
+          <table class="legal-table">
+            <thead>
+              <tr><th>Sinal</th><th>Peso</th><th>Leitura</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Momentum de 21 sessões ajustado por volatilidade</td><td>0,36</td><td>direção recente</td></tr>
+              <tr><td>MM20 versus MM50</td><td>0,24</td><td>tendência curta contra média</td></tr>
+              <tr><td>RSI 14</td><td>0,18</td><td>excesso de compra ou venda</td></tr>
+              <tr><td>MACD</td><td>0,12</td><td>aceleração da tendência</td></tr>
+              <tr><td>Volume versus média de 20 sessões</td><td>0,10</td><td>participação do movimento</td></tr>
+              <tr><td>Preço versus MM200</td><td>0,08</td><td>tendência longa</td></tr>
+            </tbody>
+          </table>
+          <p>
+            Os pesos somam <strong>1,08</strong> de propósito. Quando todos os sinais apontam para
+            o mesmo lado, o score satura no limite de <strong>±1</strong>. Esse corte impede que a
+            softmax produza 0% ou 100% e mantém a leitura dentro de uma faixa de incerteza.
+          </p>
+          <p>
+            O score vira probabilidade por uma <strong>softmax de três classes</strong>, com uma
+            âncora neutra explícita:
+          </p>
+          <pre class="json-block">Z = e^(2,2·S) + e^(−2,2·S) + 1,4
+p_alta    = e^(2,2·S) / Z
+p_baixa   = e^(−2,2·S) / Z
+p_lateral = 1,4 / Z</pre>
+          <p>
+            A âncora <code>1,4</code> faz a classe lateral valer cerca de 41% quando o score é zero,
+            contra 29,4% para alta e 29,4% para baixa. Para que alta ou baixa alcancem 70%, o score
+            precisa ser forte. Essa escolha é deliberada: o modelo começa neutro e só se inclina
+            quando os dados se inclinam.
+          </p>
+          <p>
+            A <strong>confiança</strong> exibida ao lado da leitura combina a magnitude do score com
+            o tamanho da amostra:
+          </p>
+          <pre class="json-block">confiança = min(0,92; 0,48 + 0,34·|S| + 0,10·min(1; n/252))</pre>
+          <p>
+            Ela não é a probabilidade de acerto. É uma medida de quanto o modelo confia na própria
+            leitura, e cai quando o histórico é curto ou os sinais são ambíguos.
+          </p>
+        </section>
+
+        <section id="vies">
+          <h2>4. Controle de viés</h2>
+          <p>
+            Análises econômicas costumam pender para o pessimismo: notícias negativas recebem mais
+            espaço, cenários de queda parecem mais “prudentes” e a incerteza é tratada como risco de
+            baixa. O OpenFinancial controla esse viés em cinco pontos.
+          </p>
+          <ol>
+            <li>
+              <strong>Classe neutra explícita.</strong> O modelo tem três saídas. Não existe a
+              obrigação de escolher entre alta e baixa; a lateralidade é uma resposta legítima.
+            </li>
+            <li>
+              <strong>Âncora neutra na softmax.</strong> A probabilidade lateral não é um resíduo:
+              ela tem peso próprio e domina quando o score é fraco.
+            </li>
+            <li>
+              <strong>Simetria entre alta e baixa.</strong> Os pesos de <code>e^(2,2·S)</code> e
+              <code>e^(−2,2·S)</code> são iguais em módulo. Não há penalidade assimétrica para o
+              otimismo.
+            </li>
+            <li>
+              <strong>Notícia não é sentença.</strong> No texto gerado por LLM, cada evento entra
+              com fonte, data e impacto declarado (positivo, negativo ou neutro). O prompt proíbe
+              linguagem de certeza e exige que o cenário lateral seja mencionado quando relevante.
+            </li>
+            <li>
+              <strong>Leitura humana no fim.</strong> A página mostra probabilidades, confiança,
+              indicadores e fontes lado a lado. O objetivo é dar contexto para uma decisão humana,
+              não substituí-la.
+            </li>
+          </ol>
+          <div class="legal-callout warn">
+            <strong>Atenção:</strong>
+            <span>controle de viés não significa otimismo. Se os dados apontarem queda, o modelo
+            dirá queda — com probabilidade, fonte e incerteza. O compromisso é com a simetria, não
+            com um resultado agradável.</span>
+          </div>
+        </section>
+
+        <section id="periodos">
+          <h2>5. Períodos e projeções</h2>
+          <p>
+            O panorama é recalculado para cinco janelas: <strong>1 mês</strong> (21 sessões),
+            <strong>3 meses</strong> (63), <strong>6 meses</strong> (126), <strong>1 ano</strong>
+            (252) e <strong>5 anos</strong> (1.260). O seletor de período no topo troca a janela de
+            todas as análises, da série de probabilidades e da tabela.
+          </p>
+          <p>
+            A projeção à frente usa um movimento geométrico browniano calibrado pela volatilidade
+            recente. São desenhados os quantis 10, 25, 50, 75 e 90% para 21, 42 ou 63 pregões,
+            conforme o período. A linha central é o cenário mediano; as bandas mostram a dispersão.
+            Projeção não é previsão: é uma faixa de incerteza condicionada ao passado recente.
+          </p>
+          <p>
+            Os <strong>cenários</strong> de alta e baixa usam retornos simétricos de
+            <strong>±1 desvio-padrão</strong> do horizonte, calculados pela volatilidade diária
+            recente e pela raiz do número de pregões. O cenário lateral fica em 0%. Suporte e
+            resistência continuam exibidos como níveis de referência, mas não definem os retornos
+            dos cenários — assim a baixa não zera quando o preço está no mínimo da janela.
+          </p>
+        </section>
+
+        <section id="noticias">
+          <h2>6. Notícias e relatórios oficiais</h2>
+          <p>
+            O panorama lista eventos do período com fonte e impacto declarado. As fontes previstas
+            são B3, CVM, BCB, IBGE e comunicados das companhias. O texto narrativo é produzido por
+            modelos OpenCode <strong>no servidor</strong>, nunca no navegador.
+          </p>
+          <p>
+            O token do provedor de LLM fica em variável de ambiente do serviço. O navegador recebe
+            apenas o texto final e a lista de fontes. Se o provedor estiver indisponível, a API
+            devolve uma leitura determinística gerada pelo motor de probabilidades — o site continua
+            funcionando, sem inventar notícias.
+          </p>
+          <p>
+            O prompt do narrador exige quatro regras: (1) citar as fontes recebidas; (2) não afirmar
+            certeza; (3) manter os três cenários visíveis; (4) encerrar com o aviso de que o conteúdo
+            não é recomendação de investimento.
+          </p>
+        </section>
+
+        <section id="api">
+          <h2>7. API de referência</h2>
+          <p>
+            A API é servida em <code>https://api.projetosdinamicos.com.br</code>, atrás do nginx,
+            e usa apenas a biblioteca padrão do Python no servidor de referência. Todos os endpoints
+            são <code>GET</code>, respondem JSON e enviam CORS para o domínio do site.
+          </p>
+          <table class="legal-table">
+            <thead>
+              <tr><th>Endpoint</th><th>Parâmetros</th><th>Retorno</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>/health</code></td><td>—</td><td>status, versão e horário</td></tr>
+              <tr><td><code>/v1/panorama</code></td><td><code>periodo=1m|3m|6m|1a|5a</code></td><td>resumo, distribuição, série de probabilidades, eventos e ativos</td></tr>
+              <tr><td><code>/v1/ativos</code></td><td><code>setor</code>, <code>busca</code></td><td>lista de ativos com preço e variações</td></tr>
+              <tr><td><code>/v1/ativos/{ticker}</code></td><td><code>periodo</code></td><td>metadados e análise do ativo</td></tr>
+              <tr><td><code>/v1/ativos/{ticker}/serie</code></td><td><code>periodo</code></td><td>série OHLC simplificada (data, fechamento, volume)</td></tr>
+              <tr><td><code>/v1/mercado</code></td><td><code>periodo</code></td><td>índices, câmbio, juros, inflação e amplitude</td></tr>
+              <tr><td><code>/v1/eventos</code></td><td><code>periodo</code>, <code>ticker</code></td><td>eventos com fonte e impacto</td></tr>
+              <tr><td><code>/v1/analises/{ticker}</code></td><td><code>periodo</code></td><td>probabilidades, cenários, indicadores e projeção</td></tr>
+              <tr><td><code>/v1/analises/{ticker}/narrativa</code></td><td><code>periodo</code></td><td>leitura textual gerada por LLM no servidor; sem provedor, usa o texto determinístico do motor</td></tr>
+            </tbody>
+          </table>
+          <p>
+            O contrato completo, exemplos de <code>curl</code> e instruções de implantação ficam em
+            <code>server/README.md</code>, no repositório. A configuração de nginx e o serviço
+            systemd também estão em <code>server/</code>.
+          </p>
+        </section>
+
+        <section id="limites">
+          <h2>8. Limites do modelo</h2>
+          <ul>
+            <li><strong>Não é causal.</strong> O modelo descreve regularidades estatísticas; não explica por que o preço se move.</li>
+            <li><strong>Não lê fundamentos.</strong> Balanços, governança e notícias entram como contexto, não como valuation.</li>
+            <li><strong>Latência.</strong> A CDN pode estar alguns minutos atrás do mercado; a API informa o horário de geração.</li>
+            <li><strong>Eventos corporativos.</strong> Desdobramentos, dividendos e mudanças de índice exigem ajuste na série.</li>
+            <li><strong>Liquidez.</strong> Ativos com baixo volume distorcem sinais de volume e volatilidade.</li>
+            <li><strong>Dados demo.</strong> Quando o selo indica <em>demo local</em>, todos os números são sintéticos.</li>
+            <li><strong>Sem personalização.</strong> O modelo não conhece seu horizonte, seu risco ou seus objetivos.</li>
+          </ul>
+          <div class="legal-callout warn">
+            <strong>Não é recomendação.</strong>
+            <span>O OpenFinancial não indica compra, venda ou manutenção de ativos. Decisões de
+            investimento são de responsabilidade do usuário e devem considerar seus objetivos,
+            sua tolerância a risco e, quando necessário, um profissional habilitado.</span>
+          </div>
+        </section>
+
+        <section id="reprodutibilidade">
+          <h2>9. Atualização e reprodutibilidade</h2>
+          <p>
+            Os dados de demonstração são gerados por <code>tools/gerar_dados_demo.py</code>, com
+            semente fixa <code>20261113</code> e data-base <code>2026-11-13</code>. A mesma semente
+            produz a mesma série, o que permite testar a interface e o contrato da API sem depender
+            de rede.
+          </p>
+          <p>
+            Em produção, o fluxo previsto é: ingestão das séries oficiais → cálculo do motor de
+            probabilidades → publicação dos JSON na CDN e na API → leitura pelo site. Cada payload
+            carrega <code>fonte</code>, <code>atualizadoEm</code> e <code>demo</code> para que a
+            origem seja sempre auditável.
+          </p>
+          <p>
+            O site é estático e não tem etapa de build. A pasta publicada no GitHub Pages contém
+            HTML, CSS, JavaScript e os JSON de fallback.
+          </p>
+        </section>
+
+        <section id="contato">
+          <h2>10. Contato</h2>
+          <p>
+            Dúvidas sobre a metodologia, correções de dados ou sugestões de fontes podem ser
+            enviadas para <a href="mailto:contato@projetosdinamicos.com.br">contato@projetosdinamicos.com.br</a>.
+            Questões de privacidade devem ser dirigidas a
+            <a href="mailto:dpo@projetosdinamicos.com.br">dpo@projetosdinamicos.com.br</a>.
+          </p>
+        </section>
+      </article>
+    </div>
+  </main>
+
+  <footer class="legal-footer">
+    <div class="wrap">
+      <span>© 2026 Projetos Dinâmicos · OpenFinancial · Metodologia versão 2026-11-13</span>
+      <span><a href="termos.html">Termos de Uso</a> · <a href="privacidade.html">Política de Privacidade</a> · <a href="index.html">Panorama</a></span>
+    </div>
+  </footer>
+</body>
+</html>
