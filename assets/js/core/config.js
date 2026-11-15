@@ -18,6 +18,10 @@ export const CONFIG = {
   // Em desenvolvimento, usa a API local quando a meta nao foi personalizada.
   apiBase:
     hostLocal && apiConfigurada === API_PADRAO ? 'http://127.0.0.1:8096' : apiConfigurada,
+  // Gateway de IA usado como fallback de busca.
+  llmBase: trimBase(meta('of-llm-base', 'https://api.projetosdinamicos.com.br/llm/v1')),
+  searchModel: meta('of-search-model', 'modelo1'),
+  llmTimeout: Number(meta('of-llm-timeout', '45000')) || 45000,
   demoMode: meta('of-demo', 'auto'),
   timeout: Number(meta('of-timeout', '4500')) || 4500,
 };

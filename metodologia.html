@@ -22,7 +22,7 @@
         <span class="brand-text"><strong>Open<em>Financial</em></strong><small>B3 · probabilidades</small></span>
       </a>
       <nav aria-label="Principal">
-        <a href="index.html">Panorama</a>
+        <a href="index.html">Busca</a>
         <a href="metodologia.html" aria-current="page">Metodologia</a>
         <a href="termos.html">Termos</a>
         <a href="privacidade.html">Privacidade</a>
@@ -262,8 +262,8 @@ p_lateral = 1,4 / Z</pre>
           <h2>7. API de referência</h2>
           <p>
             A API é servida em <code>https://api.projetosdinamicos.com.br</code>, atrás do nginx,
-            e usa apenas a biblioteca padrão do Python no servidor de referência. Todos os endpoints
-            são <code>GET</code>, respondem JSON e enviam CORS para o domínio do site.
+            e usa apenas a biblioteca padrão do Python no servidor de referência. Os endpoints de
+            dados são <code>GET</code>, respondem JSON e enviam CORS para o domínio do site.
           </p>
           <table class="legal-table">
             <thead>
@@ -281,6 +281,11 @@ p_lateral = 1,4 / Z</pre>
               <tr><td><code>/v1/analises/{ticker}/narrativa</code></td><td><code>periodo</code></td><td>leitura textual gerada por LLM no servidor; sem provedor, usa o texto determinístico do motor</td></tr>
             </tbody>
           </table>
+          <p>
+            O console de busca usa <code>/v1/ativos?busca=</code> como motor principal. Se a API
+            não responder, o navegador tenta o gateway OpenAI-compatible em
+            <code>/llm/v1/chat/completions</code> e, por último, filtra a base demo local.
+          </p>
           <p>
             O contrato completo, exemplos de <code>curl</code> e instruções de implantação ficam em
             <code>server/README.md</code>, no repositório. A configuração de nginx e o serviço
@@ -343,7 +348,7 @@ p_lateral = 1,4 / Z</pre>
   <footer class="legal-footer">
     <div class="wrap">
       <span>© 2026 Projetos Dinâmicos · OpenFinancial · Metodologia versão 2026-11-13</span>
-      <span><a href="termos.html">Termos de Uso</a> · <a href="privacidade.html">Política de Privacidade</a> · <a href="index.html">Panorama</a></span>
+      <span><a href="termos.html">Termos de Uso</a> · <a href="privacidade.html">Política de Privacidade</a> · <a href="index.html">Busca</a></span>
     </div>
   </footer>
 </body>

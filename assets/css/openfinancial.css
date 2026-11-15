@@ -617,6 +617,58 @@
 .of-legend-line i.dash { background: repeating-linear-gradient(90deg, var(--brand-3) 0 4px, transparent 4px 7px); }
 .of-legend-line i.band { background: rgba(47, 122, 100, .25); height: 8px; border-radius: 3px; }
 
+/* ---------------------------- Console de busca ---------------------------- */
+.of-search-console { padding: 1.3rem 1.35rem 1.2rem; }
+.of-search-console-form {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-wrap: wrap;
+  margin: 1rem 0 .75rem;
+}
+.of-search-console-form .of-search { flex: 1 1 320px; }
+.of-search-console-form .btn { flex: none; }
+.of-search-console .of-search .input {
+  padding-top: .7rem;
+  padding-bottom: .7rem;
+  font-size: .95rem;
+}
+.of-search-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  flex-wrap: wrap;
+  margin-bottom: .85rem;
+}
+.of-search-actions p { margin: 0; }
+.of-search-console .of-results {
+  width: 100%;
+  min-height: min(48vh, 460px);
+  resize: vertical;
+  background: #fffefb;
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  tab-size: 2;
+}
+.of-search-console .of-footnote { margin-top: .7rem; }
+.of-search-console code {
+  font-family: var(--font-mono);
+  font-size: .76rem;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: .05rem .3rem;
+}
+.src-chip[data-source="llm"] {
+  border-color: #e8c9b9;
+  background: var(--accent-soft);
+  color: #8a4529;
+}
+.src-chip[data-source="llm"] .dot { background: var(--accent); }
+
 /* ------------------------------- Responsivo ------------------------------- */
 @media (max-width: 1080px) {
   .of-indices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -629,6 +681,9 @@
 
 @media (max-width: 720px) {
   .of-hero { padding: 1.8rem 0 1.2rem; }
+  .of-search-console-form .btn { width: 100%; }
+  .of-search-actions .row { width: 100%; }
+  .of-search-actions .btn { flex: 1 1 auto; }
   .of-hero-side { grid-template-columns: 1fr; }
   .of-hero-stat { grid-template-columns: 1fr auto; }
   .of-hero-stat > strong { text-align: right; }

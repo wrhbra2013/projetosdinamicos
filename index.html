@@ -3,13 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OpenFinancial — panorama probabilístico da B3</title>
-  <meta name="description" content="OpenFinancial: panorama probabilístico dos ativos da B3, com probabilidades de alta, lateralidade e baixa por período, notícias e relatórios oficiais analisados por modelos OpenCode.">
+  <title>OpenFinancial — busca de ativos da B3</title>
+  <meta name="description" content="OpenFinancial: busque ativos da B3 por ticker, nome ou setor. Filtro de pesquisa com resultados da API, fallback de IA e base demo local.">
   <meta name="theme-color" content="#123b32">
   <meta name="color-scheme" content="light">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.projetosdinamicos.com.br https://cdn.projetosdinamicos.com.br http://127.0.0.1:8096 http://localhost:8096; font-src 'self'; base-uri 'self'; form-action 'self'">
   <meta name="of-cdn-base" content="https://cdn.projetosdinamicos.com.br/b3">
   <meta name="of-api-base" content="https://api.projetosdinamicos.com.br">
+  <meta name="of-llm-base" content="https://api.projetosdinamicos.com.br/llm/v1">
+  <meta name="of-search-model" content="modelo1">
+  <meta name="of-llm-timeout" content="30000">
   <meta name="of-timeout" content="4500">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/css/base.css">
@@ -17,7 +20,7 @@
   <link rel="stylesheet" href="assets/css/openfinancial.css">
 </head>
 <body class="of-page">
-  <a class="skip-link" href="#panorama">Ir para o panorama</a>
+  <a class="skip-link" href="#busca">Ir para a busca</a>
 
   <header class="site-header of-header">
     <div class="wrap header-inner">
@@ -28,208 +31,77 @@
         <span class="brand-text"><strong>Open<em>Financial</em></strong><small>B3 · probabilidades</small></span>
       </a>
       <nav class="site-nav" aria-label="Principal">
-        <a href="index.html" aria-current="page">Panorama</a>
+        <a href="index.html" aria-current="page">Busca</a>
         <a href="metodologia.html">Metodologia</a>
         <a href="termos.html">Termos</a>
         <a href="privacidade.html">Privacidade</a>
-        <a class="btn primary sm" href="#ativos">Explorar ativos</a>
+        <a class="btn primary sm" href="#ativos">Buscar ativos</a>
       </nav>
     </div>
   </header>
 
-  <main id="panorama">
-    <section class="of-hero" aria-labelledby="hero-title">
+  <main id="busca">
+    <section class="of-hero of-hero-search" aria-labelledby="hero-title">
       <div class="wrap">
-        <div class="of-hero-grid">
-          <div>
-            <p class="eyebrow">Panorama probabilístico da B3</p>
-            <h1 id="hero-title">Tendências do mercado em <em>probabilidades</em>, não em palpites.</h1>
-            <p class="lead">
-              Ações, índices e indicadores da B3 organizados em três cenários — alta, lateral e baixa —
-              com o peso de cada um calculado a partir de preço, volume, notícias e relatórios oficiais.
-              Os dados de mercado vêm por CDN; as análises, da API OpenFinancial.
-            </p>
-            <div class="of-status-row" aria-live="polite">
-              <span class="src-chip" id="status-panorama" data-source="loading"><span class="dot" aria-hidden="true"></span>análises: carregando</span>
-              <span class="src-chip" id="status-ativos" data-source="loading"><span class="dot" aria-hidden="true"></span>ativos: carregando</span>
-              <span class="of-updated" id="atualizado">consultando fontes…</span>
-            </div>
-          </div>
-          <div class="of-hero-side" aria-label="Resumo do panorama">
-            <div class="of-hero-stat">
-              <span>Viés dominante</span>
-              <strong id="hero-trend">—</strong>
-              <small id="hero-trend-detail">Aguardando o panorama.</small>
-            </div>
-            <div class="of-hero-stat">
-              <span>Ativos analisados</span>
-              <strong id="hero-count">—</strong>
-              <small>cesta B3 · dados via CDN</small>
-            </div>
-            <div class="of-hero-stat">
-              <span>Modelo</span>
-              <strong id="hero-model">—</strong>
-              <small id="hero-period">período de 6 meses</small>
-            </div>
-          </div>
+        <p class="eyebrow">Busca de ativos · api.projetosdinamicos.com.br</p>
+        <h1 id="hero-title">Encontre um ativo em <em>probabilidades</em>.</h1>
+        <p class="lead">
+          Digite um ticker, o nome da empresa ou um setor. O filtro consulta a API OpenFinancial
+          e devolve os ativos correspondentes no campo de resultados abaixo.
+        </p>
+        <div class="of-status-row" aria-live="polite">
+          <span class="src-chip" id="status-busca" data-source=""><span class="dot" aria-hidden="true"></span>fonte: aguardando</span>
+          <span class="of-updated" id="busca-info">aguardando busca</span>
         </div>
       </div>
     </section>
 
     <div class="wrap of-content">
-      <section class="of-toolbar card" aria-label="Filtro de período">
-        <div class="of-toolbar-main">
-          <span class="field-label" id="periodo-label">Horizonte</span>
-          <div class="of-periods" role="group" aria-labelledby="periodo-label">
-            <button class="of-period" type="button" data-period="1m" aria-pressed="false">1 mês</button>
-            <button class="of-period" type="button" data-period="3m" aria-pressed="false">3 meses</button>
-            <button class="of-period" type="button" data-period="6m" aria-pressed="true">6 meses</button>
-            <button class="of-period" type="button" data-period="1a" aria-pressed="false">1 ano</button>
-            <button class="of-period" type="button" data-period="5a" aria-pressed="false">5 anos</button>
+      <section class="card of-search-console" id="ativos" aria-labelledby="busca-title">
+        <div class="card-head">
+          <div>
+            <h2 id="busca-title">Filtro de pesquisa</h2>
+            <p class="small muted">
+              A busca usa <code>/v1/ativos?busca=</code>; se a API não responder, tenta o
+              gateway de IA e depois a base demo local.
+            </p>
           </div>
-        </div>
-        <div class="of-toolbar-side">
-          <span class="small muted" id="resumo-periodo">Carregando a leitura do período…</span>
-          <button class="btn sm" type="button" id="recarregar">Atualizar dados</button>
-        </div>
-      </section>
-
-      <section class="of-indices" id="indices" aria-label="Indicadores de mercado" aria-live="polite">
-        <div class="of-skeleton"></div>
-        <div class="of-skeleton"></div>
-        <div class="of-skeleton"></div>
-        <div class="of-skeleton"></div>
-      </section>
-
-      <div class="of-grid-main">
-        <section class="card of-chart-card" aria-labelledby="prob-title">
-          <div class="card-head">
-            <div>
-              <h2 id="prob-title">Probabilidade agregada</h2>
-              <p class="small muted" id="prob-sub">Evolução das classes de tendência na carteira acompanhada.</p>
-            </div>
-            <div class="chart-legend" aria-label="Legenda">
-              <span class="alta"><i aria-hidden="true"></i>Alta</span>
-              <span class="lateral"><i aria-hidden="true"></i>Lateral</span>
-              <span class="baixa"><i aria-hidden="true"></i>Baixa</span>
-            </div>
-          </div>
-          <svg class="of-chart" id="grafico-prob" viewBox="0 0 820 300" role="img" aria-label="Gráfico de área empilhada com a probabilidade de alta, lateralidade e baixa ao longo do tempo"></svg>
-        </section>
-
-        <aside class="card of-breadth-card" aria-labelledby="breadth-title">
-          <div class="card-head">
-            <h2 id="breadth-title">Amplitude do mercado</h2>
-            <span class="badge tag" id="breadth-period">6 meses</span>
-          </div>
-          <div class="of-breadth-bar" id="breadth-bar" aria-hidden="true"></div>
-          <dl class="of-breadth-list" id="breadth-list">
-            <div><dt class="alta"><i aria-hidden="true"></i>Alta</dt><span class="track"><span class="alta" style="width:0"></span></span><dd>—</dd></div>
-            <div><dt class="lateral"><i aria-hidden="true"></i>Lateral</dt><span class="track"><span class="lateral" style="width:0"></span></span><dd>—</dd></div>
-            <div><dt class="baixa"><i aria-hidden="true"></i>Baixa</dt><span class="track"><span class="baixa" style="width:0"></span></span><dd>—</dd></div>
-          </dl>
-          <p class="small muted" id="breadth-note">A classe lateral é explícita no modelo: ausência de sinal não vira automaticamente alta ou baixa.</p>
-        </aside>
-      </div>
-
-      <section aria-labelledby="heat-title">
-        <div class="section-title">
-          <h2 id="heat-title">Mapa de tendências</h2>
-          <span class="small muted">clique em um ativo para abrir a análise completa</span>
-        </div>
-        <div class="of-heatmap" id="heatmap" aria-live="polite">
-          <div class="of-skeleton"></div>
-          <div class="of-skeleton"></div>
-          <div class="of-skeleton"></div>
-          <div class="of-skeleton"></div>
-          <div class="of-skeleton"></div>
-          <div class="of-skeleton"></div>
-          <div class="of-skeleton"></div>
-          <div class="of-skeleton"></div>
-        </div>
-      </section>
-
-      <section id="ativos" aria-labelledby="ativos-title">
-        <div class="section-title">
-          <h2 id="ativos-title">Ativos acompanhados</h2>
-          <span class="small muted" id="ativos-count">—</span>
+          <span class="badge tag" id="busca-total">—</span>
         </div>
 
-        <div class="of-filters">
-          <label class="of-search">
+        <form class="of-search-console-form" id="form-busca" role="search" action="index.html" method="get">
+          <label class="of-search" for="q">
             <span class="hidden">Buscar ativo</span>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-            <input class="input" type="search" id="busca" placeholder="Buscar por ticker, nome ou setor…" autocomplete="off">
+            <input class="input" id="q" name="q" type="search" maxlength="120" placeholder="Ex.: PETR4, Vale, bancos, energia…" autocomplete="off" autofocus aria-label="Buscar ativo por ticker, nome ou setor">
           </label>
-          <label class="field">
-            <span class="field-label">Setor</span>
-            <select class="input" id="setor">
-              <option value="">Todos os setores</option>
-            </select>
-          </label>
-          <div class="chip-row" id="filtros-tendencia" role="group" aria-label="Filtrar por tendência">
-            <button class="chip active" type="button" data-trend="" aria-pressed="true">Todos</button>
-            <button class="chip" type="button" data-trend="alta" aria-pressed="false">Alta</button>
-            <button class="chip" type="button" data-trend="lateral" aria-pressed="false">Lateral</button>
-            <button class="chip" type="button" data-trend="baixa" aria-pressed="false">Baixa</button>
+          <button class="btn primary" id="btn-buscar" type="submit">Pesquisar</button>
+        </form>
+
+        <noscript>
+          <p class="small muted">Ative o JavaScript para consultar a API e preencher os resultados automaticamente.</p>
+        </noscript>
+
+        <div class="of-search-actions">
+          <p class="small muted" id="busca-status" aria-live="polite">Digite um ticker, nome ou setor para pesquisar.</p>
+          <div class="row">
+            <button class="btn sm" id="btn-copiar" type="button">Copiar resultados</button>
+            <button class="btn sm" id="btn-limpar" type="button">Limpar</button>
           </div>
         </div>
 
-        <div class="table-wrap">
-          <table class="data-table of-table">
-            <thead>
-              <tr>
-                <th scope="col">Ativo</th>
-                <th scope="col">Setor</th>
-                <th scope="col" class="num">Preço</th>
-                <th scope="col" class="num">Variação</th>
-                <th scope="col">Tendência</th>
-                <th scope="col" class="num">Prob. alta</th>
-                <th scope="col">30 dias</th>
-                <th scope="col"><span class="hidden">Abrir</span></th>
-              </tr>
-            </thead>
-            <tbody id="tabela-ativos">
-              <tr><td colspan="8" class="muted">Carregando ativos…</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="small muted of-footnote" id="tabela-vazia" hidden>Nenhum ativo corresponde aos filtros. Ajuste a busca ou o setor.</p>
+        <label class="field-label" for="resultados">Resultados</label>
+        <textarea id="resultados" class="input of-results" readonly spellcheck="false" aria-label="Resultados da busca" placeholder="Os resultados da busca aparecem aqui."></textarea>
+
+        <p class="small muted of-footnote">
+          Motor: <code>api.projetosdinamicos.com.br</code> — <code>/v1/ativos?busca=</code> →
+          <code>/llm/v1</code> → demo local. Nenhum resultado é recomendação de investimento.
+        </p>
       </section>
-
-      <div class="of-grid-main of-grid-events">
-        <section class="card" aria-labelledby="eventos-title">
-          <div class="card-head">
-            <h2 id="eventos-title">Eventos e notícias</h2>
-            <span class="badge tag" id="eventos-fonte">—</span>
-          </div>
-          <ol class="of-events" id="eventos">
-            <li class="of-event"><div></div><div><h3>Consultando notícias e relatórios oficiais…</h3></div></li>
-          </ol>
-        </section>
-
-        <aside class="card of-method-card">
-          <p class="eyebrow">Controle de viés</p>
-          <h2>Leitura equilibrada por padrão</h2>
-          <p>
-            O modelo não é obrigado a escolher entre alta e baixa. Existe uma classe
-            <strong>lateral</strong> explícita, e a probabilidade neutra cresce quando os sinais
-            são fracos. Notícias e relatórios entram como contexto — nunca como sentença.
-          </p>
-          <ul class="of-checks">
-            <li>Três cenários com pesos que somam 100%</li>
-            <li>Confiança exibida junto de cada leitura</li>
-            <li>Fontes oficiais e data de atualização visíveis</li>
-            <li>Nenhuma saída é recomendação de investimento</li>
-          </ul>
-          <a class="btn sm" href="metodologia.html">Como o modelo funciona</a>
-        </aside>
-      </div>
 
       <p class="of-disclaimer" role="note">
         <strong>Conteúdo informativo e probabilístico.</strong>
-        O OpenFinancial não recomenda compra ou venda de ativos. Probabilidades descrevem cenários
-        condicionados aos dados disponíveis e podem mudar sem aviso. Confirme informações nos
+        O OpenFinancial não recomenda compra ou venda de ativos. Confirme informações nos
         canais oficiais da B3, CVM, BCB e das companhias antes de qualquer decisão.
       </p>
     </div>
@@ -245,12 +117,12 @@
             </span>
             <span class="brand-text"><strong>Open<em>Financial</em></strong><small>B3 · probabilidades</small></span>
           </a>
-          <p class="muted">Panorama probabilístico da B3 com dados de mercado via CDN e análises servidas pela API OpenFinancial.</p>
+          <p class="muted">Busca e panorama probabilístico da B3, com dados de mercado via CDN e análises servidas pela API OpenFinancial.</p>
         </div>
         <div>
           <h4>Plataforma</h4>
-          <a href="index.html">Panorama</a>
-          <a href="index.html#ativos">Ativos acompanhados</a>
+          <a href="index.html">Busca</a>
+          <a href="index.html#ativos">Buscar ativos</a>
           <a href="metodologia.html">Metodologia</a>
         </div>
         <div>
@@ -272,6 +144,6 @@
     </div>
   </footer>
 
-  <script type="module" src="assets/js/panorama.js"></script>
+  <script type="module" src="assets/js/busca.js"></script>
 </body>
 </html>

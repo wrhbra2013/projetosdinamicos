@@ -29,6 +29,7 @@ import os
 import re
 import sys
 import threading
+import unicodedata
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -133,16 +134,23 @@ def texto(valor: Any) -> str:
     return str(valor or "").strip()
 
 
+def normalizar_texto(valor: Any) -> str:
+    """Compara termos sem diferenciar maiúsculas, acentos ou cedilha."""
+    decomposto = unicodedata.normalize("NFKD", texto(valor))
+    return "".join(c for c in decomposto if not unicodedata.combining(c)).lower()
+
+
 def filtrar_ativos(lista: list[dict], query: dict[str, list[str]]) -> list[dict]:
-    setor = texto((query.get("setor") or [""])[0]).lower()
-    busca = texto((query.get("busca") or [""])[0]).lower()
+    setor = normalizar_texto((query.get("setor") or [""])[0])
+    busca = normalizar_texto((query.get("busca") or [""])[0])
     saida = []
     for ativo in lista:
-        if setor and setor not in texto(ativo.get("setor")).lower():
+        if setor and setor not in normalizar_texto(ativo.get("setor")):
             continue
         if busca:
             alvo = " ".join(
-                texto(ativo.get(campo)).lower() for campo in ("ticker", "nome", "setor")
+                normalizar_texto(ativo.get(campo))
+                for campo in ("ticker", "nome", "setor", "segmento")
             )
             if busca not in alvo:
                 continue

@@ -23,14 +23,20 @@ externas. Os dados de mercado chegam por CDN; as análises, por API.
 ```
 
 A ordem de tentativa é **API → CDN → demo** para análises e **CDN → demo** para
-ativos e séries. Os selos no topo da página mostram qual fonte respondeu em cada
-camada.
+ativos e séries. No console de busca, o selo de fonte mostra qual motor respondeu:
+API, gateway de IA ou demo local.
+
+A página inicial é um **console de busca**: o termo digitado vira
+`GET /v1/ativos?busca=<termo>`; se a API não responder, o cliente tenta o gateway
+`/llm/v1` com o catálogo local como contexto e, por último, filtra a cópia demo em
+`assets/data/ativos.json`. A comparação ignora maiúsculas e acentos (`itau` encontra
+`Itaú`), e o resultado é exibido em texto simples no textarea.
 
 ## Páginas
 
 | Arquivo | Função |
 | --- | --- |
-| `index.html` | panorama: indicadores, probabilidade agregada, amplitude, mapa de tendências, tabela e eventos. |
+| `index.html` | busca: filtro por ticker, nome ou setor, com os resultados em um textarea (API → IA → demo). |
 | `ativo.html` | detalhe do ativo: preço com médias e projeção, probabilidades, cenários, indicadores e fontes. |
 | `metodologia.html` | fontes, fórmula do score, controle de viés, períodos, contrato da API e limites. |
 | `termos.html` | Termos de Uso. |
@@ -67,7 +73,8 @@ tamanho da amostra; não é probabilidade de acerto.
 | Análises | `https://api.projetosdinamicos.com.br` | `/v1/panorama`, `/v1/analises/<TICKER>`, `/v1/eventos` |
 | Fallback | `assets/data/` | cópia local marcada com `fonte: "demo"` |
 
-A CDN e a API de produção ainda não estão publicadas. Por isso o repositório
+A CDN e os endpoints de dados da API de produção ainda não estão publicados. O
+gateway `/llm/v1` responde, mas pode estar limitado por cota. Por isso o repositório
 inclui uma cesta sintética de **16 ativos da B3**, gerada com semente fixa
 `20261113` e data-base `2026-11-13`, além de cinco anos de sessões diárias,
 projeções e eventos. Todos os payloads de demonstração carregam
@@ -129,8 +136,10 @@ assets/
     core/b3-client.js     carregamento API → CDN → demo e normalização
     core/charts.js        SVG: preço, área empilhada, sparkline
     core/format.js        números, percentuais, datas e classes
-    panorama.js           comportamento do panorama
+    busca.js              console de busca (API → IA → demo)
     ativo.js              comportamento da página do ativo
+    panorama.js           painel antigo (não usado pela busca)
+    llm-dashboard.js      experimento antigo de painel (não usado pela busca)
   data/                   dados demo + séries históricas
 server/
   motor_probabilidades.py modelo compartilhado
