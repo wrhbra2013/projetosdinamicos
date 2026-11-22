@@ -3,133 +3,202 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>OpenFinancial — busca de ativos da B3</title>
-  <meta name="description" content="OpenFinancial: busque ativos da B3 por ticker, nome ou setor. Filtro de pesquisa com resultados da API, fallback de IA e base demo local.">
+  <title>Projetos Dinâmicos — assistente de criação de negócios</title>
+  <meta name="description" content="Assistente de criação de negócios: filtre seu perfil, receba sugestões de nichos pela API /llm e monte um resumo com MVP, capital inicial e logística.">
   <meta name="theme-color" content="#123b32">
   <meta name="color-scheme" content="light">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.projetosdinamicos.com.br https://cdn.projetosdinamicos.com.br http://127.0.0.1:8096 http://localhost:8096; font-src 'self'; base-uri 'self'; form-action 'self'">
-  <meta name="of-cdn-base" content="https://cdn.projetosdinamicos.com.br/b3">
-  <meta name="of-api-base" content="https://api.projetosdinamicos.com.br">
-  <meta name="of-llm-base" content="https://api.projetosdinamicos.com.br/llm/v1">
-  <meta name="of-search-model" content="modelo1">
-  <meta name="of-llm-timeout" content="30000">
-  <meta name="of-timeout" content="4500">
+  <meta name="llm-api-base" content="https://api.projetosdinamicos.com.br/llm">
+  <meta name="pd-modelo" content="opencode/big-pickle">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/landing.css">
-  <link rel="stylesheet" href="assets/css/openfinancial.css">
+  <link rel="stylesheet" href="assets/css/negocios.css">
 </head>
-<body class="of-page">
-  <a class="skip-link" href="#busca">Ir para a busca</a>
+<body class="pd-page">
+  <a class="skip-link" href="#painel">Ir para o painel</a>
 
-  <header class="site-header of-header">
+  <header class="site-header">
     <div class="wrap header-inner">
-      <a class="brand" href="index.html" aria-label="OpenFinancial — página inicial">
+      <a class="brand" href="index.html" aria-label="Projetos Dinâmicos — página inicial">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-4 3 2 5-6"/><path d="M16 7h3v3"/></svg>
         </span>
-        <span class="brand-text"><strong>Open<em>Financial</em></strong><small>B3 · probabilidades</small></span>
+        <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>assistente de negócios</small></span>
       </a>
       <nav class="site-nav" aria-label="Principal">
-        <a href="index.html" aria-current="page">Busca</a>
-        <a href="metodologia.html">Metodologia</a>
-        <a href="termos.html">Termos</a>
-        <a href="privacidade.html">Privacidade</a>
-        <a class="btn primary sm" href="#ativos">Buscar ativos</a>
+        <a href="#painel">Painel</a>
+        <a href="#como-funciona">Como funciona</a>
+        <button class="btn sm" id="btn-token-top" type="button">Conectar API</button>
+        <button class="btn primary sm" id="btn-filtros-top" type="button">Abrir filtros</button>
       </nav>
     </div>
   </header>
 
-  <main id="busca">
-    <section class="of-hero of-hero-search" aria-labelledby="hero-title">
+  <main>
+    <section class="pd-hero" aria-labelledby="hero-title">
       <div class="wrap">
-        <p class="eyebrow">Busca de ativos · api.projetosdinamicos.com.br</p>
-        <h1 id="hero-title">Encontre um ativo em <em>probabilidades</em>.</h1>
+        <p class="eyebrow">Assistente de criação de negócios · API /llm</p>
+        <h1 id="hero-title">Da ideia ao <em>MVP</em> em poucas interações.</h1>
         <p class="lead">
-          Digite um ticker, o nome da empresa ou um setor. O filtro consulta a API OpenFinancial
-          e devolve os ativos correspondentes no campo de resultados abaixo.
+          Descreva seu capital, tempo, cidade e habilidades no filtro. Cada nova interação com a
+          IA traz sugestões de nichos até montar um resumo de negócio com MVP, capital inicial,
+          logística e próximos passos.
         </p>
-        <div class="of-status-row" aria-live="polite">
-          <span class="src-chip" id="status-busca" data-source=""><span class="dot" aria-hidden="true"></span>fonte: aguardando</span>
-          <span class="of-updated" id="busca-info">aguardando busca</span>
+        <div class="pd-hero-actions">
+          <button class="btn primary lg" id="btn-filtros-hero" type="button">Abrir filtro de nicho</button>
+          <a class="btn lg" href="#painel">Ver painel</a>
+        </div>
+        <div class="pd-hero-meta">
+          <span class="status" id="api-status" data-state="checking">verificando API…</span>
+          <span class="small muted" id="modelo-info">modelo: —</span>
         </div>
       </div>
     </section>
 
-    <div class="wrap of-content">
-      <section class="card of-search-console" id="ativos" aria-labelledby="busca-title">
+    <section class="wrap pd-dashboard" id="painel" aria-label="Painel do assistente">
+      <aside class="pd-side" aria-label="Configuração">
+        <div class="card">
+          <div class="card-head">
+            <h2>Seu filtro</h2>
+            <button class="btn sm" id="btn-editar-filtros" type="button">Editar</button>
+          </div>
+          <div id="perfil-resumo">
+            <p class="small muted">Ainda não há filtro. Abra o modal para descrever seu perfil.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Etapas</h2>
+          <ol class="pd-steps">
+            <li class="pd-step" data-step="perfil" data-state="active">
+              <span>1</span>
+              <div><strong>Filtro</strong><small>Capital, tempo, modelo e habilidades</small></div>
+            </li>
+            <li class="pd-step" data-step="nichos" data-state="todo">
+              <span>2</span>
+              <div><strong>Nichos</strong><small>Sugestões com aderência ao perfil</small></div>
+            </li>
+            <li class="pd-step" data-step="resumo" data-state="todo">
+              <span>3</span>
+              <div><strong>Resumo</strong><small>MVP, capital, logística e passos</small></div>
+            </li>
+          </ol>
+          <div class="progress-wrap">
+            <div class="progress"><div class="progress-bar" id="progresso-barra" style="width: 33%"></div></div>
+            <span class="progress-label" id="progresso-label">1/3</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Conexão</h2>
+          <p class="small muted" id="fonte-info">Nenhuma interação ainda. A fonte aparece após a primeira sugestão.</p>
+          <button class="btn sm full" id="btn-token-side" type="button">Configurar token</button>
+        </div>
+      </aside>
+
+      <div class="card pd-thread-card">
         <div class="card-head">
           <div>
-            <h2 id="busca-title">Filtro de pesquisa</h2>
-            <p class="small muted">
-              A busca usa <code>/v1/ativos?busca=</code>; se a API não responder, tenta o
-              gateway de IA e depois a base demo local.
-            </p>
+            <h2>Sugestões e conversa</h2>
+            <p class="small muted">A cada mensagem, a API recebe o histórico curto e devolve novas opções.</p>
           </div>
-          <span class="badge tag" id="busca-total">—</span>
+          <span class="badge tag" id="etapa-badge">etapa 1 de 3</span>
         </div>
 
-        <form class="of-search-console-form" id="form-busca" role="search" action="index.html" method="get">
-          <label class="of-search" for="q">
-            <span class="hidden">Buscar ativo</span>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-            <input class="input" id="q" name="q" type="search" maxlength="120" placeholder="Ex.: PETR4, Vale, bancos, energia…" autocomplete="off" autofocus aria-label="Buscar ativo por ticker, nome ou setor">
-          </label>
-          <button class="btn primary" id="btn-buscar" type="submit">Pesquisar</button>
-        </form>
-
-        <noscript>
-          <p class="small muted">Ative o JavaScript para consultar a API e preencher os resultados automaticamente.</p>
-        </noscript>
-
-        <div class="of-search-actions">
-          <p class="small muted" id="busca-status" aria-live="polite">Digite um ticker, nome ou setor para pesquisar.</p>
-          <div class="row">
-            <button class="btn sm" id="btn-copiar" type="button">Copiar resultados</button>
-            <button class="btn sm" id="btn-limpar" type="button">Limpar</button>
+        <div class="pd-thread" id="thread" aria-live="polite">
+          <div class="empty">
+            <div class="empty-icon" aria-hidden="true">✦</div>
+            <h3>Comece pelo filtro</h3>
+            <p>Informe capital, tempo, modelo e habilidades. A IA devolve nichos e, após sua escolha, monta o resumo do negócio.</p>
+            <button class="btn primary" type="button" id="btn-filtros-vazio">Abrir filtro de nicho</button>
           </div>
         </div>
 
-        <label class="field-label" for="resultados">Resultados</label>
-        <textarea id="resultados" class="input of-results" readonly spellcheck="false" aria-label="Resultados da busca" placeholder="Os resultados da busca aparecem aqui."></textarea>
+        <div class="pd-composer">
+          <label class="hidden" for="compose">Mensagem de ajuste</label>
+          <input class="input" id="compose" type="text" maxlength="500" autocomplete="off" placeholder="Ex.: sem estoque, até 10h/semana, foco em renda extra…">
+          <button class="btn" id="btn-refinar" type="button">Refinar</button>
+          <button class="btn" id="btn-outras" type="button">Outras sugestões</button>
+          <button class="btn primary" id="btn-resumo" type="button" disabled>Gerar resumo</button>
+        </div>
+        <p class="msg" id="chat-msg" role="status">Preencha o filtro para começar.</p>
+      </div>
 
-        <p class="small muted of-footnote">
-          Motor: <code>api.projetosdinamicos.com.br</code> — <code>/v1/ativos?busca=</code> →
-          <code>/llm/v1</code> → demo local. Nenhum resultado é recomendação de investimento.
-        </p>
-      </section>
+      <aside class="pd-resumo-col" aria-label="Resumo do negócio">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <h2>Resumo do negócio</h2>
+              <p class="small muted">Preenche conforme as interações</p>
+            </div>
+            <span class="badge tag" id="resumo-badge">aguardando</span>
+          </div>
+          <div class="card-body" id="resumo-content">
+            <div class="pd-resumo-bloco"><h3>Nicho</h3><p class="pendente">Aguardando geração do resumo.</p></div>
+            <div class="pd-resumo-bloco"><h3>MVP</h3><p class="pendente">Aguardando geração do resumo.</p></div>
+            <div class="pd-resumo-bloco"><h3>Capital inicial</h3><p class="pendente">Aguardando geração do resumo.</p></div>
+            <div class="pd-resumo-bloco"><h3>Logística</h3><p class="pendente">Aguardando geração do resumo.</p></div>
+            <div class="pd-resumo-bloco"><h3>Público-alvo</h3><p class="pendente">Aguardando geração do resumo.</p></div>
+            <div class="pd-resumo-bloco"><h3>Próximos passos</h3><p class="pendente">Aguardando geração do resumo.</p></div>
+          </div>
+          <div class="pd-resumo-acoes">
+            <button class="btn sm" id="btn-copiar" type="button" disabled>Copiar resumo</button>
+            <button class="btn sm" id="btn-reiniciar" type="button">Reiniciar</button>
+          </div>
+        </div>
+      </aside>
+    </section>
 
-      <p class="of-disclaimer" role="note">
-        <strong>Conteúdo informativo e probabilístico.</strong>
-        O OpenFinancial não recomenda compra ou venda de ativos. Confirme informações nos
-        canais oficiais da B3, CVM, BCB e das companhias antes de qualquer decisão.
-      </p>
-    </div>
+    <section class="pd-como" id="como-funciona" aria-labelledby="como-title">
+      <div class="wrap">
+        <div class="section-head">
+          <h2 id="como-title">Como o assistente funciona</h2>
+          <p class="lead-sm">Um fluxo curto: você define as restrições, a IA propõe caminhos e você escolhe qual aprofundar.</p>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <span class="step-num">01</span>
+            <h3>Filtro em modal</h3>
+            <p>Capital, cidade, modelo de operação, tempo semanal, habilidades e restrições em um único formulário.</p>
+          </article>
+          <article class="step">
+            <span class="step-num">02</span>
+            <h3>Nichos por interação</h3>
+            <p>Cada mensagem atualiza o histórico e devolve novas sugestões ordenadas por aderência ao seu perfil.</p>
+          </article>
+          <article class="step">
+            <span class="step-num">03</span>
+            <h3>Resumo acionável</h3>
+            <p>Ao escolher um nicho, o painel monta MVP, faixa de capital, logística, canais e próximos passos.</p>
+          </article>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
     <div class="wrap">
       <div class="footer-grid">
         <div>
-          <a class="brand" href="index.html" aria-label="OpenFinancial — página inicial">
+          <a class="brand" href="index.html" aria-label="Projetos Dinâmicos — página inicial">
             <span class="brand-mark" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-4 3 2 5-6"/><path d="M16 7h3v3"/></svg>
             </span>
-            <span class="brand-text"><strong>Open<em>Financial</em></strong><small>B3 · probabilidades</small></span>
+            <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>assistente de negócios</small></span>
           </a>
-          <p class="muted">Busca e panorama probabilístico da B3, com dados de mercado via CDN e análises servidas pela API OpenFinancial.</p>
+          <p>Um assistente enxuto para transformar restrições reais em primeiros experimentos de negócio.</p>
         </div>
         <div>
           <h4>Plataforma</h4>
-          <a href="index.html">Busca</a>
-          <a href="index.html#ativos">Buscar ativos</a>
-          <a href="metodologia.html">Metodologia</a>
+          <a href="#painel">Painel</a>
+          <a href="#como-funciona">Como funciona</a>
+          <a href="index.html">Início</a>
         </div>
         <div>
-          <h4>Dados</h4>
-          <a href="metodologia.html#fontes">Fontes e atualização</a>
-          <a href="metodologia.html#api">API de referência</a>
-          <a href="metodologia.html#limites">Limites do modelo</a>
+          <h4>API</h4>
+          <a href="https://api.projetosdinamicos.com.br/llm/health">Gateway /llm</a>
+          <a href="#painel">Fonte das respostas</a>
         </div>
         <div>
           <h4>Documentos</h4>
@@ -138,12 +207,118 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <span>© 2026 Projetos Dinâmicos · OpenFinancial</span>
-        <span>Dados de demonstração quando a fonte oficial não responde</span>
+        <span>© 2026 Projetos Dinâmicos</span>
+        <span>Sugestões são hipóteses a validar, não garantia de resultado.</span>
       </div>
     </div>
   </footer>
 
-  <script type="module" src="assets/js/busca.js"></script>
+  <dialog class="pd-dialog" id="dialog-filtros" aria-labelledby="filtros-title">
+    <form class="modal-shell" id="form-filtros" novalidate>
+      <div class="modal-head">
+        <div>
+          <h2 id="filtros-title">Filtro de criação de negócio</h2>
+          <p class="modal-sub">Quanto mais contexto, melhores os nichos sugeridos pela IA.</p>
+        </div>
+        <button class="icon-btn" type="button" data-close="dialog-filtros" aria-label="Fechar filtro">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="pd-form-grid">
+          <div class="field span-full">
+            <label class="field-label" for="f-ideia">Ideia inicial (opcional)</label>
+            <input class="input" id="f-ideia" name="ideia" type="text" maxlength="160" placeholder="Ex.: algo com comida, sem estoque, para vender no bairro">
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="f-capital">Capital disponível (R$)</label>
+              <input class="input" id="f-capital" name="capital" type="number" min="0" step="50" value="2000" inputmode="numeric">
+              <span class="field-hint">Use 0 se ainda não definiu um valor.</span>
+            </div>
+            <div class="field">
+              <label class="field-label" for="f-cidade">Cidade ou região</label>
+              <input class="input" id="f-cidade" name="cidade" type="text" maxlength="100" placeholder="Ex.: Campinas, interior de SP">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="f-modelo">Modelo de operação</label>
+              <select class="input" id="f-modelo" name="modelo">
+                <option value="qualquer">Qualquer</option>
+                <option value="online">Online</option>
+                <option value="presencial">Presencial</option>
+                <option value="hibrido" selected>Híbrido</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="f-horas">Tempo por semana</label>
+              <select class="input" id="f-horas" name="horas">
+                <option value="até 5 horas">Até 5 horas</option>
+                <option value="5 a 10 horas">5 a 10 horas</option>
+                <option value="10 a 20 horas" selected>10 a 20 horas</option>
+                <option value="20+ horas">20+ horas</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="f-habilidades">Habilidades e experiência</label>
+              <input class="input" id="f-habilidades" name="habilidades" type="text" maxlength="180" placeholder="Ex.: design, vendas, elétrica, ensino">
+            </div>
+            <div class="field">
+              <label class="field-label" for="f-publico">Público-alvo desejado</label>
+              <input class="input" id="f-publico" name="publico" type="text" maxlength="180" placeholder="Ex.: mães de crianças em idade escolar">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field">
+              <label class="field-label" for="f-objetivo">Objetivo</label>
+              <select class="input" id="f-objetivo" name="objetivo">
+                <option value="primeiro" selected>Primeiro negócio</option>
+                <option value="renda">Renda extra</option>
+                <option value="carreira">Troca de carreira</option>
+                <option value="escalar">Escalar operação atual</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="f-restricoes">Restrições (opcional)</label>
+              <input class="input" id="f-restricoes" name="restricoes" type="text" maxlength="180" placeholder="Ex.: sem estoque, sem dirigir, sem fins de semana">
+            </div>
+          </div>
+          <p class="form-error hidden" id="filtros-erro" role="alert"></p>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" type="button" data-close="dialog-filtros">Cancelar</button>
+        <button class="btn primary" id="btn-filtros-enviar" type="submit">Buscar nichos</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="pd-dialog" id="dialog-token" aria-labelledby="token-title">
+    <form class="modal-shell" id="form-token" novalidate>
+      <div class="modal-head">
+        <div>
+          <h2 id="token-title">Conectar à API /llm</h2>
+          <p class="modal-sub">O Bearer token fica apenas no localStorage deste navegador e é enviado diretamente ao gateway.</p>
+        </div>
+        <button class="icon-btn" type="button" data-close="dialog-token" aria-label="Fechar conexão">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label class="field-label" for="token">Bearer token</label>
+          <input class="input" id="token" name="token" type="password" autocomplete="off" spellcheck="false" placeholder="Cole o token gerado na instalação">
+          <span class="field-hint">Aceito com ou sem o prefixo “Bearer ”. Sem token, o assistente usa o modo demonstração.</span>
+        </div>
+        <p class="msg" id="token-msg" role="status"></p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn danger-text" id="btn-token-remover" type="button">Remover token</button>
+        <button class="btn" type="button" data-close="dialog-token">Fechar</button>
+        <button class="btn primary" type="submit">Salvar token</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="assets/js/negocios.js"></script>
 </body>
 </html>

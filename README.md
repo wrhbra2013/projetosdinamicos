@@ -1,183 +1,147 @@
-# OpenFinancial
+# Projetos Dinâmicos — assistente de criação de negócios
 
-Panorama probabilístico dos ativos da B3. Em vez de um palpite de alta ou baixa,
-cada ativo recebe **três probabilidades que somam 100%** — alta, lateral e baixa —
-por cinco horizontes (1 mês, 3 meses, 6 meses, 1 ano e 5 anos).
-
-O site é estático, sem etapa de build, sem cadastro e sem bibliotecas de gráfico
-externas. Os dados de mercado chegam por CDN; as análises, por API.
+O site da raiz (`projetosdinamicos.com.br`) agora é um **assistente de criação de
+negócios**. Em vez de um chat aberto, ele funciona como um filtro guiado: o
+visitante informa capital, tempo, cidade, modelo de operação, habilidades e
+restrições; a API `projetosdinamicos/llm` devolve sugestões de nichos; cada nova
+interação refina as opções até gerar um **resumo de negócio** com MVP, capital
+inicial, logística, canais, riscos e próximos passos.
 
 ```text
-                         ┌─────────────────────────────────────────┐
-  visitante ── HTTPS ──► │  site estático (GitHub Pages)           │
-                         │  index.html · ativo.html · metodologia  │
-                         └───────────────┬─────────────────────────┘
-                                         │
-              ┌──────────────────────────┴──────────────────────────┐
-              ▼                                                     ▼
-  cdn.projetosdinamicos.com.br/b3                    api.projetosdinamicos.com.br
-  ativos.json · mercado.json · panorama.json          /v1/panorama · /v1/analises/...
-  series/<TICKER>.json                                (motor + LLM server-side)
-              │                                                     │
-              └────────────────► assets/data/ (fallback demo) ◄──────┘
+visitante ──► modal de filtro ──► POST /llm/v1/chat/completions
+                                      │
+                  JSON com 3 a 5 nichos (adesão, capital, MVP)
+                                      │
+                     escolha / ajuste por mensagem
+                                      │
+                  JSON com resumo: nicho, MVP, capital, logística
+                                      │
+                          dashboard + copiar resumo
 ```
 
-A ordem de tentativa é **API → CDN → demo** para análises e **CDN → demo** para
-ativos e séries. No console de busca, o selo de fonte mostra qual motor respondeu:
-API, gateway de IA ou demo local.
+O projeto continua estático, sem build, sem `npm` e sem bibliotecas externas.
+A autenticação é o **Bearer token da API /llm, informado pelo próprio visitante
+e salvo só no `localStorage` do navegador**. Sem token ou com falha na API, o
+assistente usa sugestões determinísticas locais e sinaliza a fonte como
+`demo local`.
 
-A página inicial é um **console de busca**: o termo digitado vira
-`GET /v1/ativos?busca=<termo>`; se a API não responder, o cliente tenta o gateway
-`/llm/v1` com o catálogo local como contexto e, por último, filtra a cópia demo em
-`assets/data/ativos.json`. A comparação ignora maiúsculas e acentos (`itau` encontra
-`Itaú`), e o resultado é exibido em texto simples no textarea.
+## Fluxo do assistente
 
-## Páginas
+| Etapa | O que acontece | Saída |
+| --- | --- | --- |
+| 1. Filtro | Modal com capital, cidade, modelo, tempo, habilidades, público, objetivo e restrições. | Perfil exibido na coluna lateral. |
+| 2. Nichos | O filtro vira prompt; o modelo devolve 3 a 5 nichos com aderência de 0 a 100. | Cartões com capital estimado, prazo, MVP e riscos. |
+| 3. Resumo | Ao escolher um nicho (ou pedir um ajuste), o modelo devolve o plano estruturado. | Painel com MVP, capital inicial, logística, canais e passos. |
+
+Botões do painel:
+
+- **Refinar**: envia o texto digitado junto com o histórico recente. Se o resumo
+  já existe, ele é reescrito; caso contrário, vêm novos nichos.
+- **Outras sugestões**: pede ao modelo opções diferentes com o mesmo filtro.
+- **Aprofundar este nicho**: seleciona o cartão e gera o resumo na hora.
+- **Copiar resumo**: leva o plano em texto simples para a área de transferência.
+- **Reiniciar**: limpa a sessão e mantém o token salvo.
+
+## Páginas e arquivos
 
 | Arquivo | Função |
 | --- | --- |
-| `index.html` | busca: filtro por ticker, nome ou setor, com os resultados em um textarea (API → IA → demo). |
-| `ativo.html` | detalhe do ativo: preço com médias e projeção, probabilidades, cenários, indicadores e fontes. |
-| `metodologia.html` | fontes, fórmula do score, controle de viés, períodos, contrato da API e limites. |
-| `termos.html` | Termos de Uso. |
-| `privacidade.html` | Política de Privacidade (LGPD). |
-| `openchat.html` | Redireciona para `index.html` (links antigos do OpenChat). |
+| `index.html` | landing + dashboard do assistente + modais de filtro e token. |
+| `assets/js/negocios.js` | estado da sessão, renderização do painel e orquestração das chamadas. |
+| `assets/js/negocios-llm.js` | prompts, parsing JSON e normalização das respostas da API. |
+| `assets/js/negocios-demo.js` | sugestões e resumo locais usados como fallback. |
+| `assets/js/core/opencode.js` | cliente OpenAI-compatible: `/health`, `/v1/models`, `/v1/chat/completions`. |
+| `assets/css/negocios.css` | layout do dashboard, cartões, modais e responsividade. |
+| `termos.html`, `privacidade.html` | documentos legais. |
+| `metodologia.html`, `ativo.html`, `busca.js`, `server/` | legado do antigo OpenFinancial (B3), mantidos no repositório. |
+| `openchat.html` | redirecionamento antigo, mantido por compatibilidade de links. |
 
-## Como a probabilidade é calculada
+## API /llm
 
-O motor parte de um **score técnico** `S` entre −1 e +1, combinando momentum
-ajustado por volatilidade, MM20 × MM50, RSI 14, MACD, volume e preço × MM200.
-O score vira distribuição por uma softmax de três classes com âncora neutra:
+Base configurável pela meta tag `llm-api-base` (padrão
+`https://api.projetosdinamicos.com.br/llm`) e modelo por `pd-modelo` (padrão
+`opencode/big-pickle`).
 
-```text
-Z = e^(2,2·S) + e^(−2,2·S) + 1,4
-p_alta    = e^(2,2·S) / Z
-p_baixa   = e^(−2,2·S) / Z
-p_lateral = 1,4 / Z
-```
-
-Com `S = 0`, a leitura é aproximadamente **29,4% alta / 41,2% lateral / 29,4%
-baixa**. A classe lateral não é resíduo: ela tem peso próprio e domina quando os
-sinais são fracos. Alta e baixa são simétricas em módulo — não existe penalidade
-assimétrica para o otimismo. Esse é o controle explícito do viés pessimista
-comum em análises econômicas, descrito em `metodologia.html#vies`.
-
-A **confiança** exibida ao lado da leitura combina a magnitude do score com o
-tamanho da amostra; não é probabilidade de acerto.
-
-## Dados
-
-| Camada | Fonte padrão | Conteúdo |
+| Método | Endpoint | Uso no site |
 | --- | --- | --- |
-| Mercado | `https://cdn.projetosdinamicos.com.br/b3` | `ativos.json`, `mercado.json`, `series/<TICKER>.json` |
-| Análises | `https://api.projetosdinamicos.com.br` | `/v1/panorama`, `/v1/analises/<TICKER>`, `/v1/eventos` |
-| Fallback | `assets/data/` | cópia local marcada com `fonte: "demo"` |
+| `GET` | `/health` | selo de status no topo. |
+| `GET` | `/v1/models` | validação do token e contagem de modelos. |
+| `POST` | `/v1/chat/completions` | sugestão de nichos e geração/ajuste do resumo. |
 
-A CDN e os endpoints de dados da API de produção ainda não estão publicados. O
-gateway `/llm/v1` responde, mas pode estar limitado por cota. Por isso o repositório
-inclui uma cesta sintética de **16 ativos da B3**, gerada com semente fixa
-`20261113` e data-base `2026-11-13`, além de cinco anos de sessões diárias,
-projeções e eventos. Todos os payloads de demonstração carregam
-`fonte: "demo"` e a interface sinaliza isso.
+As respostas são pedidas como **JSON puro** e normalizadas antes de aparecer na
+tela. O parser aceita também JSON dentro de cercas de código. O histórico
+enviado é limitado às últimas seis mensagens e cada mensagem é truncada, para
+evitar payloads grandes.
 
-```bash
-python3 tools/gerar_dados_demo.py     # regenera assets/data/
-python3 server/ingest.py              # recalcula as análises sobre as séries
+Contrato simplificado das respostas:
+
+```jsonc
+// nichos
+{
+  "etapa": "nichos",
+  "titulo": "...",
+  "resumo": "...",
+  "sugestoes": [
+    {
+      "id": "n1", "nome": "...", "nicho": "...", "adesao": 82,
+      "capitalEstimado": "R$ 500 – R$ 2.000", "prazo": "2 semanas",
+      "porque": "...", "mvp": "...", "riscos": "..."
+    }
+  ],
+  "pergunta": "..."
+}
+
+// resumo
+{
+  "etapa": "resumo",
+  "titulo": "...",
+  "resumo": "...",
+  "negocio": {
+    "nome": "...", "nicho": "...", "publico": "...", "propostaValor": "...",
+    "mvp": "...",
+    "capitalInicial": { "total": "R$ ...", "itens": [{ "item": "...", "valor": "R$ ..." }] },
+    "logistica": "...", "canais": "...", "precificacao": "...", "riscos": "...",
+    "passos": ["..."]
+  },
+  "premissas": ["..."]
+}
 ```
 
 ## Rodando localmente
 
-Requisitos: Python 3.10+. Não há `npm`, bundler ou dependências externas.
+Requisitos: Python 3.10+ apenas para servir arquivos. Não há dependências de
+frontend.
 
 ```bash
-# terminal 1 — site estático
 python3 -m http.server 8080 --bind 127.0.0.1
-
-# terminal 2 — API de referência (opcional)
-python3 server/openfinancial_api.py --host 127.0.0.1 --port 8096
 ```
 
-Abra `http://localhost:8080/`. Em `localhost` ou `127.0.0.1`, o cliente usa
-automaticamente a API em `http://127.0.0.1:8096` — a CSP já libera esse
-endereço. Sem a API, ele usa o fallback local e mostra `demo local` nos selos.
+Abra `http://localhost:8080/`. Clique em **Conectar API**, informe o Bearer
+token e depois em **Abrir filtro**. Sem token, o fluxo funciona em
+`demo local`, útil para testar layout e interações sem consumir cota.
 
 > Módulos ES não funcionam em `file://`. Sirva a pasta por HTTP.
 
-## API de referência
+## Segurança e limites
 
-| Endpoint | Parâmetros | Retorno |
-| --- | --- | --- |
-| `GET /health` | — | status, versão, períodos, fonte e horário |
-| `GET /v1/panorama` | `periodo` | resumo, distribuição, série de probabilidades, eventos e ativos |
-| `GET /v1/ativos` | `setor`, `busca` | lista de ativos com preço e variações |
-| `GET /v1/ativos/{ticker}` | `periodo` | metadados e análise do ativo |
-| `GET /v1/ativos/{ticker}/serie` | `periodo`, `todos` | série OHLC simplificada |
-| `GET /v1/mercado` | `periodo` | índices, câmbio, juros, inflação e amplitude |
-| `GET /v1/eventos` | `periodo`, `ticker` | eventos com fonte e impacto |
-| `GET /v1/analises/{ticker}` | `periodo` | probabilidades, cenários, indicadores e projeção |
-| `GET /v1/analises/{ticker}/narrativa` | `periodo` | narrativa por LLM (server-side) ou texto do motor |
-
-Períodos: `1m`, `3m`, `6m`, `1a`, `5a` (padrão `6m`). O contrato completo,
-exemplos de `curl`, variáveis de ambiente e implantação com nginx/systemd estão
-em [`server/README.md`](server/README.md).
-
-A narrativa por LLM é opcional e acontece **no servidor**: o token fica em
-variável de ambiente e nunca chega ao navegador. Sem token, a API devolve o
-texto determinístico do motor e o site continua funcionando.
-
-## Estrutura
-
-```text
-index.html, ativo.html, metodologia.html, termos.html, privacidade.html
-assets/
-  css/base.css, landing.css, openfinancial.css, legal.css
-  js/
-    core/config.js        bases de CDN/API, timeout e metadados
-    core/b3-client.js     carregamento API → CDN → demo e normalização
-    core/charts.js        SVG: preço, área empilhada, sparkline
-    core/format.js        números, percentuais, datas e classes
-    busca.js              console de busca (API → IA → demo)
-    ativo.js              comportamento da página do ativo
-    panorama.js           painel antigo (não usado pela busca)
-    llm-dashboard.js      experimento antigo de painel (não usado pela busca)
-  data/                   dados demo + séries históricas
-server/
-  motor_probabilidades.py modelo compartilhado
-  ingest.py               ingestão e recálculo
-  openfinancial_api.py    servidor HTTP de referência
-  README.md, nginx, systemd
-tools/
-  gerar_dados_demo.py     gerador determinístico
-```
+- O token não é embutido no HTML, não vai para o repositório e não é enviado a
+  outro domínio além do gateway configurado. Ainda assim, qualquer script da
+  página com acesso ao `localStorage` poderia lê-lo: por isso o site usa CSP
+  rígida e nenhuma dependência de terceiros. Para um público amplo, o próximo
+  passo é trocar isso por um proxy server-side com o token em variável de
+  ambiente.
+- As faixas de capital e os MVPs são **hipóteses**, não orçamento, promessa de
+  faturamento ou recomendação de investimento.
+- O fallback local é determinístico e genérico; ele não consulta mercado, lei
+  municipal ou disponibilidade de fornecedores.
+- A API pode estar limitada por cota. Nesse caso o assistente avisa e cai no
+  modo demonstração.
+- Os textos legais e a metodologia ainda usam vocabulário do antigo
+  OpenFinancial; a próxima revisão deve adaptá-los ao assistente de negócios.
 
 ## Implantação
 
-1. O site é publicado no GitHub Pages a partir da branch `main` (há um `CNAME`
-   para `www.projetosdinamicos.com.br`).
-2. A API roda atrás do nginx em `api.projetosdinamicos.com.br`, com o serviço
-   `openfinancial-api` e o recálculo periódico `openfinancial-ingest.timer`.
-3. A CDN publica os JSON de `/var/www/openfinancial/data` em
-   `https://cdn.projetosdinamicos.com.br/b3/`.
-
-Passo a passo, checklist e configurações: [`server/README.md`](server/README.md).
-
-## Limitações
-
-- Modelo estatístico, não causal: não lê fundamentos, governança ou valuation.
-- Projeções são faixas de incerteza calibradas pelo passado recente, não previsões.
-- Cenários de alta e baixa usam ±1 desvio-padrão do horizonte; suporte e resistência
-  são apenas níveis de referência e não definem esses retornos.
-- Dados demo são sintéticos; use os selos de fonte para saber o que está na tela.
-- Eventos corporativos (desdobramentos, dividendos, mudanças de índice) exigem
-  ajuste da série antes da ingestão.
-- Nada aqui é recomendação de investimento. Confirme informações nos canais
-  oficiais da B3, CVM, BCB e das companhias.
-
-## Licença e contato
-
-Código e textos do projeto pertencem aos responsáveis pelo OpenFinancial. Dados
-de mercado podem pertencer à B3, às companhias ou aos órgãos que os publicam e
-seguem suas próprias condições de uso.
-
-- Conteúdo e correções: <contato@projetosdinamicos.com.br>
-- Privacidade e LGPD: <dpo@projetosdinamicos.com.br>
+O site é publicado no GitHub Pages a partir da branch `main`. O `CNAME` aponta
+`www.projetosdinamicos.com.br`; a raiz `projetosdinamicos.com.br` deve ser
+configurada no DNS/registrador para o mesmo destino. A API `/llm` é externa a
+este repositório — este projeto apenas consome o gateway.
