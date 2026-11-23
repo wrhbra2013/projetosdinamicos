@@ -1,0 +1,35 @@
+{
+  "name": "Projetos Dinâmicos — Assistente Pessoal Offline",
+  "short_name": "PD Assistente",
+  "description": "Assistente pessoal com Qwen 1B Instruct pela API /llm, com cache offline e respostas locais.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f2ea",
+  "theme_color": "#123b32",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "./assets/icons/assistente.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova conversa",
+      "short_name": "Nova conversa",
+      "description": "Abre o assistente com uma conversa nova.",
+      "url": "./index.html?nova=1"
+    }
+  ]
+}

@@ -1,147 +1,148 @@
-# Projetos Dinâmicos — assistente de criação de negócios
+# Projetos Dinâmicos — assistente pessoal offline
 
-O site da raiz (`projetosdinamicos.com.br`) agora é um **assistente de criação de
-negócios**. Em vez de um chat aberto, ele funciona como um filtro guiado: o
-visitante informa capital, tempo, cidade, modelo de operação, habilidades e
-restrições; a API `projetosdinamicos/llm` devolve sugestões de nichos; cada nova
-interação refina as opções até gerar um **resumo de negócio** com MVP, capital
-inicial, logística, canais, riscos e próximos passos.
+O site da raiz (`projetosdinamicos.com.br`) é agora uma **plataforma de assistente
+pessoal com IA**. O modelo roda de forma local/privada atrás do gateway
+`https://api.projetosdinamicos.com.br/llm` (compatível com a API da OpenAI) e é
+usado para conversas, escrita, organização, estudo e brainstorm.
+
+O projeto é estático: **sem build, sem `npm` e sem dependências externas**. É uma
+PWA — instala como aplicativo, abre com a interface em cache e responde mesmo sem
+rede, usando geradores locais determinísticos. Conversas, memória e preferências
+ficam no `localStorage` do navegador.
 
 ```text
-visitante ──► modal de filtro ──► POST /llm/v1/chat/completions
-                                      │
-                  JSON com 3 a 5 nichos (adesão, capital, MVP)
-                                      │
-                     escolha / ajuste por mensagem
-                                      │
-                  JSON com resumo: nicho, MVP, capital, logística
-                                      │
-                          dashboard + copiar resumo
+usuário ──► chat (PWA) ──► POST /llm/v1/chat/completions ──► Qwen 1B Instruct
+                 │                                              │
+                 ├── GET /llm/health, /llm/v1/models            │
+                 │                                              ▼
+                 └── sem token / sem rede / falha ──► resposta local + aviso
+                                                       │
+                                                       ▼
+                                          histórico salvo no navegador
 ```
 
-O projeto continua estático, sem build, sem `npm` e sem bibliotecas externas.
-A autenticação é o **Bearer token da API /llm, informado pelo próprio visitante
-e salvo só no `localStorage` do navegador**. Sem token ou com falha na API, o
-assistente usa sugestões determinísticas locais e sinaliza a fonte como
-`demo local`.
+## O que mudou em relação à versão anterior
 
-## Fluxo do assistente
-
-| Etapa | O que acontece | Saída |
-| --- | --- | --- |
-| 1. Filtro | Modal com capital, cidade, modelo, tempo, habilidades, público, objetivo e restrições. | Perfil exibido na coluna lateral. |
-| 2. Nichos | O filtro vira prompt; o modelo devolve 3 a 5 nichos com aderência de 0 a 100. | Cartões com capital estimado, prazo, MVP e riscos. |
-| 3. Resumo | Ao escolher um nicho (ou pedir um ajuste), o modelo devolve o plano estruturado. | Painel com MVP, capital inicial, logística, canais e passos. |
-
-Botões do painel:
-
-- **Refinar**: envia o texto digitado junto com o histórico recente. Se o resumo
-  já existe, ele é reescrito; caso contrário, vêm novos nichos.
-- **Outras sugestões**: pede ao modelo opções diferentes com o mesmo filtro.
-- **Aprofundar este nicho**: seleciona o cartão e gera o resumo na hora.
-- **Copiar resumo**: leva o plano em texto simples para a área de transferência.
-- **Reiniciar**: limpa a sessão e mantém o token salvo.
-
-## Páginas e arquivos
-
-| Arquivo | Função |
+| Antes | Agora |
 | --- | --- |
-| `index.html` | landing + dashboard do assistente + modais de filtro e token. |
-| `assets/js/negocios.js` | estado da sessão, renderização do painel e orquestração das chamadas. |
-| `assets/js/negocios-llm.js` | prompts, parsing JSON e normalização das respostas da API. |
-| `assets/js/negocios-demo.js` | sugestões e resumo locais usados como fallback. |
-| `assets/js/core/opencode.js` | cliente OpenAI-compatible: `/health`, `/v1/models`, `/v1/chat/completions`. |
-| `assets/css/negocios.css` | layout do dashboard, cartões, modais e responsividade. |
-| `termos.html`, `privacidade.html` | documentos legais. |
-| `metodologia.html`, `ativo.html`, `busca.js`, `server/` | legado do antigo OpenFinancial (B3), mantidos no repositório. |
-| `openchat.html` | redirecionamento antigo, mantido por compatibilidade de links. |
+| Fluxo guiado de criação de negócios (filtro → nichos → resumo) | Chat pessoal livre com 5 modos de especialização |
+| Modelo padrão `opencode/big-pickle` | Qwen 1B Instruct (ID detectado em `/v1/models`) |
+| Página dependente da rede | PWA com cache offline e fallback local |
+| Sessão apenas em memória | Até 20 conversas persistidas no navegador |
+
+Os arquivos do assistente de negócios e do antigo OpenFinancial seguem no
+repositório como **legado** (documentados mais adiante), sem serem carregados
+pela página principal.
+
+## Recursos
+
+- **Chat contínuo** com histórico recente enviado ao modelo (últimas 20 mensagens).
+- **Modos**: Geral, Escrita, Tarefas, Estudo e Ideias — cada um com prompt próprio
+  e sugestões de abertura.
+- **Memória local**: um campo de contexto pessoal opcional, enviado ao modelo e
+  editável/apagável a qualquer momento.
+- **Anexos de texto** (`.txt`, `.md`, `.csv`, `.json`, até 60 KB) incorporados à
+  mensagem enviada.
+- **Múltiplas conversas**: criar, alternar, excluir e limpar mensagens.
+- **Seletor de modelo**: preenche a lista devolvida por `/v1/models`, priorizando
+  modelos Qwen 1B/1,5B/1,8B com `Instruct`/`Chat` no nome.
+- **Indicadores honestos**: a resposta informa se veio da API /llm ou do gerador
+  local; o badge do topo mostra o estado da conexão.
+
+## Funcionamento offline
+
+1. O `sw.js` guarda o shell da aplicação (HTML, CSS, módulos JS, manifesto,
+   ícones e páginas legais) em um cache do Cache Storage.
+2. Navegações usam rede primeiro e caem no `index.html` cacheado; arquivos
+   estáticos são servidos do cache.
+3. Requisições ao gateway **não** são interceptadas pelo service worker. Sem
+   token, com `navigator.onLine === false` ou com falha de rede/HTTP, quem decide
+   é a aplicação: ela registra um aviso na conversa e usa
+   `assistente-prompts.js` para gerar uma resposta local (resumo extrativo,
+   checklist, plano de estudos, ideias, rascunho ou comparação).
+4. Ao voltar a conexão, o evento `online` dispara uma nova verificação de
+   `/health` e `/v1/models`.
+
+> O service worker só é registrado em HTTPS ou `localhost` — limite do navegador.
 
 ## API /llm
 
-Base configurável pela meta tag `llm-api-base` (padrão
-`https://api.projetosdinamicos.com.br/llm`) e modelo por `pd-modelo` (padrão
-`opencode/big-pickle`).
+A base é configurável pela meta tag `llm-api-base` (padrão
+`https://api.projetosdinamicos.com.br/llm`). O cliente OpenAI-compatible está em
+`assets/js/core/opencode.js`.
 
-| Método | Endpoint | Uso no site |
+| Método | Endpoint | Uso |
 | --- | --- | --- |
 | `GET` | `/health` | selo de status no topo. |
-| `GET` | `/v1/models` | validação do token e contagem de modelos. |
-| `POST` | `/v1/chat/completions` | sugestão de nichos e geração/ajuste do resumo. |
+| `GET` | `/v1/models` | validar token, listar modelos e detectar o Qwen. |
+| `POST` | `/v1/chat/completions` | enviar conversa (`stream: false`). |
 
-As respostas são pedidas como **JSON puro** e normalizadas antes de aparecer na
-tela. O parser aceita também JSON dentro de cercas de código. O histórico
-enviado é limitado às últimas seis mensagens e cada mensagem é truncada, para
-evitar payloads grandes.
+O ID inicial vem da meta tag `pd-modelo` (padrão `qwen1b-instruct`). Com token
+válido, a lista de `/v1/models` substitui esse valor pelo ID real publicado pelo
+gateway; a escolha do usuário tem prioridade e é lembrada no navegador. Para
+fixar outro modelo, edite a meta tag em `index.html`.
 
-Contrato simplificado das respostas:
+Exemplo do corpo enviado:
 
-```jsonc
-// nichos
+```json
 {
-  "etapa": "nichos",
-  "titulo": "...",
-  "resumo": "...",
-  "sugestoes": [
-    {
-      "id": "n1", "nome": "...", "nicho": "...", "adesao": 82,
-      "capitalEstimado": "R$ 500 – R$ 2.000", "prazo": "2 semanas",
-      "porque": "...", "mvp": "...", "riscos": "..."
-    }
+  "model": "qwen1b-instruct",
+  "messages": [
+    { "role": "system", "content": "…prompt do modo + memória local…" },
+    { "role": "user", "content": "…mensagem atual…" }
   ],
-  "pergunta": "..."
-}
-
-// resumo
-{
-  "etapa": "resumo",
-  "titulo": "...",
-  "resumo": "...",
-  "negocio": {
-    "nome": "...", "nicho": "...", "publico": "...", "propostaValor": "...",
-    "mvp": "...",
-    "capitalInicial": { "total": "R$ ...", "itens": [{ "item": "...", "valor": "R$ ..." }] },
-    "logistica": "...", "canais": "...", "precificacao": "...", "riscos": "...",
-    "passos": ["..."]
-  },
-  "premissas": ["..."]
+  "stream": false,
+  "temperature": 0.6,
+  "max_tokens": 900
 }
 ```
 
+## Arquivos
+
+| Arquivo | Função |
+| --- | --- |
+| `index.html` | interface do assistente, PWA, modais de token. |
+| `assets/js/assistente.js` | estado, renderização, envio, sessões, conexão e offline. |
+| `assets/js/assistente-prompts.js` | prompts dos modos e respostas locais. |
+| `assets/js/assistente-storage.js` | leitura/escrita validada do `localStorage`. |
+| `assets/js/core/opencode.js` | cliente `/health`, `/v1/models`, `/v1/chat/completions`. |
+| `assets/css/assistente.css` | layout do chat e estados de conexão. |
+| `manifest.webmanifest`, `sw.js`, `assets/icons/` | instalação e cache da PWA. |
+| `assets/css/base.css`, `landing.css` | tokens visuais, cabeçalho e rodapé compartilhados. |
+| `termos.html`, `privacidade.html` | documentos legais do assistente. |
+| `negocios*.js`, `negocios.css`, `llm-dashboard.js`, `metodologia.html`, `ativo.html`, `busca.js`, `server/`, `tools/` | legado do assistente de negócios/OpenFinancial; mantidos no repositório, não usados pela raiz. |
+| `openchat.html` | redirecionamento antigo, mantido por compatibilidade. |
+
 ## Rodando localmente
 
-Requisitos: Python 3.10+ apenas para servir arquivos. Não há dependências de
-frontend.
+Requisito: Python 3.10+ apenas para servir arquivos estáticos.
 
 ```bash
 python3 -m http.server 8080 --bind 127.0.0.1
 ```
 
-Abra `http://localhost:8080/`. Clique em **Conectar API**, informe o Bearer
-token e depois em **Abrir filtro**. Sem token, o fluxo funciona em
-`demo local`, útil para testar layout e interações sem consumir cota.
+Abra `http://localhost:8080/`. Clique em **Conectar API**, informe o Bearer token
+e envie uma mensagem. Sem token, o assistente responde em modo local — útil para
+testar a interface sem consumir cota.
 
-> Módulos ES não funcionam em `file://`. Sirva a pasta por HTTP.
+> Módulos ES e service workers não funcionam em `file://`. Sirva a pasta por HTTP.
 
-## Segurança e limites
+## Privacidade e limites
 
-- O token não é embutido no HTML, não vai para o repositório e não é enviado a
-  outro domínio além do gateway configurado. Ainda assim, qualquer script da
-  página com acesso ao `localStorage` poderia lê-lo: por isso o site usa CSP
-  rígida e nenhuma dependência de terceiros. Para um público amplo, o próximo
-  passo é trocar isso por um proxy server-side com o token em variável de
-  ambiente.
-- As faixas de capital e os MVPs são **hipóteses**, não orçamento, promessa de
-  faturamento ou recomendação de investimento.
-- O fallback local é determinístico e genérico; ele não consulta mercado, lei
-  municipal ou disponibilidade de fornecedores.
-- A API pode estar limitada por cota. Nesse caso o assistente avisa e cai no
-  modo demonstração.
-- Os textos legais e a metodologia ainda usam vocabulário do antigo
-  OpenFinancial; a próxima revisão deve adaptá-los ao assistente de negócios.
+- O token **não** é embutido no HTML nem enviado a outro domínio além do gateway.
+  Qualquer script da página com acesso ao `localStorage` poderia lê-lo: por isso
+  a CSP é rígida e o projeto não carrega dependências de terceiros.
+- Conversas e memória ficam no dispositivo. Limpar os dados do site apaga tudo.
+- A resposta local é determinística, genérica e sinalizada como tal. Ela não
+  consulta fontes externas, não sabe legislação e não substitui revisão humana.
+- Modelos pequenos (1B) podem alucinar, perder contexto longo e errar em tarefas
+  complexas. Prefira pedidos curtos e verifique informações relevantes.
+- A API pode ter cota limitada. Nesse caso o assistente avisa e cai no modo local.
 
 ## Implantação
 
-O site é publicado no GitHub Pages a partir da branch `main`. O `CNAME` aponta
-`www.projetosdinamicos.com.br`; a raiz `projetosdinamicos.com.br` deve ser
-configurada no DNS/registrador para o mesmo destino. A API `/llm` é externa a
-este repositório — este projeto apenas consome o gateway.
+Publicação via GitHub Pages na branch `main`. O `CNAME` aponta
+`www.projetosdinamicos.com.br`; a raiz deve apontar para o mesmo destino no
+registrador. A API `/llm` é externa a este repositório: aqui ela é apenas
+consumida. Após publicar, incrementar `CACHE` em `sw.js` força a atualização do
+cache dos usuários.

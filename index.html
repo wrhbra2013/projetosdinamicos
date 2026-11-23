@@ -3,177 +3,134 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Projetos Dinâmicos — assistente de criação de negócios</title>
-  <meta name="description" content="Assistente de criação de negócios: filtre seu perfil, receba sugestões de nichos pela API /llm e monte um resumo com MVP, capital inicial e logística.">
+  <title>Projetos Dinâmicos — assistente pessoal offline</title>
+  <meta name="description" content="Assistente pessoal com IA local: converse com o Qwen 1B Instruct pela API /llm, com PWA offline, histórico no navegador e respostas locais sem conexão.">
   <meta name="theme-color" content="#123b32">
   <meta name="color-scheme" content="light">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.projetosdinamicos.com.br https://cdn.projetosdinamicos.com.br http://127.0.0.1:8096 http://localhost:8096; font-src 'self'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.projetosdinamicos.com.br https://cdn.projetosdinamicos.com.br http://127.0.0.1:8096 http://localhost:8096; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'">
   <meta name="llm-api-base" content="https://api.projetosdinamicos.com.br/llm">
-  <meta name="pd-modelo" content="opencode/big-pickle">
+  <meta name="pd-modelo" content="qwen1b-instruct">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/landing.css">
-  <link rel="stylesheet" href="assets/css/negocios.css">
+  <link rel="stylesheet" href="assets/css/assistente.css">
 </head>
-<body class="pd-page">
-  <a class="skip-link" href="#painel">Ir para o painel</a>
+<body class="as-page">
+  <a class="skip-link" href="#thread">Ir para a conversa</a>
 
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="brand" href="index.html" aria-label="Projetos Dinâmicos — página inicial">
         <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-4 3 2 5-6"/><path d="M16 7h3v3"/></svg>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8z"/></svg>
         </span>
-        <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>assistente de negócios</small></span>
+        <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>assistente pessoal offline</small></span>
       </a>
       <nav class="site-nav" aria-label="Principal">
         <a href="#painel">Painel</a>
-        <a href="#como-funciona">Como funciona</a>
+        <a href="#sobre">Sobre</a>
+        <span class="small muted" id="modelo-label">modelo: —</span>
+        <span class="status" id="api-status" data-state="checking" role="status">verificando API…</span>
         <button class="btn sm" id="btn-token-top" type="button">Conectar API</button>
-        <button class="btn primary sm" id="btn-filtros-top" type="button">Abrir filtros</button>
+        <button class="btn primary sm" id="btn-novo-top" type="button">Nova conversa</button>
       </nav>
     </div>
   </header>
 
-  <main>
-    <section class="pd-hero" aria-labelledby="hero-title">
-      <div class="wrap">
-        <p class="eyebrow">Assistente de criação de negócios · API /llm</p>
-        <h1 id="hero-title">Da ideia ao <em>MVP</em> em poucas interações.</h1>
-        <p class="lead">
-          Descreva seu capital, tempo, cidade e habilidades no filtro. Cada nova interação com a
-          IA traz sugestões de nichos até montar um resumo de negócio com MVP, capital inicial,
-          logística e próximos passos.
-        </p>
-        <div class="pd-hero-actions">
-          <button class="btn primary lg" id="btn-filtros-hero" type="button">Abrir filtro de nicho</button>
-          <a class="btn lg" href="#painel">Ver painel</a>
-        </div>
-        <div class="pd-hero-meta">
-          <span class="status" id="api-status" data-state="checking">verificando API…</span>
-          <span class="small muted" id="modelo-info">modelo: —</span>
-        </div>
-      </div>
-    </section>
+  <main class="wrap" id="painel">
+    <div class="as-banner hidden" id="offline-banner" role="status">
+      <span aria-hidden="true">⚠</span>
+      <span><strong>Modo offline ativo.</strong> A interface está disponível pelo cache da PWA e o assistente responde localmente. Ao voltar a conexão, a API /llm é verificada automaticamente.</span>
+    </div>
 
-    <section class="wrap pd-dashboard" id="painel" aria-label="Painel do assistente">
-      <aside class="pd-side" aria-label="Configuração">
-        <div class="card">
+    <div class="as-layout">
+      <aside class="as-side" aria-label="Configurações do assistente">
+        <section class="card" aria-labelledby="sessoes-title">
           <div class="card-head">
-            <h2>Seu filtro</h2>
-            <button class="btn sm" id="btn-editar-filtros" type="button">Editar</button>
+            <h2 id="sessoes-title">Conversas</h2>
+            <button class="btn sm" id="btn-nova-conversa" type="button">Nova</button>
           </div>
-          <div id="perfil-resumo">
-            <p class="small muted">Ainda não há filtro. Abra o modal para descrever seu perfil.</p>
+          <div class="as-sessoes" id="lista-sessoes"></div>
+          <p class="as-hint">Até 20 conversas e 120 mensagens por conversa ficam salvas apenas neste navegador.</p>
+        </section>
+
+        <section class="card" aria-labelledby="modo-title">
+          <h2 id="modo-title">Modo do assistente</h2>
+          <div class="as-modos" role="group" aria-label="Modo do assistente">
+            <button class="as-modo" type="button" data-modo="geral" aria-pressed="true"><strong>Geral</strong><small>Dúvidas e decisões</small></button>
+            <button class="as-modo" type="button" data-modo="escrita" aria-pressed="false"><strong>Escrita</strong><small>Textos e e-mails</small></button>
+            <button class="as-modo" type="button" data-modo="tarefas" aria-pressed="false"><strong>Tarefas</strong><small>Organização</small></button>
+            <button class="as-modo" type="button" data-modo="estudo" aria-pressed="false"><strong>Estudo</strong><small>Planos e revisão</small></button>
+            <button class="as-modo" type="button" data-modo="ideias" aria-pressed="false"><strong>Ideias</strong><small>Brainstorm</small></button>
           </div>
-        </div>
+        </section>
 
-        <div class="card">
-          <h2>Etapas</h2>
-          <ol class="pd-steps">
-            <li class="pd-step" data-step="perfil" data-state="active">
-              <span>1</span>
-              <div><strong>Filtro</strong><small>Capital, tempo, modelo e habilidades</small></div>
-            </li>
-            <li class="pd-step" data-step="nichos" data-state="todo">
-              <span>2</span>
-              <div><strong>Nichos</strong><small>Sugestões com aderência ao perfil</small></div>
-            </li>
-            <li class="pd-step" data-step="resumo" data-state="todo">
-              <span>3</span>
-              <div><strong>Resumo</strong><small>MVP, capital, logística e passos</small></div>
-            </li>
-          </ol>
-          <div class="progress-wrap">
-            <div class="progress"><div class="progress-bar" id="progresso-barra" style="width: 33%"></div></div>
-            <span class="progress-label" id="progresso-label">1/3</span>
+        <section class="card" aria-labelledby="memoria-title">
+          <h2 id="memoria-title">Memória local</h2>
+          <label class="hidden" for="memoria">Contexto pessoal</label>
+          <textarea class="input" id="memoria" maxlength="1200" placeholder="Ex.: trabalho como designer, tenho 4h livres à noite, prefiro respostas curtas."></textarea>
+          <p class="as-hint">Enviado como contexto ao modelo. Fica só no localStorage; você pode apagar quando quiser.</p>
+          <p class="msg" id="memoria-msg" role="status"></p>
+          <div class="as-side-actions">
+            <button class="btn sm" id="btn-limpar-memoria" type="button">Limpar memória</button>
           </div>
-        </div>
+        </section>
 
-        <div class="card">
-          <h2>Conexão</h2>
-          <p class="small muted" id="fonte-info">Nenhuma interação ainda. A fonte aparece após a primeira sugestão.</p>
-          <button class="btn sm full" id="btn-token-side" type="button">Configurar token</button>
-        </div>
-      </aside>
-
-      <div class="card pd-thread-card">
-        <div class="card-head">
-          <div>
-            <h2>Sugestões e conversa</h2>
-            <p class="small muted">A cada mensagem, a API recebe o histórico curto e devolve novas opções.</p>
-          </div>
-          <span class="badge tag" id="etapa-badge">etapa 1 de 3</span>
-        </div>
-
-        <div class="pd-thread" id="thread" aria-live="polite">
-          <div class="empty">
-            <div class="empty-icon" aria-hidden="true">✦</div>
-            <h3>Comece pelo filtro</h3>
-            <p>Informe capital, tempo, modelo e habilidades. A IA devolve nichos e, após sua escolha, monta o resumo do negócio.</p>
-            <button class="btn primary" type="button" id="btn-filtros-vazio">Abrir filtro de nicho</button>
-          </div>
-        </div>
-
-        <div class="pd-composer">
-          <label class="hidden" for="compose">Mensagem de ajuste</label>
-          <input class="input" id="compose" type="text" maxlength="500" autocomplete="off" placeholder="Ex.: sem estoque, até 10h/semana, foco em renda extra…">
-          <button class="btn" id="btn-refinar" type="button">Refinar</button>
-          <button class="btn" id="btn-outras" type="button">Outras sugestões</button>
-          <button class="btn primary" id="btn-resumo" type="button" disabled>Gerar resumo</button>
-        </div>
-        <p class="msg" id="chat-msg" role="status">Preencha o filtro para começar.</p>
-      </div>
-
-      <aside class="pd-resumo-col" aria-label="Resumo do negócio">
-        <div class="card">
-          <div class="card-head">
-            <div>
-              <h2>Resumo do negócio</h2>
-              <p class="small muted">Preenche conforme as interações</p>
+        <section class="card" aria-labelledby="conexao-title">
+          <h2 id="conexao-title">Conexão</h2>
+          <p class="small muted" id="conexao-info">Verificando a API /llm…</p>
+          <div class="field">
+            <label class="field-label" for="modelo-select">Modelo</label>
+            <div class="as-modelo-linha">
+              <select class="input" id="modelo-select" disabled aria-label="Modelo de linguagem"></select>
+              <button class="btn sm" id="btn-atualizar-modelos" type="button" title="Consultar /v1/models">↻</button>
             </div>
-            <span class="badge tag" id="resumo-badge">aguardando</span>
+            <span class="as-hint">O ID do Qwen é detectado em <code>/v1/models</code>. Você pode trocar o modelo quando quiser.</span>
           </div>
-          <div class="card-body" id="resumo-content">
-            <div class="pd-resumo-bloco"><h3>Nicho</h3><p class="pendente">Aguardando geração do resumo.</p></div>
-            <div class="pd-resumo-bloco"><h3>MVP</h3><p class="pendente">Aguardando geração do resumo.</p></div>
-            <div class="pd-resumo-bloco"><h3>Capital inicial</h3><p class="pendente">Aguardando geração do resumo.</p></div>
-            <div class="pd-resumo-bloco"><h3>Logística</h3><p class="pendente">Aguardando geração do resumo.</p></div>
-            <div class="pd-resumo-bloco"><h3>Público-alvo</h3><p class="pendente">Aguardando geração do resumo.</p></div>
-            <div class="pd-resumo-bloco"><h3>Próximos passos</h3><p class="pendente">Aguardando geração do resumo.</p></div>
+          <div class="as-side-actions">
+            <button class="btn sm full" id="btn-token-side" type="button">Configurar token</button>
           </div>
-          <div class="pd-resumo-acoes">
-            <button class="btn sm" id="btn-copiar" type="button" disabled>Copiar resumo</button>
-            <button class="btn sm" id="btn-reiniciar" type="button">Reiniciar</button>
-          </div>
-        </div>
+        </section>
       </aside>
-    </section>
 
-    <section class="pd-como" id="como-funciona" aria-labelledby="como-title">
-      <div class="wrap">
-        <div class="section-head">
-          <h2 id="como-title">Como o assistente funciona</h2>
-          <p class="lead-sm">Um fluxo curto: você define as restrições, a IA propõe caminhos e você escolhe qual aprofundar.</p>
+      <section class="card as-chat" aria-labelledby="chat-titulo">
+        <div class="as-chat-head">
+          <div>
+            <h2 id="chat-titulo">Assistente pessoal</h2>
+            <p class="small muted">Qwen 1B Instruct via API /llm · fallback local quando offline</p>
+          </div>
+          <div class="as-chat-badges">
+            <span class="badge tag" id="chat-fonte">aguardando</span>
+            <span class="badge info">offline-first</span>
+          </div>
         </div>
-        <div class="steps">
-          <article class="step">
-            <span class="step-num">01</span>
-            <h3>Filtro em modal</h3>
-            <p>Capital, cidade, modelo de operação, tempo semanal, habilidades e restrições em um único formulário.</p>
-          </article>
-          <article class="step">
-            <span class="step-num">02</span>
-            <h3>Nichos por interação</h3>
-            <p>Cada mensagem atualiza o histórico e devolve novas sugestões ordenadas por aderência ao seu perfil.</p>
-          </article>
-          <article class="step">
-            <span class="step-num">03</span>
-            <h3>Resumo acionável</h3>
-            <p>Ao escolher um nicho, o painel monta MVP, faixa de capital, logística, canais e próximos passos.</p>
-          </article>
+
+        <div class="as-thread" id="thread" aria-live="polite"></div>
+
+        <div class="as-composer">
+          <label class="hidden" for="compose">Mensagem</label>
+          <textarea class="input" id="compose" maxlength="4000" placeholder="Pergunte, peça um rascunho ou organize suas tarefas…" rows="2"></textarea>
+          <div class="as-anexo hidden" id="anexo-chip">
+            <span aria-hidden="true">📎</span>
+            <span id="anexo-nome"></span>
+            <button type="button" id="btn-remover-anexo" aria-label="Remover anexo">✕</button>
+          </div>
+          <div class="as-composer-row">
+            <button class="btn sm" id="btn-anexar" type="button" title="Anexar arquivo de texto">📎 Anexar</button>
+            <input class="hidden" id="file-input" type="file" accept=".txt,.md,.csv,.json,text/plain">
+            <button class="btn sm" id="btn-limpar-chat" type="button">Limpar mensagens</button>
+            <span class="grow"></span>
+            <button class="btn primary" id="btn-enviar" type="button">Enviar</button>
+          </div>
+          <p class="msg" id="chat-msg" role="status">Conecte o token para usar o Qwen ou converse em modo local.</p>
         </div>
-      </div>
+      </section>
+    </div>
+
+    <section class="as-legal-note" id="sobre" aria-labelledby="sobre-title">
+      <h2 id="sobre-title" class="hidden">Sobre o assistente</h2>
+      <p><strong>Privacidade por padrão:</strong> conversas, memória e modelo preferido ficam neste navegador; o token e as mensagens enviadas vão apenas para o gateway <code>api.projetosdinamicos.com.br/llm</code>. Sem token ou sem rede, o assistente usa geradores locais determinísticos e identifica a origem da resposta.</p>
     </section>
   </main>
 
@@ -183,22 +140,22 @@
         <div>
           <a class="brand" href="index.html" aria-label="Projetos Dinâmicos — página inicial">
             <span class="brand-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-4 3 2 5-6"/><path d="M16 7h3v3"/></svg>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8z"/></svg>
             </span>
-            <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>assistente de negócios</small></span>
+            <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>assistente pessoal offline</small></span>
           </a>
-          <p>Um assistente enxuto para transformar restrições reais em primeiros experimentos de negócio.</p>
+          <p>Um assistente pessoal enxuto: IA pequena, dados no seu navegador e funcionamento mesmo sem conexão.</p>
         </div>
         <div>
           <h4>Plataforma</h4>
           <a href="#painel">Painel</a>
-          <a href="#como-funciona">Como funciona</a>
+          <a href="#sobre">Como funciona</a>
           <a href="index.html">Início</a>
         </div>
         <div>
           <h4>API</h4>
           <a href="https://api.projetosdinamicos.com.br/llm/health">Gateway /llm</a>
-          <a href="#painel">Fonte das respostas</a>
+          <a href="https://api.projetosdinamicos.com.br/llm/v1/models">Modelos</a>
         </div>
         <div>
           <h4>Documentos</h4>
@@ -208,98 +165,17 @@
       </div>
       <div class="footer-bottom">
         <span>© 2026 Projetos Dinâmicos</span>
-        <span>Sugestões são hipóteses a validar, não garantia de resultado.</span>
+        <span>Modelo pequeno pode errar. Confira informações importantes antes de agir.</span>
       </div>
     </div>
   </footer>
-
-  <dialog class="pd-dialog" id="dialog-filtros" aria-labelledby="filtros-title">
-    <form class="modal-shell" id="form-filtros" novalidate>
-      <div class="modal-head">
-        <div>
-          <h2 id="filtros-title">Filtro de criação de negócio</h2>
-          <p class="modal-sub">Quanto mais contexto, melhores os nichos sugeridos pela IA.</p>
-        </div>
-        <button class="icon-btn" type="button" data-close="dialog-filtros" aria-label="Fechar filtro">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="pd-form-grid">
-          <div class="field span-full">
-            <label class="field-label" for="f-ideia">Ideia inicial (opcional)</label>
-            <input class="input" id="f-ideia" name="ideia" type="text" maxlength="160" placeholder="Ex.: algo com comida, sem estoque, para vender no bairro">
-          </div>
-          <div class="form-row">
-            <div class="field">
-              <label class="field-label" for="f-capital">Capital disponível (R$)</label>
-              <input class="input" id="f-capital" name="capital" type="number" min="0" step="50" value="2000" inputmode="numeric">
-              <span class="field-hint">Use 0 se ainda não definiu um valor.</span>
-            </div>
-            <div class="field">
-              <label class="field-label" for="f-cidade">Cidade ou região</label>
-              <input class="input" id="f-cidade" name="cidade" type="text" maxlength="100" placeholder="Ex.: Campinas, interior de SP">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="field">
-              <label class="field-label" for="f-modelo">Modelo de operação</label>
-              <select class="input" id="f-modelo" name="modelo">
-                <option value="qualquer">Qualquer</option>
-                <option value="online">Online</option>
-                <option value="presencial">Presencial</option>
-                <option value="hibrido" selected>Híbrido</option>
-              </select>
-            </div>
-            <div class="field">
-              <label class="field-label" for="f-horas">Tempo por semana</label>
-              <select class="input" id="f-horas" name="horas">
-                <option value="até 5 horas">Até 5 horas</option>
-                <option value="5 a 10 horas">5 a 10 horas</option>
-                <option value="10 a 20 horas" selected>10 a 20 horas</option>
-                <option value="20+ horas">20+ horas</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="field">
-              <label class="field-label" for="f-habilidades">Habilidades e experiência</label>
-              <input class="input" id="f-habilidades" name="habilidades" type="text" maxlength="180" placeholder="Ex.: design, vendas, elétrica, ensino">
-            </div>
-            <div class="field">
-              <label class="field-label" for="f-publico">Público-alvo desejado</label>
-              <input class="input" id="f-publico" name="publico" type="text" maxlength="180" placeholder="Ex.: mães de crianças em idade escolar">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="field">
-              <label class="field-label" for="f-objetivo">Objetivo</label>
-              <select class="input" id="f-objetivo" name="objetivo">
-                <option value="primeiro" selected>Primeiro negócio</option>
-                <option value="renda">Renda extra</option>
-                <option value="carreira">Troca de carreira</option>
-                <option value="escalar">Escalar operação atual</option>
-              </select>
-            </div>
-            <div class="field">
-              <label class="field-label" for="f-restricoes">Restrições (opcional)</label>
-              <input class="input" id="f-restricoes" name="restricoes" type="text" maxlength="180" placeholder="Ex.: sem estoque, sem dirigir, sem fins de semana">
-            </div>
-          </div>
-          <p class="form-error hidden" id="filtros-erro" role="alert"></p>
-        </div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn" type="button" data-close="dialog-filtros">Cancelar</button>
-        <button class="btn primary" id="btn-filtros-enviar" type="submit">Buscar nichos</button>
-      </div>
-    </form>
-  </dialog>
 
   <dialog class="pd-dialog" id="dialog-token" aria-labelledby="token-title">
     <form class="modal-shell" id="form-token" novalidate>
       <div class="modal-head">
         <div>
           <h2 id="token-title">Conectar à API /llm</h2>
-          <p class="modal-sub">O Bearer token fica apenas no localStorage deste navegador e é enviado diretamente ao gateway.</p>
+          <p class="modal-sub">O Bearer token fica apenas no localStorage deste navegador e é enviado ao gateway configurado na meta tag <code>llm-api-base</code>.</p>
         </div>
         <button class="icon-btn" type="button" data-close="dialog-token" aria-label="Fechar conexão">✕</button>
       </div>
@@ -307,7 +183,7 @@
         <div class="field">
           <label class="field-label" for="token">Bearer token</label>
           <input class="input" id="token" name="token" type="password" autocomplete="off" spellcheck="false" placeholder="Cole o token gerado na instalação">
-          <span class="field-hint">Aceito com ou sem o prefixo “Bearer ”. Sem token, o assistente usa o modo demonstração.</span>
+          <span class="field-hint">Aceito com ou sem o prefixo “Bearer ”. Sem token, o assistente continua em modo local.</span>
         </div>
         <p class="msg" id="token-msg" role="status"></p>
       </div>
@@ -319,6 +195,10 @@
     </form>
   </dialog>
 
-  <script type="module" src="assets/js/negocios.js"></script>
+  <noscript>
+    <p class="noscript">O assistente precisa de JavaScript para conversar. Os documentos legais continuam disponíveis.</p>
+  </noscript>
+
+  <script type="module" src="assets/js/assistente.js"></script>
 </body>
 </html>

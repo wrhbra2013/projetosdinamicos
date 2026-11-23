@@ -3,27 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Política de Privacidade — OpenFinancial</title>
-  <meta name="description" content="Política de Privacidade do OpenFinancial: dados técnicos mínimos, sem cadastro, sem cookies de rastreamento e sem envio de dados pessoais para as análises.">
+  <title>Política de Privacidade — Projetos Dinâmicos</title>
+  <meta name="description" content="Política de privacidade do assistente pessoal offline da Projetos Dinâmicos: dados locais, token no navegador, uso da API /llm e direitos do titular.">
   <meta name="theme-color" content="#123b32">
   <meta name="color-scheme" content="light">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/legal.css">
-  <link rel="stylesheet" href="assets/css/openfinancial.css">
 </head>
 <body class="legal-page">
   <header class="legal-header">
     <div class="wrap">
-      <a class="brand" href="index.html" aria-label="OpenFinancial — página inicial">
+      <a class="brand" href="index.html" aria-label="Projetos Dinâmicos — página inicial">
         <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-4 3 2 5-6"/><path d="M16 7h3v3"/></svg>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8z"/></svg>
         </span>
-        <span class="brand-text"><strong>Open<em>Financial</em></strong><small>B3 · probabilidades</small></span>
+        <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>assistente pessoal offline</small></span>
       </a>
       <nav aria-label="Principal">
-        <a href="index.html">Busca</a>
-        <a href="metodologia.html">Metodologia</a>
+        <a href="index.html">Assistente</a>
         <a href="termos.html">Termos</a>
         <a href="privacidade.html" aria-current="page">Privacidade</a>
       </nav>
@@ -36,12 +34,12 @@
         <p class="eyebrow">Documento legal · LGPD</p>
         <h1>Política de Privacidade</h1>
         <p>
-          Esta política explica quais dados o OpenFinancial trata, com quais finalidades, por quanto
-          tempo e como você pode exercer seus direitos. O site foi desenhado para funcionar sem
-          cadastro e com o mínimo de dados possível.
+          Esta política explica como o assistente pessoal da Projetos Dinâmicos trata dados quando
+          você conversa com o Qwen pela API <code>/llm</code> ou usa os recursos offline. O serviço
+          não exige cadastro e foi desenhado para manter as conversas no seu dispositivo.
         </p>
         <div class="legal-meta">
-          <span>Versão 2026-11-13</span>
+          <span>Versão 2026-11-22</span>
           <span>Vigência imediata</span>
           <span>Lei nº 13.709/2018 (LGPD)</span>
         </div>
@@ -51,7 +49,7 @@
     <div class="wrap legal-layout">
       <aside class="legal-toc" aria-label="Sumário">
         <strong>Nesta página</strong>
-        <a href="#controlador">1. Controlador e encarregado</a>
+        <a href="#controlador">1. Controlador</a>
         <a href="#dados">2. Dados tratados</a>
         <a href="#finalidades">3. Finalidades e bases legais</a>
         <a href="#local">4. Onde os dados ficam</a>
@@ -61,228 +59,142 @@
         <a href="#seguranca">8. Segurança</a>
         <a href="#cookies">9. Cookies e armazenamento local</a>
         <a href="#criancas">10. Crianças e adolescentes</a>
-        <a href="#transferencia">11. Transferência internacional</a>
-        <a href="#alteracoes">12. Alterações</a>
-        <a href="#contato">13. Contato e ANPD</a>
+        <a href="#alteracoes">11. Alterações</a>
+        <a href="#contato">12. Contato</a>
       </aside>
 
       <article class="legal-body">
         <div class="legal-callout">
-          <strong>Resumo em uma frase:</strong>
-          <span>o OpenFinancial não pede conta, não usa cookies de rastreamento e não envia dados
-          pessoais para a API de análises; o servidor registra apenas dados técnicos mínimos para
-          segurança e diagnóstico.</span>
+          <strong>Resumo:</strong>
+          <span>não há conta nem cookies de rastreamento. Conversas, memória e preferências ficam no
+          seu navegador; o token e o texto de cada mensagem enviada vão somente ao gateway
+          <code>api.projetosdinamicos.com.br/llm</code>.</span>
         </div>
 
         <section id="controlador">
-          <h2>1. Controlador e encarregado</h2>
+          <h2>1. Controlador</h2>
           <p>
-            O controlador dos dados pessoais tratados no OpenFinancial é <strong>Projetos
-            Dinâmicos</strong>, responsável pelas decisões sobre o tratamento realizado no site e na
-            API.
+            O controlador é <strong>Projetos Dinâmicos</strong>. Em implantações replicadas por outra
+            organização, essa organização passa a ser a controladora daquela instalação.
           </p>
           <p>
-            O encarregado pelo tratamento de dados pessoais (DPO) pode ser contatado em
+            Contato para assuntos de privacidade:
             <a href="mailto:dpo@projetosdinamicos.com.br">dpo@projetosdinamicos.com.br</a>.
-          </p>
-          <p>
-            Quando o projeto for replicado por outra organização, esta passa a ser a controladora da
-           aquela implantação e deve manter suas próprias informações de contato e de encarregado.
           </p>
         </section>
 
         <section id="dados">
           <h2>2. Dados tratados</h2>
-          <p>
-            O site não possui formulário de cadastro, login, comentários ou envio de arquivos. Não
-            coletamos nome, e-mail, telefone, CPF ou dados bancários.
-          </p>
           <table class="legal-table">
-            <thead>
-              <tr><th>Categoria</th><th>Exemplos</th><th>Origem</th></tr>
-            </thead>
+            <thead><tr><th>Dado</th><th>Origem</th><th>Local</th></tr></thead>
             <tbody>
-              <tr>
-                <td>Dados técnicos de acesso</td>
-                <td>endereço IP, data e hora, rota solicitada, user agent, código de resposta</td>
-                <td>requisições ao servidor e à CDN</td>
-              </tr>
-              <tr>
-                <td>Preferências de navegação</td>
-                <td>período selecionado na URL (<code>?periodo=6m</code>)</td>
-                <td>navegador do usuário</td>
-              </tr>
-              <tr>
-                <td>Dados de mercado</td>
-                <td>tickers, preços, volumes e indicadores</td>
-                <td>não são dados pessoais</td>
-              </tr>
+              <tr><td>Mensagens e respostas</td><td>Digitadas ou anexadas por você</td><td>localStorage do navegador</td></tr>
+              <tr><td>Contexto pessoal (“memória local”)</td><td>Preenchido opcionalmente por você</td><td>localStorage do navegador</td></tr>
+              <tr><td>Modo e modelo preferidos</td><td>Escolhas na interface</td><td>localStorage do navegador</td></tr>
+              <tr><td>Bearer token da API /llm</td><td>Informado por você</td><td>localStorage do navegador</td></tr>
+              <tr><td>Texto da mensagem enviada ao modelo</td><td>Conversa atual e contexto</td><td>gateway /llm</td></tr>
+              <tr><td>Dados técnicos de rede (IP, horário, user-agent)</td><td>Conexão HTTP</td><td>infraestrutura do gateway</td></tr>
             </tbody>
           </table>
           <p>
-            Não há criação de perfil comportamental, publicidade direcionada, venda de dados ou
-            decisões automatizadas com efeito jurídico sobre o usuário.
+            O site não pede nome, e-mail, telefone, CPF ou dados bancários. Não há formulário de
+            cadastro, login, comentários ou publicação.
           </p>
         </section>
 
         <section id="finalidades">
           <h2>3. Finalidades e bases legais</h2>
-          <table class="legal-table">
-            <thead>
-              <tr><th>Finalidade</th><th>Base legal</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>Entregar o site, a CDN e a API</td><td>execução do serviço e legítimo interesse</td></tr>
-              <tr><td>Segurança, prevenção a abuso e diagnóstico</td><td>legítimo interesse (art. 7º, IX, LGPD)</td></tr>
-              <tr><td>Cumprir obrigações legais e regulatórias</td><td>obrigação legal ou regulatória</td></tr>
-              <tr><td>Exercer direitos em processo judicial ou administrativo</td><td>exercício regular de direitos</td></tr>
-            </tbody>
-          </table>
-          <p>
-            O tratamento é limitado ao necessário para as finalidades acima, conforme o princípio da
-            minimização.
-          </p>
+          <ul class="bullets">
+            <li><strong>Execução do serviço solicitado:</strong> gerar respostas com o modelo e manter o histórico da conversa no dispositivo.</li>
+            <li><strong>Consentimento:</strong> uso do contexto pessoal e do anexo de texto, ambos opcionais e controlados por você.</li>
+            <li><strong>Interesse legítimo:</strong> registros técnicos mínimos do gateway para segurança, diagnóstico e prevenção a abuso.</li>
+          </ul>
         </section>
 
         <section id="local">
           <h2>4. Onde os dados ficam</h2>
           <p>
-            A interface é estática e roda no navegador. Os dados de mercado são baixados da CDN e as
-            análises, da API. Nenhum dado pessoal é enviado nessas requisições além dos dados
-            técnicos inerentes ao protocolo HTTP.
-          </p>
-          <p>
-            O período escolhido é refletido apenas na URL da página, via <code>history.replaceState</code>.
-            Não usamos <code>localStorage</code>, <code>sessionStorage</code> ou IndexedDB para
-            identificar visitantes.
-          </p>
-          <p>
-            Logs do servidor e da CDN ficam na infraestrutura do provedor contratado, pelo prazo
-            necessário à segurança e ao diagnóstico.
+            O aplicativo é estático e roda no navegador. O service worker guarda os arquivos da
+            interface em cache para funcionamento offline; esse cache não contém conversas. As
+            mensagens são gravadas apenas no armazenamento local do dispositivo e nunca são
+            sincronizadas com servidores deste projeto.
           </p>
         </section>
 
         <section id="compartilhamento">
           <h2>5. Compartilhamento</h2>
           <p>
-            Não vendemos nem alugamos dados pessoais. O compartilhamento ocorre apenas com
-            operadores necessários à prestação do serviço:
-          </p>
-          <ul>
-            <li>provedor de hospedagem do site estático (GitHub Pages);</li>
-            <li>provedor de CDN e servidor da API;</li>
-            <li>provedor de modelo de linguagem, quando a narrativa é gerada no servidor;</li>
-            <li>autoridades públicas, quando houver obrigação legal.</li>
-          </ul>
-          <p>
-            As requisições à API de análises não incluem dados pessoais do visitante. O provedor de
-            LLM recebe apenas o contexto de mercado necessário para redigir a leitura.
+            Quando você envia uma mensagem com token válido e conexão ativa, o texto da conversa e
+            o contexto vão para o gateway <code>api.projetosdinamicos.com.br/llm</code>, que aciona o
+            modelo. Nenhum outro serviço de terceiros é carregado pela página. A resposta local,
+            usada sem rede ou sem token, não sai do navegador.
           </p>
         </section>
 
         <section id="retencao">
           <h2>6. Retenção e descarte</h2>
           <p>
-            Logs técnicos são mantidos pelo período necessário à segurança, à auditoria e ao
-            diagnóstico, e depois descartados ou anonimizados. Dados agregados de acesso podem ser
-            mantidos para estatística, sem possibilidade de identificação individual.
-          </p>
-          <p>
-            Como não há cadastro, não existe base de usuários a excluir. Se você entrar em contato
-            por e-mail, a mensagem será mantida pelo tempo necessário ao atendimento e ao cumprimento
-            de obrigações legais.
+            O aplicativo mantém até 20 conversas e 120 mensagens por conversa. Você pode apagar
+            mensagens, excluir conversas, limpar a memória local, remover o token e limpar os dados
+            do site nas configurações do navegador. Após a remoção, não há cópia desses dados em
+            sistemas sob controle do projeto.
           </p>
         </section>
 
         <section id="direitos">
           <h2>7. Seus direitos</h2>
-          <p>Nos termos da LGPD, você pode solicitar:</p>
-          <ul>
-            <li>confirmação da existência de tratamento;</li>
-            <li>acesso aos dados tratados;</li>
-            <li>correção de dados incompletos, inexatos ou desatualizados;</li>
-            <li>anonimização, bloqueio ou eliminação de dados desnecessários ou excessivos;</li>
-            <li>informação sobre compartilhamentos;</li>
-            <li>revogação de consentimento, quando o tratamento se basear nele;</li>
-            <li>oposição a tratamento realizado com fundamento em legítimo interesse, nos casos cabíveis.</li>
-          </ul>
           <p>
-            Para exercer seus direitos, escreva para
-            <a href="mailto:dpo@projetosdinamicos.com.br">dpo@projetosdinamicos.com.br</a>. A
-            solicitação pode exigir confirmação de identidade para evitar acesso indevido. O prazo de
-            resposta observa a LGPD e as orientações da ANPD.
+            Você pode solicitar confirmação do tratamento, acesso, correção, limitação, portabilidade
+            ou eliminação dos dados, além de informações sobre compartilhamentos. Na prática, a
+            maior parte dessas ações pode ser feita diretamente na interface e nas configurações do
+            navegador. Para demandas formais, use o contato desta política ou a ANPD.
           </p>
         </section>
 
         <section id="seguranca">
           <h2>8. Segurança</h2>
           <p>
-            Adotamos medidas técnicas e administrativas compatíveis com o risco, incluindo HTTPS,
-            controle de acesso ao servidor, separação entre site estático e API, tokens de LLM
-            mantidos em variáveis de ambiente e ausência de credenciais no código do navegador.
-          </p>
-          <p>
-            Nenhum sistema é imune a incidentes. Em caso de incidente relevante que possa acarretar
-            risco ou dano significativo, comunicaremos os titulares e a ANPD conforme a lei.
+            A página usa CSP rígida, não carrega bibliotecas de terceiros e envia o token somente ao
+            gateway por HTTPS. Ainda assim, o token fica no armazenamento local: qualquer código
+            executado na origem poderia lê-lo. Não compartilhe seu token e Use um token dedicado a
+            este dispositivo. Para ambientes com muitos usuários, recomenda-se proxy server-side com
+            o token em variável de ambiente.
           </p>
         </section>
 
         <section id="cookies">
           <h2>9. Cookies e armazenamento local</h2>
           <p>
-            O OpenFinancial não utiliza cookies próprios de rastreamento, nem pixels de publicidade.
-            A CDN e o provedor de hospedagem podem usar cookies estritamente necessários à entrega e
-            à segurança; esses cookies não são controlados pelo site.
-          </p>
-          <p>
-            O site não grava preferências no navegador. O período selecionado existe apenas na URL e
-            desaparece quando você fecha ou compartilha o endereço sem o parâmetro.
+            Não há cookies próprios ou de terceiros, pixels de publicidade ou rastreamento. O
+            funcionamento usa <code>localStorage</code> (conversas, preferências e token) e Cache
+            Storage (arquivos da interface). Você pode bloquear ou limpar ambos no navegador; o
+            assistente continuará funcionando online, porém sem histórico e sem cache offline.
           </p>
         </section>
 
         <section id="criancas">
           <h2>10. Crianças e adolescentes</h2>
           <p>
-            O conteúdo é destinado ao público adulto interessado em mercado de capitais. Não
-            coletamos intencionalmente dados de crianças ou adolescentes. Se identificarmos coleta
-            inadvertida, os dados serão eliminados.
-          </p>
-        </section>
-
-        <section id="transferencia">
-          <h2>11. Transferência internacional</h2>
-          <p>
-            O site é hospedado no GitHub Pages e pode usar CDN e provedores de nuvem com servidores
-            fora do Brasil. Quando houver transferência internacional de dados técnicos, ela observa
-            os mecanismos previstos na LGPD, como cláusulas contratuais e avaliação de segurança do
-            fornecedor.
+            O assistente não é direcionado a menores de 12 anos e não coleta dados identificáveis
+            de crianças. Responsáveis devem supervisionar o uso e revisar as respostas do modelo.
           </p>
         </section>
 
         <section id="alteracoes">
-          <h2>12. Alterações</h2>
+          <h2>11. Alterações</h2>
           <p>
-            Esta política é versionada. A versão vigente é <strong>2026-11-13</strong>. Mudanças
-            relevantes serão publicadas nesta página, com atualização de data e versão.
-          </p>
-          <p>
-            Recomendamos revisar esta política periodicamente. O uso continuado após a entrada em
-            vigor de uma nova versão representa ciência das regras atualizadas.
+            Mudanças nesta política são publicadas nesta página com nova data de versão. Alterações
+            relevantes no tratamento de dados serão comunicadas na interface do assistente.
           </p>
         </section>
 
         <section id="contato">
-          <h2>13. Contato e ANPD</h2>
+          <h2>12. Contato</h2>
           <p>
-            Solicitações relacionadas a dados pessoais devem ser dirigidas ao encarregado:
+            Dúvidas e solicitações:
             <a href="mailto:dpo@projetosdinamicos.com.br">dpo@projetosdinamicos.com.br</a>.
-            Dúvidas gerais podem ser enviadas para
-            <a href="mailto:contato@projetosdinamicos.com.br">contato@projetosdinamicos.com.br</a>.
-          </p>
-          <p>
-            Se você entender que sua solicitação não foi atendida adequadamente, pode apresentar
-            reclamação à Autoridade Nacional de Proteção de Dados (ANPD), em
-            <a href="https://www.gov.br/anpd/" target="_blank" rel="noopener noreferrer">gov.br/anpd</a>.
+            Você também pode acionar a
+            <a href="https://www.gov.br/anpd/" target="_blank" rel="noopener noreferrer">ANPD</a>.
           </p>
         </section>
       </article>
@@ -291,8 +203,8 @@
 
   <footer class="legal-footer">
     <div class="wrap">
-      <span>© 2026 Projetos Dinâmicos · OpenFinancial · Privacidade versão 2026-11-13</span>
-      <span><a href="termos.html">Termos de Uso</a> · <a href="metodologia.html">Metodologia</a> · <a href="index.html">Busca</a></span>
+      <span>© 2026 Projetos Dinâmicos · Privacidade versão 2026-11-22</span>
+      <span><a href="termos.html">Termos de Uso</a> · <a href="index.html">Assistente</a></span>
     </div>
   </footer>
 </body>

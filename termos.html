@@ -3,27 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Termos de Uso — OpenFinancial</title>
-  <meta name="description" content="Termos de Uso do OpenFinancial, o panorama probabilístico de ativos da B3. Conteúdo informativo, sem recomendação de investimento.">
+  <title>Termos de Uso — Projetos Dinâmicos</title>
+  <meta name="description" content="Termos de uso do assistente pessoal offline da Projetos Dinâmicos, com IA Qwen pela API /llm.">
   <meta name="theme-color" content="#123b32">
   <meta name="color-scheme" content="light">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/legal.css">
-  <link rel="stylesheet" href="assets/css/openfinancial.css">
 </head>
 <body class="legal-page">
   <header class="legal-header">
     <div class="wrap">
-      <a class="brand" href="index.html" aria-label="OpenFinancial — página inicial">
+      <a class="brand" href="index.html" aria-label="Projetos Dinâmicos — página inicial">
         <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M7 15l4-4 3 2 5-6"/><path d="M16 7h3v3"/></svg>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8z"/></svg>
         </span>
-        <span class="brand-text"><strong>Open<em>Financial</em></strong><small>B3 · probabilidades</small></span>
+        <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>assistente pessoal offline</small></span>
       </a>
       <nav aria-label="Principal">
-        <a href="index.html">Busca</a>
-        <a href="metodologia.html">Metodologia</a>
+        <a href="index.html">Assistente</a>
         <a href="termos.html" aria-current="page">Termos</a>
         <a href="privacidade.html">Privacidade</a>
       </nav>
@@ -36,14 +34,14 @@
         <p class="eyebrow">Documento legal</p>
         <h1>Termos de Uso</h1>
         <p>
-          Estes termos regem o acesso ao OpenFinancial, o panorama probabilístico de ativos da B3.
-          Ao usar o site, você declara que leu e concorda com estas regras e com a Política de
-          Privacidade.
+          Estes termos regem o uso do assistente pessoal da Projetos Dinâmicos, uma aplicação web
+          que utiliza o modelo Qwen 1B Instruct por meio da API <code>/llm</code> e funciona também
+          sem conexão, com recursos locais.
         </p>
         <div class="legal-meta">
-          <span>Versão 2026-11-13</span>
+          <span>Versão 2026-11-22</span>
           <span>Vigência imediata</span>
-          <span>Lei nº 13.709/2018 e legislação do mercado de capitais</span>
+          <span>Uso pessoal e gratuito</span>
         </div>
       </div>
     </section>
@@ -51,180 +49,127 @@
     <div class="wrap legal-layout">
       <aside class="legal-toc" aria-label="Sumário">
         <strong>Nesta página</strong>
-        <a href="#servico">1. O serviço</a>
-        <a href="#natureza">2. Natureza informativa</a>
-        <a href="#uso">3. Uso aceitável</a>
-        <a href="#propriedade">4. Propriedade e dados</a>
-        <a href="#fontes">5. Fontes e disponibilidade</a>
-        <a href="#responsabilidade">6. Responsabilidade</a>
-        <a href="#privacidade">7. Privacidade</a>
-        <a href="#alteracoes">8. Alterações</a>
-        <a href="#foro">9. Lei aplicável e foro</a>
-        <a href="#contato">10. Contato</a>
+        <a href="#aceitacao">1. Aceitação</a>
+        <a href="#servico">2. O serviço</a>
+        <a href="#acesso">3. Acesso e token</a>
+        <a href="#uso">4. Uso adequado</a>
+        <a href="#propriedade">5. Propriedade intelectual</a>
+        <a href="#ia">6. IA e limitações</a>
+        <a href="#offline">7. Funcionamento offline</a>
+        <a href="#disponibilidade">8. Disponibilidade</a>
+        <a href="#responsabilidade">9. Responsabilidade</a>
+        <a href="#alteracoes">10. Alterações</a>
+        <a href="#contato">11. Contato</a>
       </aside>
 
       <article class="legal-body">
-        <div class="legal-callout warn">
-          <strong>Leia antes de usar:</strong>
-          <span>o OpenFinancial apresenta probabilidades e cenários. Não é recomendação de
-          investimento, não é oferta de valores mobiliários e não garante resultado.</span>
+        <div class="legal-callout">
+          <strong>Em resumo:</strong>
+          <span>o assistente é gratuito, não pede cadastro e mantém suas conversas no navegador.
+          As respostas são sugestões geradas por IA: verifique sempre antes de tomar decisões.</span>
         </div>
 
-        <section id="servico">
-          <h2>1. O serviço</h2>
+        <section id="aceitacao">
+          <h2>1. Aceitação</h2>
           <p>
-            O OpenFinancial é um site estático de informação sobre ativos negociados na B3. Ele
-            organiza preços, volumes, indicadores técnicos, notícias e relatórios oficiais em um
-            panorama com três classes de tendência: alta, lateral e baixa.
-          </p>
-          <p>
-            O acesso é gratuito e não exige cadastro. O serviço pode ser alterado, suspenso ou
-            descontinuado a qualquer momento, especialmente durante a fase de demonstração em que os
-            dados podem ser sintéticos.
-          </p>
-          <p>
-            Quando um selo indicar <strong>demo local</strong>, os dados são gerados para teste e não
-            representam o mercado real. A origem de cada payload é declarada nos campos
-            <code>fonte</code>, <code>atualizadoEm</code> e <code>demo</code>.
+            Ao usar o assistente, você declara ter lido e concordado com estes termos e com a
+            <a href="privacidade.html">Política de Privacidade</a>. Se não concordar, não utilize o
+            serviço.
           </p>
         </section>
 
-        <section id="natureza">
-          <h2>2. Natureza informativa e ausência de recomendação</h2>
+        <section id="servico">
+          <h2>2. O serviço</h2>
           <p>
-            Todo o conteúdo do OpenFinancial tem finalidade <strong>informativa, educacional e
-            probabilística</strong>. Nenhuma tela, texto, probabilidade ou projeção constitui:
+            A plataforma oferece um chat pessoal com modos para conversa, escrita, tarefas, estudo e
+            ideias. As respostas são produzidas pelo modelo quando há token e conexão, ou por
+            rotinas locais determinísticas quando não há. O assistente não envia e-mails, não agenda
+            compromissos e não executa ações fora da interface.
           </p>
-          <ul>
-            <li>recomendação de compra, venda ou manutenção de qualquer ativo;</li>
-            <li>oferta pública ou privada de valores mobiliários;</li>
-            <li>consultoria de valores mobiliários, análise de investimento personalizada ou gestão de recursos;</li>
-            <li>garantia de rentabilidade, de acerto ou de comportamento futuro do mercado.</li>
-          </ul>
+        </section>
+
+        <section id="acesso">
+          <h2>3. Acesso e token</h2>
           <p>
-            Probabilidades descrevem cenários condicionados aos dados disponíveis. Elas não
-            incorporam seus objetivos, seu horizonte, seu patrimônio ou sua tolerância a risco.
-            Decisões de investimento são de responsabilidade exclusiva do usuário.
-          </p>
-          <p>
-            O usuário deve consultar os documentos oficiais das companhias, os canais da B3, da CVM,
-            do Banco Central e, quando necessário, um profissional habilitado.
+            Não há login ou cadastro. Para usar o modelo você informa um Bearer token emitido para a
+            API <code>/llm</code>; ele fica no armazenamento local do navegador e pode ser removido a
+            qualquer momento. O token é pessoal e intransferível: não compartilhe seu valor e use
+            credenciais distintas por dispositivo.
           </p>
         </section>
 
         <section id="uso">
-          <h2>3. Uso aceitável</h2>
-          <p>Você concorda em não:</p>
-          <ul>
-            <li>usar o site para atividades ilegais, fraudulentas ou que violem direitos de terceiros;</li>
-            <li>tentar obter acesso não autorizado a serviços, servidores ou dados;</li>
-            <li>sobrecarregar a API, a CDN ou a infraestrutura com requisições automatizadas abusivas;</li>
-            <li>remover avisos de fonte, autoria, versão ou limitação de responsabilidade;</li>
-            <li>apresentar os resultados como recomendação de investimento ou como serviço de consultoria.</li>
+          <h2>4. Uso adequado</h2>
+          <ul class="bullets">
+            <li>Não use o serviço para atividades ilícitas, discriminatórias ou que violem direitos de terceiros.</li>
+            <li>Não envie dados sensíveis, segredos industriais ou informações de outra pessoa sem autorização.</li>
+            <li>Não tente explorar, sobrecarregar ou contornar os limites da API /llm.</li>
+            <li>Não apresente as respostas como parecer profissional, médico, jurídico ou financeiro.</li>
           </ul>
-          <p>
-            O uso de trechos com atribuição é permitido. A republicação sistemática do panorama ou
-            das séries depende de autorização, respeitadas as licenças das fontes originais.
-          </p>
         </section>
 
         <section id="propriedade">
-          <h2>4. Propriedade intelectual e dados de mercado</h2>
+          <h2>5. Propriedade intelectual</h2>
           <p>
-            A marca OpenFinancial, o código da interface, os textos explicativos e o desenho do
-            panorama pertencem aos responsáveis pelo projeto. Os dados de mercado podem pertencer à
-            B3, às companhias, aos órgãos públicos ou aos provedores que os publicam, e são usados
-            conforme suas condições de uso.
-          </p>
-          <p>
-            As probabilidades, séries de probabilidade, projeções e leituras textuais produzidas pelo
-            OpenFinancial podem ser citadas com atribuição, sem sugerir endosso do projeto ou das
-            fontes.
+            O código, o desenho da interface e os textos institucionais pertencem à Projetos
+            Dinâmicos ou a seus colaboradores. Os textos que você produz são seus; ao enviá-los ao
+            modelo, você autoriza o processamento necessário para gerar a resposta, conforme a
+            Política de Privacidade. Marcas de terceiros permanecem com seus titulares.
           </p>
         </section>
 
-        <section id="fontes">
-          <h2>5. Fontes, precisão e disponibilidade</h2>
+        <section id="ia">
+          <h2>6. IA e limitações</h2>
           <p>
-            Os dados podem vir de CDN estática, da API OpenFinancial ou de uma cópia local de
-            demonstração. A ordem de tentativa e a fonte ativa são exibidas na interface.
+            Modelos small language models podem cometer erros, inventar referências, perder detalhes
+            do contexto e produzir respostas incompletas. A saída é uma sugestão, não uma verdade
+            verificada. Revise criticamente qualquer informação relevante antes de agir. A resposta
+            local é ainda mais limitada: ela segue padrões determinísticos e não consulta fontes.
           </p>
-          <ul>
-            <li>não garantimos exatidão, completude, atualidade ou adequação a uma finalidade específica;</li>
-            <li>séries podem conter lacunas, atrasos, ajustes pendentes ou falhas de provedor;</li>
-            <li>o serviço pode ficar indisponível sem aviso prévio;</li>
-            <li>a API e a CDN podem mudar de endereço, formato ou frequência de atualização.</li>
-          </ul>
+        </section>
+
+        <section id="offline">
+          <h2>7. Funcionamento offline</h2>
           <p>
-            Sempre que houver divergência, prevalecem os canais oficiais da B3, da CVM, do Banco
-            Central e das companhias.
+            O assistente pode ser instalado como aplicativo e guarda os arquivos da interface em
+            cache. Sem rede, as conversas continuam disponíveis e as respostas são geradas
+            localmente, com aviso explícito. O histórico permanece no dispositivo; não há fila de
+            reenvio automático de mensagens para a API.
+          </p>
+        </section>
+
+        <section id="disponibilidade">
+          <h2>8. Disponibilidade</h2>
+          <p>
+            O serviço é oferecido na medida do possível, sem garantia de disponibilidade contínua.
+            A API /llm pode sofrer manutenção, indisponibilidade ou limites de cota. Nesses casos o
+            assistente sinaliza a falha e passa a responder localmente.
           </p>
         </section>
 
         <section id="responsabilidade">
-          <h2>6. Limitação de responsabilidade</h2>
+          <h2>9. Responsabilidade</h2>
           <p>
-            Na máxima extensão permitida pela lei, os responsáveis pelo OpenFinancial não respondem
-            por perdas diretas, indiretas, incidentais ou consequenciais decorrentes de:
-          </p>
-          <ul>
-            <li>decisões de investimento tomadas com base no conteúdo;</li>
-            <li>interrupção, atraso, erro ou indisponibilidade do serviço;</li>
-            <li>uso de dados de demonstração como se fossem dados reais;</li>
-            <li>ações de terceiros, incluindo provedores de dados, CDN e modelos de linguagem.</li>
-          </ul>
-          <p>
-            Nada nestes termos afasta direitos assegurados pelo Código de Defesa do Consumidor
-            quando aplicáveis, nem limita responsabilidade por dolo ou culpa grave.
-          </p>
-        </section>
-
-        <section id="privacidade">
-          <h2>7. Privacidade</h2>
-          <p>
-            O site não exige conta e não usa cookies de rastreamento. O tratamento de dados pessoais
-            é descrito na <a href="privacidade.html">Política de Privacidade</a>, que integra estes
-            Termos para todos os efeitos.
-          </p>
-          <p>
-            A API pode registrar dados técnicos mínimos (endereço IP, horário e rota) para segurança
-            e diagnóstico, conforme a política de privacidade.
+            Na máxima extensão permitida pela lei, a Projetos Dinâmicos não responde por perdas
+            decorrentes do uso das respostas, da perda de dados locais apagados pelo usuário ou de
+            falhas na infraestrutura do gateway. Você é responsável pelo conteúdo que envia e pelo
+            uso que faz das sugestões.
           </p>
         </section>
 
         <section id="alteracoes">
-          <h2>8. Alterações destes Termos</h2>
+          <h2>10. Alterações</h2>
           <p>
-            Estes Termos são versionados. A versão vigente é <strong>2026-11-13</strong>. Alterações
-            relevantes serão publicadas nesta página, com atualização da data e do número da versão.
-          </p>
-          <p>
-            O uso continuado após a entrada em vigor de uma nova versão representa concordância com
-            as regras atualizadas.
-          </p>
-        </section>
-
-        <section id="foro">
-          <h2>9. Lei aplicável e foro</h2>
-          <p>
-            Estes Termos são regidos pelas leis brasileiras, em especial pela Lei nº 13.709/2018
-            (LGPD), pela Lei nº 12.965/2014 (Marco Civil da Internet), pela legislação do mercado de
-            capitais e pelo Código de Defesa do Consumidor, quando aplicável.
-          </p>
-          <p>
-            Fica eleito o foro do domicílio do usuário para dirimir controvérsias de consumo, quando
-            assim exigir a legislação. Nos demais casos, fica eleito o foro da comarca da sede dos
-            responsáveis pelo projeto.
+            Estes termos podem ser atualizados; a versão vigente estará sempre nesta página, com a
+            respectiva data. O uso continuado após uma alteração implica aceitação da nova versão.
           </p>
         </section>
 
         <section id="contato">
-          <h2>10. Contato</h2>
+          <h2>11. Contato</h2>
           <p>
-            Dúvidas sobre estes Termos podem ser enviadas para
+            Dúvidas sobre estes termos podem ser enviadas para
             <a href="mailto:contato@projetosdinamicos.com.br">contato@projetosdinamicos.com.br</a>.
-            Solicitações relacionadas a dados pessoais devem ser dirigidas ao encarregado, em
-            <a href="mailto:dpo@projetosdinamicos.com.br">dpo@projetosdinamicos.com.br</a>.
           </p>
         </section>
       </article>
@@ -233,8 +178,8 @@
 
   <footer class="legal-footer">
     <div class="wrap">
-      <span>© 2026 Projetos Dinâmicos · OpenFinancial · Termos versão 2026-11-13</span>
-      <span><a href="privacidade.html">Política de Privacidade</a> · <a href="metodologia.html">Metodologia</a> · <a href="index.html">Busca</a></span>
+      <span>© 2026 Projetos Dinâmicos · Termos versão 2026-11-22</span>
+      <span><a href="privacidade.html">Privacidade</a> · <a href="index.html">Assistente</a></span>
     </div>
   </footer>
 </body>
