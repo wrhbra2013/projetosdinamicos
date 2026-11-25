@@ -227,7 +227,7 @@ function renderThread() {
     const corpo = document.createElement('div');
     corpo.className = 'dash-msg-body muted';
     corpo.textContent = 'pensando…';
-    pensando.append(coro);
+    pensando.append(corpo);
     els.thread.append(pensando);
   }
 

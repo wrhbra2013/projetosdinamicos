@@ -6,7 +6,7 @@
    - Requisições à API NÃO são interceptadas: a interface mostra o erro.
    ========================================================================== */
 
-const CACHE = 'pd-openchat-v2';
+const CACHE = 'pd-openchat-v3';
 
 const SHELL = [
   './',
