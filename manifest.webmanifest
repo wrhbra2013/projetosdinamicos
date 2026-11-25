@@ -1,7 +1,7 @@
 {
-  "name": "Projetos Dinâmicos — Assistente Pessoal Offline",
-  "short_name": "PD Assistente",
-  "description": "Assistente pessoal com Qwen 1B Instruct pela API /llm, com cache offline e respostas locais.",
+  "name": "Projetos Dinâmicos — OpenChat Qwen",
+  "short_name": "OpenChat",
+  "description": "Dashboard simples do OpenChat: converse com o Qwen 2.5 0.5B pela API /llm usando seu nome de usuário.",
   "lang": "pt-BR",
   "dir": "ltr",
   "start_url": "./index.html",
@@ -26,10 +26,10 @@
   ],
   "shortcuts": [
     {
-      "name": "Nova conversa",
-      "short_name": "Nova conversa",
-      "description": "Abre o assistente com uma conversa nova.",
-      "url": "./index.html?nova=1"
+      "name": "Conversa",
+      "short_name": "Conversa",
+      "description": "Abre o dashboard do OpenChat.",
+      "url": "./index.html#thread"
     }
   ]
 }

@@ -1,13 +1,12 @@
 /* ============================================================================
-   Service worker do assistente pessoal.
+   Service worker do dashboard OpenChat (Qwen via API /llm).
 
    - Navegação: rede primeiro, cache como fallback (index.html).
    - Arquivos estáticos: cache primeiro, rede para preencher o cache.
-   - Requisições para api.projetosdinamicos.com.br NÃO são interceptadas:
-     a aplicação detecta a falha e usa o fallback local.
+   - Requisições à API NÃO são interceptadas: a interface mostra o erro.
    ========================================================================== */
 
-const CACHE = 'pd-assistente-v1';
+const CACHE = 'pd-openchat-v2';
 
 const SHELL = [
   './',
@@ -17,12 +16,9 @@ const SHELL = [
   './assets/icons/assistente.svg',
   './assets/css/base.css',
   './assets/css/landing.css',
-  './assets/css/assistente.css',
-  './assets/css/legal.css',
-  './assets/js/assistente.js',
-  './assets/js/assistente-prompts.js',
-  './assets/js/assistente-storage.js',
-  './assets/js/core/opencode.js',
+  './assets/css/dashboard.css',
+  './assets/js/dashboard.js',
+  './assets/js/core/qwen.js',
   './termos.html',
   './privacidade.html',
 ];

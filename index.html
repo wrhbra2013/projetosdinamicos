@@ -3,134 +3,107 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Projetos Dinâmicos — assistente pessoal offline</title>
-  <meta name="description" content="Assistente pessoal com IA local: converse com o Qwen 1B Instruct pela API /llm, com PWA offline, histórico no navegador e respostas locais sem conexão.">
+  <title>OpenChat — dashboard Qwen | Projetos Dinâmicos</title>
+  <meta name="description" content="Dashboard simples do OpenChat: converse com o Qwen 2.5 0.5B pela API /llm usando seu nome de usuário (X-Usuario).">
   <meta name="theme-color" content="#123b32">
   <meta name="color-scheme" content="light">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.projetosdinamicos.com.br https://cdn.projetosdinamicos.com.br http://127.0.0.1:8096 http://localhost:8096; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://api.projetosdinamicos.com.br http://127.0.0.1:8080 http://localhost:8080 http://127.0.0.1:8090 http://localhost:8090; font-src 'self'; manifest-src 'self'; worker-src 'self'; base-uri 'self'; form-action 'self'">
   <meta name="llm-api-base" content="https://api.projetosdinamicos.com.br/llm">
-  <meta name="pd-modelo" content="qwen1b-instruct">
+  <meta name="auth-api-base" content="https://api.projetosdinamicos.com.br/auth">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/landing.css">
-  <link rel="stylesheet" href="assets/css/assistente.css">
+  <link rel="stylesheet" href="assets/css/dashboard.css">
 </head>
-<body class="as-page">
+<body class="oc-page">
   <a class="skip-link" href="#thread">Ir para a conversa</a>
 
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="brand" href="index.html" aria-label="Projetos Dinâmicos — página inicial">
+      <a class="brand" href="index.html" aria-label="Projetos Dinâmicos — início">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8z"/></svg>
         </span>
-        <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>assistente pessoal offline</small></span>
+        <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>OpenChat · Qwen local</small></span>
       </a>
       <nav class="site-nav" aria-label="Principal">
         <a href="#painel">Painel</a>
         <a href="#sobre">Sobre</a>
-        <span class="small muted" id="modelo-label">modelo: —</span>
-        <span class="status" id="api-status" data-state="checking" role="status">verificando API…</span>
-        <button class="btn sm" id="btn-token-top" type="button">Conectar API</button>
-        <button class="btn primary sm" id="btn-novo-top" type="button">Nova conversa</button>
+        <span class="status" id="api-status" data-state="checking" role="status">verificando…</span>
+        <button class="btn sm" id="btn-usuario" type="button">Conectar</button>
+        <button class="btn primary sm" id="btn-limpar" type="button">Nova conversa</button>
       </nav>
     </div>
   </header>
 
   <main class="wrap" id="painel">
-    <div class="as-banner hidden" id="offline-banner" role="status">
-      <span aria-hidden="true">⚠</span>
-      <span><strong>Modo offline ativo.</strong> A interface está disponível pelo cache da PWA e o assistente responde localmente. Ao voltar a conexão, a API /llm é verificada automaticamente.</span>
+    <div class="oc-hero">
+      <p class="eyebrow">Dashboard simples</p>
+      <h1>Converse com o Qwen</h1>
+      <p class="muted">Modelo Qwen 2.5 0.5B Instruct via API <code>/llm</code>, com cadastro livre por nome de usuário. Respostas curtas, contexto de 1024 tokens.</p>
     </div>
 
-    <div class="as-layout">
-      <aside class="as-side" aria-label="Configurações do assistente">
-        <section class="card" aria-labelledby="sessoes-title">
+    <div class="oc-layout">
+      <aside class="dash-side" aria-label="Configurações do dashboard">
+        <section class="card" id="card-usuario">
           <div class="card-head">
-            <h2 id="sessoes-title">Conversas</h2>
-            <button class="btn sm" id="btn-nova-conversa" type="button">Nova</button>
+            <h2>Usuário</h2>
+            <button class="btn sm" id="btn-usuario-sair" type="button">Sair</button>
           </div>
-          <div class="as-sessoes" id="lista-sessoes"></div>
-          <p class="as-hint">Até 20 conversas e 120 mensagens por conversa ficam salvas apenas neste navegador.</p>
+          <p class="dash-usuario" id="dash-usuario">sem usuário</p>
+          <p class="as-hint">O nome é enviado no header <code>X-Usuario</code>. O cadastro é livre em <code>/auth/register</code>.</p>
         </section>
 
-        <section class="card" aria-labelledby="modo-title">
-          <h2 id="modo-title">Modo do assistente</h2>
-          <div class="as-modos" role="group" aria-label="Modo do assistente">
-            <button class="as-modo" type="button" data-modo="geral" aria-pressed="true"><strong>Geral</strong><small>Dúvidas e decisões</small></button>
-            <button class="as-modo" type="button" data-modo="escrita" aria-pressed="false"><strong>Escrita</strong><small>Textos e e-mails</small></button>
-            <button class="as-modo" type="button" data-modo="tarefas" aria-pressed="false"><strong>Tarefas</strong><small>Organização</small></button>
-            <button class="as-modo" type="button" data-modo="estudo" aria-pressed="false"><strong>Estudo</strong><small>Planos e revisão</small></button>
-            <button class="as-modo" type="button" data-modo="ideias" aria-pressed="false"><strong>Ideias</strong><small>Brainstorm</small></button>
+        <section class="card">
+          <div class="card-head">
+            <h2>Modelo</h2>
+            <button class="btn sm" id="btn-atualizar-modelos" type="button" title="Consultar /v1/models">↻</button>
           </div>
+          <label class="hidden" for="modelo-select">Modelo</label>
+          <select class="input" id="modelo-select" disabled aria-label="Modelo de linguagem"></select>
+          <p class="as-hint">ID detectado em <code>/v1/models</code>. Sem lista, o llamafile usa o modelo embutido.</p>
+          <p class="small muted" id="dash-fonte">detectando modelo…</p>
         </section>
 
-        <section class="card" aria-labelledby="memoria-title">
-          <h2 id="memoria-title">Memória local</h2>
-          <label class="hidden" for="memoria">Contexto pessoal</label>
-          <textarea class="input" id="memoria" maxlength="1200" placeholder="Ex.: trabalho como designer, tenho 4h livres à noite, prefiro respostas curtas."></textarea>
-          <p class="as-hint">Enviado como contexto ao modelo. Fica só no localStorage; você pode apagar quando quiser.</p>
-          <p class="msg" id="memoria-msg" role="status"></p>
-          <div class="as-side-actions">
-            <button class="btn sm" id="btn-limpar-memoria" type="button">Limpar memória</button>
-          </div>
-        </section>
-
-        <section class="card" aria-labelledby="conexao-title">
-          <h2 id="conexao-title">Conexão</h2>
-          <p class="small muted" id="conexao-info">Verificando a API /llm…</p>
-          <div class="field">
-            <label class="field-label" for="modelo-select">Modelo</label>
-            <div class="as-modelo-linha">
-              <select class="input" id="modelo-select" disabled aria-label="Modelo de linguagem"></select>
-              <button class="btn sm" id="btn-atualizar-modelos" type="button" title="Consultar /v1/models">↻</button>
-            </div>
-            <span class="as-hint">O ID do Qwen é detectado em <code>/v1/models</code>. Você pode trocar o modelo quando quiser.</span>
-          </div>
-          <div class="as-side-actions">
-            <button class="btn sm full" id="btn-token-side" type="button">Configurar token</button>
-          </div>
+        <section class="card">
+          <h2>API</h2>
+          <p class="small muted dash-base" id="dash-base"></p>
+          <ul class="dash-links">
+            <li><a href="https://api.projetosdinamicos.com.br/llm/health">/llm/health</a></li>
+            <li><a href="https://api.projetosdinamicos.com.br/llm/v1/models">/llm/v1/models</a></li>
+          </ul>
+          <p class="as-hint">Em desenvolvimento, aponte <code>llm-api-base</code> para <code>http://127.0.0.1:8080</code> para falar direto com o llamafile, sem usuário.</p>
         </section>
       </aside>
 
-      <section class="card as-chat" aria-labelledby="chat-titulo">
-        <div class="as-chat-head">
+      <section class="card dash-chat" aria-labelledby="chat-titulo">
+        <div class="card-head dash-chat-head">
           <div>
-            <h2 id="chat-titulo">Assistente pessoal</h2>
-            <p class="small muted">Qwen 1B Instruct via API /llm · fallback local quando offline</p>
+            <h2 id="chat-titulo">OpenChat</h2>
+            <p class="small muted">Qwen 2.5 0.5B via API /llm</p>
           </div>
-          <div class="as-chat-badges">
-            <span class="badge tag" id="chat-fonte">aguardando</span>
-            <span class="badge info">offline-first</span>
-          </div>
+          <span class="badge info">cadastro livre</span>
         </div>
 
-        <div class="as-thread" id="thread" aria-live="polite"></div>
+        <div class="dash-thread" id="thread" aria-live="polite"></div>
 
-        <div class="as-composer">
+        <div class="dash-composer">
           <label class="hidden" for="compose">Mensagem</label>
-          <textarea class="input" id="compose" maxlength="4000" placeholder="Pergunte, peça um rascunho ou organize suas tarefas…" rows="2"></textarea>
-          <div class="as-anexo hidden" id="anexo-chip">
-            <span aria-hidden="true">📎</span>
-            <span id="anexo-nome"></span>
-            <button type="button" id="btn-remover-anexo" aria-label="Remover anexo">✕</button>
-          </div>
-          <div class="as-composer-row">
-            <button class="btn sm" id="btn-anexar" type="button" title="Anexar arquivo de texto">📎 Anexar</button>
-            <input class="hidden" id="file-input" type="file" accept=".txt,.md,.csv,.json,text/plain">
-            <button class="btn sm" id="btn-limpar-chat" type="button">Limpar mensagens</button>
+          <textarea class="input" id="compose" maxlength="4000" rows="2" placeholder="Pergunte algo ao Qwen…"></textarea>
+          <div class="dash-composer-row">
             <span class="grow"></span>
+            <button class="btn" id="btn-parar" type="button">Parar</button>
             <button class="btn primary" id="btn-enviar" type="button">Enviar</button>
           </div>
-          <p class="msg" id="chat-msg" role="status">Conecte o token para usar o Qwen ou converse em modo local.</p>
+          <p class="msg" id="chat-msg" role="status">Conecte um usuário para conversar com o Qwen.</p>
         </div>
       </section>
     </div>
 
-    <section class="as-legal-note" id="sobre" aria-labelledby="sobre-title">
-      <h2 id="sobre-title" class="hidden">Sobre o assistente</h2>
-      <p><strong>Privacidade por padrão:</strong> conversas, memória e modelo preferido ficam neste navegador; o token e as mensagens enviadas vão apenas para o gateway <code>api.projetosdinamicos.com.br/llm</code>. Sem token ou sem rede, o assistente usa geradores locais determinísticos e identifica a origem da resposta.</p>
+    <section class="dash-legal" id="sobre">
+      <h2 class="hidden">Sobre o dashboard</h2>
+      <p><strong>Privacidade:</strong> o nome de usuário e o histórico recente ficam apenas neste navegador. As mensagens vão somente para o gateway configurado na meta tag <code>llm-api-base</code>. Modelos pequenos podem errar: confira informações importantes antes de agir.</p>
     </section>
   </main>
 
@@ -138,19 +111,12 @@
     <div class="wrap">
       <div class="footer-grid">
         <div>
-          <a class="brand" href="index.html" aria-label="Projetos Dinâmicos — página inicial">
-            <span class="brand-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8z"/></svg>
-            </span>
-            <span class="brand-text"><strong>Projetos <em>Dinâmicos</em></strong><small>assistente pessoal offline</small></span>
-          </a>
-          <p>Um assistente pessoal enxuto: IA pequena, dados no seu navegador e funcionamento mesmo sem conexão.</p>
+          <p>Um dashboard enxuto para o Qwen local da Projetos Dinâmicos: sem build, sem dependências externas.</p>
         </div>
         <div>
           <h4>Plataforma</h4>
           <a href="#painel">Painel</a>
           <a href="#sobre">Como funciona</a>
-          <a href="index.html">Início</a>
         </div>
         <div>
           <h4>API</h4>
@@ -165,40 +131,39 @@
       </div>
       <div class="footer-bottom">
         <span>© 2026 Projetos Dinâmicos</span>
-        <span>Modelo pequeno pode errar. Confira informações importantes antes de agir.</span>
+        <span>Qwen 2.5 0.5B · contexto de 1024 tokens</span>
       </div>
     </div>
   </footer>
 
-  <dialog class="pd-dialog" id="dialog-token" aria-labelledby="token-title">
-    <form class="modal-shell" id="form-token" novalidate>
+  <dialog class="pd-dialog" id="dialog-usuario" aria-labelledby="usuario-titulo">
+    <form class="modal-shell" id="form-usuario" novalidate>
       <div class="modal-head">
         <div>
-          <h2 id="token-title">Conectar à API /llm</h2>
-          <p class="modal-sub">O Bearer token fica apenas no localStorage deste navegador e é enviado ao gateway configurado na meta tag <code>llm-api-base</code>.</p>
+          <h2 id="usuario-titulo">Conectar ao /llm</h2>
+          <p class="modal-sub">Informe um nome de usuário. Se ainda não existir, ele é cadastrado automaticamente em <code>/auth/register</code> e enviado como <code>X-Usuario</code>.</p>
         </div>
-        <button class="icon-btn" type="button" data-close="dialog-token" aria-label="Fechar conexão">✕</button>
+        <button class="icon-btn" id="btn-usuario-fechar" type="button" aria-label="Fechar">✕</button>
       </div>
       <div class="modal-body">
         <div class="field">
-          <label class="field-label" for="token">Bearer token</label>
-          <input class="input" id="token" name="token" type="password" autocomplete="off" spellcheck="false" placeholder="Cole o token gerado na instalação">
-          <span class="field-hint">Aceito com ou sem o prefixo “Bearer ”. Sem token, o assistente continua em modo local.</span>
+          <label class="field-label" for="input-usuario">Nome de usuário</label>
+          <input class="input" id="input-usuario" type="text" autocomplete="username" spellcheck="false" placeholder="Ex.: debian" maxlength="40">
+          <span class="field-hint">Letras, números, ponto, hífen ou underscore. Exemplo: <code>debian</code>.</span>
         </div>
-        <p class="msg" id="token-msg" role="status"></p>
+        <p class="msg" id="usuario-msg" role="status"></p>
       </div>
       <div class="modal-actions">
-        <button class="btn danger-text" id="btn-token-remover" type="button">Remover token</button>
-        <button class="btn" type="button" data-close="dialog-token">Fechar</button>
-        <button class="btn primary" type="submit">Salvar token</button>
+        <button class="btn danger-text" id="btn-usuario-remover" type="button">Remover usuário</button>
+        <button class="btn" id="btn-usuario-salvar" type="button">Salvar e conectar</button>
       </div>
     </form>
   </dialog>
 
   <noscript>
-    <p class="noscript">O assistente precisa de JavaScript para conversar. Os documentos legais continuam disponíveis.</p>
+    <p class="noscript">O dashboard precisa de JavaScript para conversar com o Qwen.</p>
   </noscript>
 
-  <script type="module" src="assets/js/assistente.js"></script>
+  <script type="module" src="assets/js/dashboard.js"></script>
 </body>
 </html>

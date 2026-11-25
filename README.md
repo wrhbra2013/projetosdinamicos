@@ -1,148 +1,127 @@
-# Projetos Dinâmicos — assistente pessoal offline
+# Projetos Dinâmicos — dashboard OpenChat com Qwen
 
-O site da raiz (`projetosdinamicos.com.br`) é agora uma **plataforma de assistente
-pessoal com IA**. O modelo roda de forma local/privada atrás do gateway
-`https://api.projetosdinamicos.com.br/llm` (compatível com a API da OpenAI) e é
-usado para conversas, escrita, organização, estudo e brainstorm.
+A raiz do site é agora um **dashboard simples de chat**: o frontend fala com o
+Qwen 2.5 0.5B Instruct rodando como llamafile, diretamente
+(`http://127.0.0.1:8080`) ou pelo gateway
+`https://api.projetosdinamicos.com.br/llm`.
 
-O projeto é estático: **sem build, sem `npm` e sem dependências externas**. É uma
-PWA — instala como aplicativo, abre com a interface em cache e responde mesmo sem
-rede, usando geradores locais determinísticos. Conversas, memória e preferências
-ficam no `localStorage` do navegador.
+Não há build, `npm` ou dependências externas: HTML + CSS + módulos ES. O painel
+é uma PWA leve (shell em cache) e mantém nome de usuário, modelo preferido e
+histórico curto no `localStorage`.
 
 ```text
-usuário ──► chat (PWA) ──► POST /llm/v1/chat/completions ──► Qwen 1B Instruct
-                 │                                              │
-                 ├── GET /llm/health, /llm/v1/models            │
-                 │                                              ▼
-                 └── sem token / sem rede / falha ──► resposta local + aviso
-                                                       │
-                                                       ▼
-                                          histórico salvo no navegador
+usuário ──► dashboard (index.html) ──► POST /llm/v1/chat/completions ──► Qwen 2.5 0.5B
+                 │                        header X-Usuario
+                 ├── GET /llm/health, /llm/v1/models
+                 └── POST /auth/register { usuario }  (cadastro livre)
 ```
 
-## O que mudou em relação à versão anterior
+## Autenticação (mudou em relação ao Bearer token)
 
-| Antes | Agora |
-| --- | --- |
-| Fluxo guiado de criação de negócios (filtro → nichos → resumo) | Chat pessoal livre com 5 modos de especialização |
-| Modelo padrão `opencode/big-pickle` | Qwen 1B Instruct (ID detectado em `/v1/models`) |
-| Página dependente da rede | PWA com cache offline e fallback local |
-| Sessão apenas em memória | Até 20 conversas persistidas no navegador |
+O gateway **não usa mais Bearer token**. Ele exige o header `X-Usuario` em
+todas as rotas `/llm`, inclusive `/health`. O cadastro é livre:
 
-Os arquivos do assistente de negócios e do antigo OpenFinancial seguem no
-repositório como **legado** (documentados mais adiante), sem serem carregados
-pela página principal.
+```bash
+curl -s -X POST https://api.projetosdinamicos.com.br/auth/register \
+  -H 'Content-Type: application/json' -d '{"usuario":"debian"}'
+```
 
-## Recursos
+- `201` → usuário criado; `409` (`usuario_exists`) → nome já existe e pode ser usado.
+- Com um nome cadastrado: `curl -H 'X-Usuario: debian' .../llm/health` → `{"status":"ok"}`.
+- Sem nome ou com nome desconhecido: `401` com `{"error":"unauthorized", ...}`.
 
-- **Chat contínuo** com histórico recente enviado ao modelo (últimas 20 mensagens).
-- **Modos**: Geral, Escrita, Tarefas, Estudo e Ideias — cada um com prompt próprio
-  e sugestões de abertura.
-- **Memória local**: um campo de contexto pessoal opcional, enviado ao modelo e
-  editável/apagável a qualquer momento.
-- **Anexos de texto** (`.txt`, `.md`, `.csv`, `.json`, até 60 KB) incorporados à
-  mensagem enviada.
-- **Múltiplas conversas**: criar, alternar, excluir e limpar mensagens.
-- **Seletor de modelo**: preenche a lista devolvida por `/v1/models`, priorizando
-  modelos Qwen 1B/1,5B/1,8B com `Instruct`/`Chat` no nome.
-- **Indicadores honestos**: a resposta informa se veio da API /llm ou do gerador
-  local; o badge do topo mostra o estado da conexão.
+O dashboard abre um diálogo pedindo o nome, cadastra/valida em `/auth/register`
+e guarda o nome no navegador (`pd.qwen.usuario`). O llamafile local aceita
+qualquer id de modelo (ou nenhum) e **não exige** `X-Usuario`.
 
-## Funcionamento offline
+## API
 
-1. O `sw.js` guarda o shell da aplicação (HTML, CSS, módulos JS, manifesto,
-   ícones e páginas legais) em um cache do Cache Storage.
-2. Navegações usam rede primeiro e caem no `index.html` cacheado; arquivos
-   estáticos são servidos do cache.
-3. Requisições ao gateway **não** são interceptadas pelo service worker. Sem
-   token, com `navigator.onLine === false` ou com falha de rede/HTTP, quem decide
-   é a aplicação: ela registra um aviso na conversa e usa
-   `assistente-prompts.js` para gerar uma resposta local (resumo extrativo,
-   checklist, plano de estudos, ideias, rascunho ou comparação).
-4. Ao voltar a conexão, o evento `online` dispara uma nova verificação de
-   `/health` e `/v1/models`.
-
-> O service worker só é registrado em HTTPS ou `localhost` — limite do navegador.
-
-## API /llm
-
-A base é configurável pela meta tag `llm-api-base` (padrão
-`https://api.projetosdinamicos.com.br/llm`). O cliente OpenAI-compatible está em
-`assets/js/core/opencode.js`.
-
-| Método | Endpoint | Uso |
+| Método | Endpoint | Uso no painel |
 | --- | --- | --- |
-| `GET` | `/health` | selo de status no topo. |
-| `GET` | `/v1/models` | validar token, listar modelos e detectar o Qwen. |
-| `POST` | `/v1/chat/completions` | enviar conversa (`stream: false`). |
+| `POST` | `/auth/register` | cadastrar/validar o nome de usuário. |
+| `GET` | `/llm/health` | selo de status no topo. |
+| `GET` | `/llm/v1/models` | detectar o ID real do Qwen. |
+| `POST` | `/llm/v1/chat/completions` | enviar a conversa (`stream: false`). |
 
-O ID inicial vem da meta tag `pd-modelo` (padrão `qwen1b-instruct`). Com token
-válido, a lista de `/v1/models` substitui esse valor pelo ID real publicado pelo
-gateway; a escolha do usuário tem prioridade e é lembrada no navegador. Para
-fixar outro modelo, edite a meta tag em `index.html`.
-
-Exemplo do corpo enviado:
+Corpo enviado no chat (contexto curto de propósito: o modelo tem `n_ctx = 1024`):
 
 ```json
 {
-  "model": "qwen1b-instruct",
+  "model": "/zip/qwen2.5-0.5b-instruct-q4_k_m.gguf",
   "messages": [
-    { "role": "system", "content": "…prompt do modo + memória local…" },
-    { "role": "user", "content": "…mensagem atual…" }
+    { "role": "system", "content": "Você é o assistente do OpenChat…" },
+    { "role": "user", "content": "…últimas 6 mensagens + mensagem atual…" }
   ],
   "stream": false,
   "temperature": 0.6,
-  "max_tokens": 900
+  "max_tokens": 256
 }
 ```
 
-## Arquivos
+As bases são configuráveis por meta tag em `index.html`, sem mexer no JS:
+
+```html
+<meta name="llm-api-base"  content="https://api.projetosdinamicos.com.br/llm">
+<meta name="auth-api-base" content="https://api.projetosdinamicos.com.br/auth">
+```
+
+Para desenvolver/testar direto no llamafile, troque apenas a primeira para
+`http://127.0.0.1:8080`. A CSP da página já libera essa origem.
+
+## Arquivos usados pelo dashboard
 
 | Arquivo | Função |
 | --- | --- |
-| `index.html` | interface do assistente, PWA, modais de token. |
-| `assets/js/assistente.js` | estado, renderização, envio, sessões, conexão e offline. |
-| `assets/js/assistente-prompts.js` | prompts dos modos e respostas locais. |
-| `assets/js/assistente-storage.js` | leitura/escrita validada do `localStorage`. |
-| `assets/js/core/opencode.js` | cliente `/health`, `/v1/models`, `/v1/chat/completions`. |
-| `assets/css/assistente.css` | layout do chat e estados de conexão. |
-| `manifest.webmanifest`, `sw.js`, `assets/icons/` | instalação e cache da PWA. |
+| `index.html` | painel de chat, meta tags das bases e CSP. |
+| `assets/js/dashboard.js` | estado, renderização, conexão, envio e histórico. |
+| `assets/js/core/qwen.js` | cliente `/health`, `/v1/models`, `/chat/completions`, `/register` com `X-Usuario`. |
+| `assets/css/dashboard.css` | layout do painel e estados de conexão. |
 | `assets/css/base.css`, `landing.css` | tokens visuais, cabeçalho e rodapé compartilhados. |
-| `termos.html`, `privacidade.html` | documentos legais do assistente. |
-| `negocios*.js`, `negocios.css`, `llm-dashboard.js`, `metodologia.html`, `ativo.html`, `busca.js`, `server/`, `tools/` | legado do assistente de negócios/OpenFinancial; mantidos no repositório, não usados pela raiz. |
-| `openchat.html` | redirecionamento antigo, mantido por compatibilidade. |
+| `manifest.webmanifest`, `sw.js`, `assets/icons/` | instalação e cache da PWA. |
+| `termos.html`, `privacidade.html` | documentos legais. |
+| `openchat.html` | redirecionamento mantido por compatibilidade. |
+
+Os arquivos do assistente anterior (`assistente*.js`, `assistente.css`,
+`core/opencode.js`, `llm-dashboard.js`, páginas e scripts de negócios/OpenFinancial)
+permanecem no repositório como **legado**, mas não são mais carregados pela raiz.
 
 ## Rodando localmente
 
-Requisito: Python 3.10+ apenas para servir arquivos estáticos.
+Requisito: Python 3.10+ para servir arquivos estáticos.
 
 ```bash
 python3 -m http.server 8080 --bind 127.0.0.1
 ```
 
-Abra `http://localhost:8080/`. Clique em **Conectar API**, informe o Bearer token
-e envie uma mensagem. Sem token, o assistente responde em modo local — útil para
-testar a interface sem consumir cota.
+Abra `http://127.0.0.1:8080/`. Para usar o gateway público basta informar um
+nome de usuário no diálogo "Conectar". Para falar com o llamafile local, ajuste a
+meta tag `llm-api-base` para `http://127.0.0.1:8080` (o servidor de arquivos
+deve usar outra porta, por exemplo `python3 -m http.server 8000`).
 
-> Módulos ES e service workers não funcionam em `file://`. Sirva a pasta por HTTP.
+> Módulos ES e service workers não funcionam em `file://`: sirva por HTTP.
 
-## Privacidade e limites
+## Servidor (llamafile + auth)
 
-- O token **não** é embutido no HTML nem enviado a outro domínio além do gateway.
-  Qualquer script da página com acesso ao `localStorage` poderia lê-lo: por isso
-  a CSP é rígida e o projeto não carrega dependências de terceiros.
-- Conversas e memória ficam no dispositivo. Limpar os dados do site apaga tudo.
-- A resposta local é determinística, genérica e sinalizada como tal. Ela não
-  consulta fontes externas, não sabe legislação e não substitui revisão humana.
-- Modelos pequenos (1B) podem alucinar, perder contexto longo e errar em tarefas
-  complexas. Prefira pedidos curtos e verifique informações relevantes.
-- A API pode ter cota limitada. Nesse caso o assistente avisa e cai no modo local.
+Serviços em `debian@projetosdinamicos`: `qwen-llamafile` (porta 8080) e
+`qwen-auth` (porta 8090). Variáveis em `/var/www/llm/.env`: modelo
+`Qwen2.5-0.5B-Instruct-Q4_K_M`, `CONTEXT_SIZE=1024`, `THREADS=2`,
+`AUTH_CADASTRO_LIVRE=1`. O nginx publica `/llm/` e `/auth/` em
+`api.projetosdinamicos.com.br` com CORS liberando `Content-Type` e `X-Usuario`.
 
-## Implantação
+```bash
+sudo systemctl status qwen-llamafile qwen-auth
+sudo systemctl restart qwen-llamafile
+journalctl -u qwen-llamafile -n 50 --no-pager
+```
 
-Publicação via GitHub Pages na branch `main`. O `CNAME` aponta
-`www.projetosdinamicos.com.br`; a raiz deve apontar para o mesmo destino no
-registrador. A API `/llm` é externa a este repositório: aqui ela é apenas
-consumida. Após publicar, incrementar `CACHE` em `sw.js` força a atualização do
-cache dos usuários.
+> **Nunca** versionar `API_TOKEN` ou qualquer segredo do `.env` no frontend.
+> Nenhuma credencial do servidor é necessária no navegador: a identidade é o
+> nome de usuário enviado em `X-Usuario`.
+
+## Limites
+
+- Modelo de 0,5B: respostas rápidas, mas alucinações e contexto de 1024 tokens.
+  O painel limita o histórico enviado e o tamanho da resposta (`max_tokens=256`).
+- Sem usuário cadastrado (gateway) ou sem rede, o painel informa o erro; não há
+  gerador local de fallback.
+- Conversas e nome ficam no dispositivo. Limpar os dados do site apaga tudo.
